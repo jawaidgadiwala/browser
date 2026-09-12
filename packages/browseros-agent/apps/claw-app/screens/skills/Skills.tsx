@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { cn } from '@/lib/utils'
 import { useSkillsScreenData } from './skills.data'
 import { formatTokens, skillCommand } from './skills.helpers'
@@ -27,7 +28,7 @@ import { formatTokens, skillCommand } from './skills.helpers'
 const CELL_PADDING = 'px-2 py-3 first:pl-4 last:pr-4'
 
 /**
- * Tasks list. A task is a skill BrowserOS neo linked into the connected coding
+ * Tasks list. A task is a skill the cockpit linked into the connected coding
  * agents; each row shows its run count and token savings. Row click opens
  * the SKILL.md and run history.
  */
@@ -49,7 +50,7 @@ export function Skills() {
             Tasks
           </h1>
           <p className="text-ink-2 text-sm">
-            Skills BrowserOS neo linked into your coding agents. Re-run one by
+            Skills {PRODUCT_NAME} linked into your coding agents. Re-run one by
             name.
           </p>
         </div>
@@ -66,8 +67,8 @@ export function Skills() {
 
       {isError ? (
         <SkillsNotice>
-          Could not load your tasks. Check that BrowserOS neo is running and try
-          again.
+          Could not load your tasks. Check that {PRODUCT_NAME} is running and
+          try again.
         </SkillsNotice>
       ) : isLoading ? (
         <SkillsSkeleton />

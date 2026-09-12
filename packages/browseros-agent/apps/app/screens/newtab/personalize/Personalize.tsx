@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/collapsible'
 import { Label } from '@/components/ui/label'
 import { MarkdownEditor } from '@/components/ui/MarkdownEditor'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { usePersonalization } from '@/lib/personalization/personalizationStorage'
 import { cn } from '@/lib/utils'
 import { NewTabBranding } from '../index/NewTabBranding'
@@ -17,7 +18,7 @@ const sections = [
   {
     key: 'aboutYou' as const,
     title: 'Add more info about you',
-    description: 'Help BrowserOS understand who you are',
+    description: `Help ${PRODUCT_NAME} understand who you are`,
   },
   {
     key: 'expectations' as const,
@@ -66,7 +67,7 @@ export const Personalize = () => {
           value={personalization}
           autoFocus
           onChange={setPersonalization}
-          placeholder="Tell BrowserOS about yourself..."
+          placeholder={`Tell ${PRODUCT_NAME} about yourself...`}
           className="styled-scrollbar h-96 overflow-y-auto"
         />
         <p className="text-muted-foreground text-xs">

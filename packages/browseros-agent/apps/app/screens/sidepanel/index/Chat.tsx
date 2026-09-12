@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { NoChatTargetNotice } from '@/components/chat/NoChatTargetNotice'
 import { createBrowserOSAction } from '@/lib/chat-actions/types'
 import {
   SIDEPANEL_AI_TRIGGERED_EVENT,
@@ -43,6 +44,7 @@ export const Chat = () => {
     isRestoringConversation,
     isIncognito,
     retryLastTurn,
+    targetsSettled,
   } = useChatSessionContext()
 
   const {
@@ -167,11 +169,15 @@ export const Chat = () => {
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : messages.length === 0 ? (
-          <ChatEmptyState
-            mode={mode}
-            mounted={mounted}
-            onSuggestionClick={handleSuggestionClick}
-          />
+          targetsSettled && !selectedProvider ? (
+            <NoChatTargetNotice />
+          ) : (
+            <ChatEmptyState
+              mode={mode}
+              mounted={mounted}
+              onSuggestionClick={handleSuggestionClick}
+            />
+          )
         ) : (
           <ChatMessages
             messages={messages}

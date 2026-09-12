@@ -6,6 +6,7 @@ import { AppSidebar } from '@/components/sidebar/AppSidebar'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { RpcClientProvider } from '@/lib/rpc/RpcClientProvider'
 import { cn } from '@/lib/utils'
 import { ActiveConversationProvider } from '@/modules/conversations/active-conversation-context'
@@ -74,7 +75,7 @@ const SidebarLayoutContent: FC = () => {
             >
               <Menu className="size-4" />
             </Button>
-            <span className="font-semibold">BrowserOS</span>
+            <span className="font-semibold">{PRODUCT_NAME}</span>
           </header>
           {isChatPage ? (
             <main className="relative min-h-0 flex-1 overflow-hidden">

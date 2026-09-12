@@ -1,6 +1,7 @@
 import { storage } from '@wxt-dev/storage'
 import { getBrowserOSAdapter } from '@/lib/browseros/adapter'
 import { BROWSEROS_PREFS } from '@/lib/browseros/prefs'
+import { hostedProviderEnabled } from '@/lib/personal/personal-build'
 import {
   migrateLlmProvidersToV3,
   normalizeProviderNames,
@@ -95,7 +96,7 @@ export function createDefaultBrowserOSProvider(): LlmProviderConfig {
 }
 
 export function createDefaultProvidersConfig(): LlmProviderConfig[] {
-  return [createDefaultBrowserOSProvider()]
+  return hostedProviderEnabled() ? [createDefaultBrowserOSProvider()] : []
 }
 
 export const defaultProviderIdStorage = storage.defineItem<string>(

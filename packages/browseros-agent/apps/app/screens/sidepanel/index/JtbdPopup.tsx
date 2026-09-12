@@ -3,6 +3,7 @@ import { type FC, useState } from 'react'
 import { Message, MessageContent } from '@/components/ai-elements/message'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 
 export interface JtbdPopupProps {
   onTakeSurvey: (opts?: { dontShowAgain?: boolean }) => void
@@ -32,7 +33,9 @@ export const JtbdPopup: FC<JtbdPopupProps> = ({
           <div className="flex items-start gap-3 pr-6">
             <MessageSquareHeart className="h-5 w-5 shrink-0 text-primary" />
             <div>
-              <p className="font-medium text-sm">Help us improve BrowserOS!</p>
+              <p className="font-medium text-sm">
+                Help us improve {PRODUCT_NAME}!
+              </p>
               <p className="mt-1 text-muted-foreground text-xs">
                 Take a quick 3-minute survey.
               </p>

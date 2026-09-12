@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test'
+import { BROWSEROS_MCP_SERVER_NAME } from '@browseros/shared/constants/urls'
 import { API_URL_STORAGE_KEY } from './client.helpers'
 import {
   buildCanonicalMcpCliCommand,
@@ -93,7 +94,7 @@ describe('buildCanonicalMcpCliCommand', () => {
   it('produces the standard `claude mcp add` shape with the canonical URL', () => {
     installWindow('')
     expect(buildCanonicalMcpCliCommand()).toBe(
-      'claude mcp add browseros-neo http://127.0.0.1:9200/mcp --transport http --scope user',
+      `claude mcp add ${BROWSEROS_MCP_SERVER_NAME} http://127.0.0.1:9200/mcp --transport http --scope user`,
     )
   })
 })

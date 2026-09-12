@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { signIn, useSession } from '@/lib/auth/auth-client'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 
 type LoginState = 'idle' | 'loading' | 'error'
 
@@ -65,7 +66,9 @@ export const LoginPage: FC = () => {
             <ArrowLeft className="size-4" />
           </Button>
           <div className="flex-1 pr-9 text-center">
-            <CardTitle className="text-2xl">Welcome to BrowserOS</CardTitle>
+            <CardTitle className="text-2xl">
+              Welcome to {PRODUCT_NAME}
+            </CardTitle>
             <CardDescription>
               Sign in to your account to continue
             </CardDescription>

@@ -23,6 +23,7 @@ import { testProvider } from '@/lib/llm-providers/testProvider'
 import type { LlmProviderConfig } from '@/lib/llm-providers/types'
 import { track } from '@/lib/metrics/track'
 import { showUpstreamPromos } from '@/lib/personal/personal-build'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { sentry } from '@/lib/sentry/sentry'
 import { useAgentServerUrl } from '@/modules/browseros/agent-server-url.hooks'
 import { useGraphqlMutation } from '@/modules/graphql/graphql-mutation.hooks'
@@ -43,7 +44,7 @@ import { NewProviderDialog } from './NewProviderDialog'
 import { partitionSyncedProviders } from './synced-providers'
 
 /**
- * BrowserOS AI pane — manage LLM providers and the default model.
+ * AI pane — manage LLM providers and the default model.
  */
 export const BrowserOsAiPane: FC = () => {
   const {
@@ -278,8 +279,8 @@ export const BrowserOsAiPane: FC = () => {
         {providersUnavailable ? (
           <Alert variant="destructive">
             <AlertDescription>
-              Your providers could not be loaded because the BrowserOS server is
-              not reachable. They are still saved on this device.
+              Your providers could not be loaded because the {PRODUCT_NAME}{' '}
+              server is not reachable. They are still saved on this device.
             </AlertDescription>
           </Alert>
         ) : null}

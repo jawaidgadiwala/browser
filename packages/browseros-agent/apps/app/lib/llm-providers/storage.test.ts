@@ -54,11 +54,13 @@ mock.module('@/lib/browseros/prefs', () => ({
   BROWSEROS_PREFS: { PROVIDERS: 'browseros.providers' },
 }))
 
+let createDefaultProvidersConfig: typeof import('./storage').createDefaultProvidersConfig
 let loadProviders: typeof import('./storage').loadProviders
 let providersStorage: typeof import('./storage').providersStorage
 
 beforeAll(async () => {
-  ;({ loadProviders, providersStorage } = await import('./storage'))
+  ;({ createDefaultProvidersConfig, loadProviders, providersStorage } =
+    await import('./storage'))
 })
 
 beforeEach(() => {
@@ -184,5 +186,13 @@ describe('loadProviders', () => {
     expect(providers).toEqual([openAI])
     expect(await providersStorage.getValue()).toEqual([openAI])
     expect(resolveDefaultProviderId(providers, remoteHermes.id)).toBe(openAI.id)
+  })
+})
+
+describe('createDefaultProvidersConfig', () => {
+  // This build has no hosted provider to seed, so a fresh profile starts with
+  // nothing configured and the surfaces prompt for a provider or coding agent.
+  it('seeds nothing while the hosted provider is gated off', () => {
+    expect(createDefaultProvidersConfig()).toEqual([])
   })
 })

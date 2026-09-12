@@ -68,7 +68,7 @@ function render(
     createElement(ConfiguredTargetsList, {
       providers: [builtIn, custom],
       coding,
-      selectedProviderId: 'browseros',
+      selectedProviderId: 'p1',
       selectedAgentId: null,
       testingProviderId: null,
       onSelectProvider: () => {},
@@ -84,14 +84,20 @@ function render(
 describe('ConfiguredTargetsList', () => {
   it('renders providers and agents in one list', () => {
     const html = render()
-    expect(html).toContain('BrowserOS')
     expect(html).toContain('My OpenAI')
     expect(html).toContain('Review agent')
   })
 
+  // This build ships no hosted provider, so a row left behind on an upgraded
+  // profile must not be offered as a target.
+  it('hides the upstream hosted provider', () => {
+    const html = render()
+    expect(html).not.toContain('data-icon="browseros"')
+    expect(html).not.toContain('Hosted model with strict rate limits')
+  })
+
   it('keeps the brand icons for each kind of target', () => {
     const html = render()
-    expect(html).toContain('data-icon="browseros"')
     expect(html).toContain('data-icon="provider"')
     expect(html).toContain('data-icon="adapter"')
   })
@@ -109,7 +115,7 @@ describe('ConfiguredTargetsList', () => {
   it('puts every target in one radio group', () => {
     const html = render()
     const radios = html.match(/name="default-provider"/g) ?? []
-    expect(radios).toHaveLength(3)
+    expect(radios).toHaveLength(2)
   })
 
   it('marks exactly one row as default', () => {

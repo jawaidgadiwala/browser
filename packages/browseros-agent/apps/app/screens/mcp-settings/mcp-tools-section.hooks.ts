@@ -18,7 +18,7 @@ async function fetchTools(agentServerUrl: string): Promise<McpTool[]> {
 }
 
 /**
- * Returns the BrowserOS MCP tool catalogue for the settings UI. Reads the
+ * Returns the MCP tool catalogue for the settings UI. Reads the
  * read-only `/mcp-manager/tools` endpoint rather than speaking MCP to `/mcp`,
  * which the browser cannot reach directly.
  */

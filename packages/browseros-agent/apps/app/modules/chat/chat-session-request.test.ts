@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import type { LlmProviderConfig } from '@/lib/llm-providers/types'
 import {
   buildSidepanelPreparedSendMessagesRequest,
+  missingLlmProvider,
   prepareSidepanelSendMessagesRequest,
 } from './chat-session-request'
 import type { SidepanelChatTarget } from './sidepanel-chat-targets'
@@ -143,3 +144,54 @@ const acpTarget: Extract<SidepanelChatTarget, { kind: 'acp' }> = {
   modelLabel: 'GPT-5.5',
   reasoningEffort: 'medium',
 }
+
+describe('missingLlmProvider', () => {
+  // Regression guard: a profile whose only target is Claude Code must be able
+  // to send. The guard used to fire on "no provider" alone and blocked it.
+  it('lets a coding agent send with no LLM provider configured', () => {
+    expect(
+      missingLlmProvider({
+        target: acpTarget,
+        resolvedProvider: null,
+        hostedProviderEnabled: false,
+      }),
+    ).toBe(false)
+  })
+
+  it('blocks an LLM turn with no provider and no hosted fallback', () => {
+    expect(
+      missingLlmProvider({
+        target: llmTarget,
+        resolvedProvider: null,
+        hostedProviderEnabled: false,
+      }),
+    ).toBe(true)
+    expect(
+      missingLlmProvider({
+        target: undefined,
+        resolvedProvider: null,
+        hostedProviderEnabled: false,
+      }),
+    ).toBe(true)
+  })
+
+  it('allows an LLM turn once a provider resolves', () => {
+    expect(
+      missingLlmProvider({
+        target: llmTarget,
+        resolvedProvider: fallbackProvider,
+        hostedProviderEnabled: false,
+      }),
+    ).toBe(false)
+  })
+
+  it('never blocks upstream, where the hosted provider still exists', () => {
+    expect(
+      missingLlmProvider({
+        target: llmTarget,
+        resolvedProvider: null,
+        hostedProviderEnabled: true,
+      }),
+    ).toBe(false)
+  })
+})

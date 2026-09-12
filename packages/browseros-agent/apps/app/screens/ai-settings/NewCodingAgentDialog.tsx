@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { useAcpAgentProbe } from '@/modules/agents/acp-agent-probe.hooks'
 import type { AcpAgentType } from '@/modules/agents/acp-agent-types'
 import { useCreateAcpAgent } from '@/modules/agents/agents.hooks'
@@ -76,8 +77,9 @@ export const NewCodingAgentDialog: FC<NewCodingAgentDialogProps> = ({
             Set up {type ? adapterLabel(type) : 'agent'}
           </DialogTitle>
           <DialogDescription>
-            BrowserOS uses your existing CLI login. This agent can run commands
-            and access files anywhere on your computer without approval.
+            {PRODUCT_NAME} uses your existing CLI login. This agent can run
+            commands and access files anywhere on your computer without
+            approval.
           </DialogDescription>
         </DialogHeader>
 

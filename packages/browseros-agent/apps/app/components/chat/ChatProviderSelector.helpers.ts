@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import type { Provider } from './chatComponentTypes'
 
 export interface ProviderOptionGroup {
@@ -17,7 +18,7 @@ export function groupProviderOptions(
       ? [
           {
             key: 'llm' as const,
-            label: 'BrowserOS agent + your LLM',
+            label: `${PRODUCT_NAME} agent + your LLM`,
             options: llm,
           },
         ]

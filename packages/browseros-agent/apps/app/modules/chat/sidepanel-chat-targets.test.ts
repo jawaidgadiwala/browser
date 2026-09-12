@@ -23,6 +23,16 @@ const provider: LlmProviderConfig = {
   updatedAt: 1,
 }
 
+const hostedProvider: LlmProviderConfig = { ...provider }
+
+const ownProvider: LlmProviderConfig = {
+  ...provider,
+  id: 'openai-1',
+  type: 'openai',
+  name: 'My OpenAI',
+  modelId: 'gpt-5.5',
+}
+
 const agent: AcpAgent = {
   id: '00000000-0000-4000-8000-000000000001',
   name: 'Review Bot',
@@ -67,7 +77,7 @@ describe('buildSidepanelChatTargets', () => {
 
 describe('resolveSidepanelChatTarget', () => {
   const targets = buildSidepanelChatTargets({
-    providers: [provider],
+    providers: [ownProvider],
     agents: [agent],
   })
 
@@ -75,7 +85,7 @@ describe('resolveSidepanelChatTarget', () => {
     expect(
       resolveSidepanelChatTarget({
         targets,
-        defaultProviderId: provider.id,
+        defaultProviderId: ownProvider.id,
         selection: { kind: 'acp', id: agent.id },
       }),
     ).toMatchObject({ kind: 'acp', id: agent.id })
@@ -85,10 +95,63 @@ describe('resolveSidepanelChatTarget', () => {
     expect(
       resolveSidepanelChatTarget({
         targets,
-        defaultProviderId: provider.id,
+        defaultProviderId: ownProvider.id,
         selection: { kind: 'acp', id: 'deleted-agent' },
       }),
-    ).toMatchObject({ kind: 'llm', id: provider.id })
+    ).toMatchObject({ kind: 'llm', id: ownProvider.id })
+  })
+
+  // This build ships no hosted provider, so a coding agent is a legitimate
+  // sole target and must become the default instead of nothing.
+  it('falls back to a coding agent when no provider is configured', () => {
+    const agentOnly = buildSidepanelChatTargets({
+      providers: [],
+      agents: [agent],
+    })
+
+    expect(
+      resolveSidepanelChatTarget({
+        targets: agentOnly,
+        defaultProviderId: '',
+        selection: null,
+      }),
+    ).toMatchObject({ kind: 'acp', id: agent.id })
+  })
+
+  // A profile upgraded from a build that shipped the hosted provider still has
+  // the row and may still name it as the default; neither may put it back.
+  it('never resolves the withheld hosted provider', () => {
+    const withHosted = buildSidepanelChatTargets({
+      providers: [hostedProvider],
+      agents: [agent],
+    })
+
+    expect(
+      resolveSidepanelChatTarget({
+        targets: withHosted,
+        defaultProviderId: hostedProvider.id,
+        selection: null,
+      }),
+    ).toMatchObject({ kind: 'acp', id: agent.id })
+
+    expect(
+      resolveSidepanelChatTarget({
+        targets: withHosted,
+        defaultProviderId: hostedProvider.id,
+        selection: { kind: 'llm', id: hostedProvider.id },
+      }),
+    ).toMatchObject({ kind: 'acp', id: agent.id })
+
+    expect(
+      resolveSidepanelChatTarget({
+        targets: buildSidepanelChatTargets({
+          providers: [hostedProvider],
+          agents: [],
+        }),
+        defaultProviderId: hostedProvider.id,
+        selection: null,
+      }),
+    ).toBeUndefined()
   })
 })
 

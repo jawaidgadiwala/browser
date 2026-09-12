@@ -28,23 +28,23 @@ function injectStyles(): void {
       0% {
         box-shadow:
           inset 0 0 ${58 * t}px ${26 * t}px transparent,
-          inset 0 0 ${50 * t}px ${22 * t}px rgba(251, 102, 24, 0.06),
-          inset 0 0 ${42 * t}px ${18 * t}px rgba(251, 102, 24, 0.12),
-          inset 0 0 ${34 * t}px ${14 * t}px rgba(251, 102, 24, 0.18);
+          inset 0 0 ${50 * t}px ${22 * t}px rgba(44, 107, 242, 0.06),
+          inset 0 0 ${42 * t}px ${18 * t}px rgba(44, 107, 242, 0.12),
+          inset 0 0 ${34 * t}px ${14 * t}px rgba(44, 107, 242, 0.18);
       }
       50% {
         box-shadow:
           inset 0 0 ${72 * t}px ${35 * t}px transparent,
-          inset 0 0 ${64 * t}px ${32 * t}px rgba(251, 102, 24, 0.10),
-          inset 0 0 ${54 * t}px ${26 * t}px rgba(251, 102, 24, 0.18),
-          inset 0 0 ${46 * t}px ${22 * t}px rgba(251, 102, 24, 0.24);
+          inset 0 0 ${64 * t}px ${32 * t}px rgba(44, 107, 242, 0.10),
+          inset 0 0 ${54 * t}px ${26 * t}px rgba(44, 107, 242, 0.18),
+          inset 0 0 ${46 * t}px ${22 * t}px rgba(44, 107, 242, 0.24);
       }
       100% {
         box-shadow:
           inset 0 0 ${58 * t}px ${26 * t}px transparent,
-          inset 0 0 ${50 * t}px ${22 * t}px rgba(251, 102, 24, 0.06),
-          inset 0 0 ${42 * t}px ${18 * t}px rgba(251, 102, 24, 0.12),
-          inset 0 0 ${34 * t}px ${14 * t}px rgba(251, 102, 24, 0.18);
+          inset 0 0 ${50 * t}px ${22 * t}px rgba(44, 107, 242, 0.06),
+          inset 0 0 ${42 * t}px ${18 * t}px rgba(44, 107, 242, 0.12),
+          inset 0 0 ${34 * t}px ${14 * t}px rgba(44, 107, 242, 0.18);
       }
     }
 
@@ -141,7 +141,7 @@ function startGlow(): void {
 }
 
 function fireConfetti(): void {
-  const colors = ['#fb6618', '#ff8a4c', '#fbbf24', '#34d399', '#60a5fa']
+  const colors = ['#2c6bf2', '#5b8df7', '#8fb3fa', '#34d399', '#fbbf24']
   const defaults = { colors, ticks: 200, gravity: 1.2, decay: 0.94 }
 
   confetti({

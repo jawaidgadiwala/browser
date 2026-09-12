@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import {
   getProviderSearchValue,
   getProviderSubtitle,
@@ -39,7 +40,7 @@ describe('groupProviderOptions', () => {
     expect(groupProviderOptions(options)).toEqual([
       {
         key: 'llm',
-        label: 'BrowserOS agent + your LLM',
+        label: `${PRODUCT_NAME} agent + your LLM`,
         options: [options[0], options[1]],
       },
       {

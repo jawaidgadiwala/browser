@@ -1,5 +1,6 @@
 import { adapterLabel } from '@/components/agents/AdapterIcon'
 import type { LlmProviderConfig } from '@/lib/llm-providers/types'
+import { HOSTED_PROVIDER_DESCRIPTION } from '@/lib/personal/product'
 import type { AcpAgent } from '@/modules/agents/acp-agent-types'
 import type { TargetRowAction } from './ConfiguredTargetRow'
 
@@ -7,7 +8,7 @@ export function providerDescription(
   provider: LlmProviderConfig,
   isBuiltIn: boolean,
 ): string {
-  if (isBuiltIn) return 'BrowserOS-hosted model with strict rate limits'
+  if (isBuiltIn) return HOSTED_PROVIDER_DESCRIPTION
   return provider.baseUrl
     ? `${provider.modelId} · ${provider.baseUrl}`
     : provider.modelId
@@ -33,7 +34,7 @@ export function agentDescription(agent: AcpAgent): string {
 /**
  * The first action is always "set as default": the row's radio and its
  * hover button both invoke it, and everything after it lands in the overflow
- * menu. The built-in BrowserOS provider cannot be tested, edited or deleted,
+ * menu. The built-in hosted provider cannot be tested, edited or deleted,
  * so it gets that one action and no menu.
  */
 export function buildProviderActions(input: {

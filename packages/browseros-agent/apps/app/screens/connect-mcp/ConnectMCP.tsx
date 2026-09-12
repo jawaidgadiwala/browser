@@ -10,6 +10,7 @@ import {
 } from '@/lib/constants/analyticsEvents'
 import { useMcpServers } from '@/lib/mcp/mcpServerStorage'
 import { track } from '@/lib/metrics/track'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { sentry } from '@/lib/sentry/sentry'
 import { useAddManagedServer } from '@/modules/mcp/add-managed-server.hooks'
 import { useGetMCPServersList } from '@/modules/mcp/managed-mcp-servers.hooks'
@@ -221,8 +222,8 @@ export const ConnectMCP: FC = () => {
           <div className="flex-1">
             <h2 className="mb-1 font-semibold text-xl">Connected Apps</h2>
             <p className="mb-6 text-muted-foreground text-sm">
-              Connect BrowserOS assistant to apps to send email, schedule
-              calendar events, write docs, and more
+              Connect the {PRODUCT_NAME} assistant to apps to send email,
+              schedule calendar events, write docs, and more
             </p>
 
             <div className="flex flex-wrap gap-3">

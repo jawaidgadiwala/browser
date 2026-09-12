@@ -5,8 +5,10 @@ import {
   BRAND_MARKS,
 } from '@/components/agents/agent-brand-marks'
 import { InlineErrorAlert } from '@/components/agents/PageAlerts'
+import { DEFAULT_PROVIDER_ID } from '@/lib/llm-providers/provider-selection'
 import { BrowserOSIcon, ProviderIcon } from '@/lib/llm-providers/providerIcons'
 import type { LlmProviderConfig } from '@/lib/llm-providers/types'
+import { hostedProviderEnabled } from '@/lib/personal/personal-build'
 import type { AcpAgent } from '@/modules/agents/acp-agent-types'
 import { ConfiguredTargetRow } from './ConfiguredTargetRow'
 import type { CodingAgentsController } from './coding-agents.hooks'
@@ -52,6 +54,12 @@ export const ConfiguredTargetsList: FC<ConfiguredTargetsListProps> = ({
   const { agents, pageError, dismissPageError, deletingAgentId, handleDelete } =
     coding
 
+  // A profile carried over from a build that shipped the hosted provider
+  // still has its row on the server; this build must not offer it.
+  const listedProviders = hostedProviderEnabled()
+    ? providers
+    : providers.filter((provider) => provider.id !== DEFAULT_PROVIDER_ID)
+
   return (
     <div className="space-y-3">
       {pageError ? (
@@ -59,8 +67,8 @@ export const ConfiguredTargetsList: FC<ConfiguredTargetsListProps> = ({
       ) : null}
 
       <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-        {providers.map((provider) => {
-          const isBuiltIn = provider.id === 'browseros'
+        {listedProviders.map((provider) => {
+          const isBuiltIn = provider.id === DEFAULT_PROVIDER_ID
           const isTesting = testingProviderId === provider.id
           const actions = buildProviderActions({
             provider,

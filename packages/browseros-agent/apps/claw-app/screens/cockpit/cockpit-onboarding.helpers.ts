@@ -12,6 +12,8 @@
  * discriminant and the copy constants; it never re-derives state.
  */
 
+import { PRODUCT_NAME } from '@/lib/personal/product'
+
 export type OnboardingState = 'first-run' | 'waiting' | 'ready'
 
 export interface OnboardingSignals {
@@ -59,8 +61,7 @@ export const MANAGE_COPY = {
 
 export const STARTER_PROMPT_LABEL = 'Paste this prompt into your agent.'
 
-export const STARTER_PROMPT =
-  'Using BrowserOS neo, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV'
+export const STARTER_PROMPT = `Using ${PRODUCT_NAME}, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV`
 
 export const CONNECTED_COPY = {
   suffix: 'connected',

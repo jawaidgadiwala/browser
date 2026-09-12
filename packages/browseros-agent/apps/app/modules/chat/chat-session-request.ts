@@ -94,3 +94,25 @@ export function toProviderOption(target: SidepanelChatTarget): Provider {
     modelLabel: target.kind === 'acp' ? target.modelLabel : undefined,
   }
 }
+
+/** Copy is the user's next step, so it names the settings page. */
+export const NO_LLM_PROVIDER_MESSAGE =
+  'No AI provider configured. Add a provider or connect a coding agent in Settings -> AI & Agents.'
+
+/**
+ * Whether a turn cannot be sent for want of an LLM provider.
+ *
+ * A coding agent carries its own credentials, so an ACP turn needs none. An LLM
+ * turn does, and in a build with no hosted provider there is nothing to fall
+ * back to — fabricating one would send the turn to an endpoint the user never
+ * configured.
+ */
+export function missingLlmProvider(input: {
+  target: SidepanelChatTarget | undefined
+  resolvedProvider: LlmProviderConfig | null
+  hostedProviderEnabled: boolean
+}): boolean {
+  if (input.target?.kind === 'acp') return false
+  if (input.resolvedProvider) return false
+  return !input.hostedProviderEnabled
+}

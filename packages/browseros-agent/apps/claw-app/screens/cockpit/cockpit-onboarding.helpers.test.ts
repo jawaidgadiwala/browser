@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from 'bun:test'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import {
   FOOTER_COPY,
   getOnboardingState,
@@ -52,7 +53,7 @@ describe('cockpit onboarding copy', () => {
 
   it('starter prompt is the streaming-price research task', () => {
     expect(STARTER_PROMPT).toBe(
-      'Using BrowserOS neo, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV',
+      `Using ${PRODUCT_NAME}, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV`,
     )
   })
 

@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { cn } from '@/lib/utils'
 import { useSkillDetailData } from './skill-detail.data'
 import {
@@ -57,7 +58,7 @@ export function SkillDetail() {
 
       {isError ? (
         <Notice>
-          Could not load this task. Check that BrowserOS neo is running and try
+          Could not load this task. Check that {PRODUCT_NAME} is running and try
           again.
         </Notice>
       ) : isLoading || !detail ? (

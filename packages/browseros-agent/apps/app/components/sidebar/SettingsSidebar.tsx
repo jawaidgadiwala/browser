@@ -16,6 +16,7 @@ import { NavLink } from 'react-router'
 import { ThemeToggle } from '@/components/elements/theme-toggle'
 import { Feature } from '@/lib/browseros/capabilities'
 import { NEO_ROUTES, neoCockpitUrl } from '@/lib/personal/neo-extension'
+import { hostedProviderEnabled } from '@/lib/personal/personal-build'
 import { PRODUCT_NAME } from '@/lib/personal/product'
 import { useNeoInstalled } from '@/lib/personal/useNeoInstalled'
 import { cn } from '@/lib/utils'
@@ -25,6 +26,8 @@ type BaseNavItem = {
   name: string
   icon: typeof Bot
   feature?: Feature
+  /** Only meaningful while the hosted provider ships. */
+  hosted?: boolean
 }
 
 type InternalNavItem = BaseNavItem & {
@@ -97,6 +100,7 @@ const primarySettingsSections: NavSection[] = [
         to: '/settings/usage',
         icon: CreditCard,
         feature: Feature.CREDITS_SUPPORT,
+        hosted: true,
       },
     ],
   },
@@ -118,6 +122,7 @@ export const SettingsSidebar: FC = () => {
       items: section.items.filter(
         (item) =>
           (!item.feature || supports(item.feature)) &&
+          (!item.hosted || hostedProviderEnabled()) &&
           (!isExternalNavItem(item) || !item.neo || neoInstalled),
       ),
     }))

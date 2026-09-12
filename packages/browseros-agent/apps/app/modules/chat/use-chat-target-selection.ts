@@ -156,6 +156,12 @@ export function useChatTargetSelection() {
     selectedLlmProviderRef,
     setDefaultProvider,
     isLoadingProviders: isLoadingProviders || isLoadingAgents,
+    // True once both fetches have stopped, so a caller can tell "nothing is
+    // configured" from "not loaded yet". Deliberately not `agentsSettled`,
+    // which requires a *successful* agents fetch and so never flips when the
+    // agent server is unreachable — that must still show the notice rather
+    // than an input with nothing behind it.
+    targetsSettled: !isLoadingProviders && !isLoadingAgents,
     agents,
     chatTargets,
     providerOptions,

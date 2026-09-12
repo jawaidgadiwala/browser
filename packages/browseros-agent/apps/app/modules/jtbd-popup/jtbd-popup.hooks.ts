@@ -7,6 +7,7 @@ import {
 import { JTBD_POPUP_CONSTANTS } from '@/lib/jtbd-popup/constants'
 import { type JtbdPopupState, jtbdPopupStorage } from '@/lib/jtbd-popup/storage'
 import { track } from '@/lib/metrics/track'
+import { showUpstreamPromos } from '@/lib/personal/personal-build'
 
 // Round 2 directions for random assignment (churn excluded — manual links only)
 const R2_DIRECTIONS = [
@@ -21,6 +22,7 @@ function pickRandomDirection(): string {
 }
 
 const isEligible = (state: JtbdPopupState): boolean => {
+  if (!showUpstreamPromos()) return false
   if (state.dontShowAgain) return false
   if (state.surveyTaken) return false
   if (state.messageCount < JTBD_POPUP_CONSTANTS.MESSAGE_THRESHOLD) return false

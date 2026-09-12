@@ -1,12 +1,12 @@
 import type { FC } from 'react'
 import { useNavigate } from 'react-router'
+import { NoChatTargetNotice } from '@/components/chat/NoChatTargetNotice'
 import { BrowserClawPromoBanner } from '@/components/promo/BrowserClawPromoBanner'
 import { ProductHuntBanner } from '@/components/promo/ProductHuntBanner'
 import { Feature } from '@/lib/browseros/capabilities'
 import { createBrowserOSAction } from '@/lib/chat-actions/types'
 import { openSidePanelWithSearch } from '@/lib/messaging/sidepanel/openSidepanelWithSearch'
 import { showUpstreamPromos } from '@/lib/personal/personal-build'
-import { PRODUCT_NAME } from '@/lib/personal/product'
 import { useCapabilities } from '@/modules/browseros/capabilities.hooks'
 import { stagePendingHomeMessage } from '@/modules/chat/pending-home-message'
 import { useChatTargetSelection } from '@/modules/chat/use-chat-target-selection'
@@ -38,7 +38,9 @@ export const AgentCommandHome: FC = () => {
     selectedProvider,
     selectProvider,
     selectChatTarget,
+    targetsSettled,
   } = useChatTargetSelection()
+  const hasNoChatTarget = targetsSettled && chatTargets.length === 0
   const waitingForLlmCapabilities =
     selectedProvider?.kind === 'llm' && llmRoutingMode === 'wait'
 
@@ -95,28 +97,32 @@ export const AgentCommandHome: FC = () => {
               next?
             </h1>
             <p className="mx-auto max-w-2xl text-muted-foreground text-sm leading-6 [text-wrap:pretty]">
-              Pick {PRODUCT_NAME} AI or any agent, then start a task — all
+              Pick your provider or any connected agent, then start a task — all
               without leaving this tab.
             </p>
           </div>
 
-          <div className="w-full max-w-3xl">
-            <ConversationInput
-              variant="home"
-              providers={providerOptions}
-              selectedProvider={selectedProvider}
-              onSelectProvider={selectProvider}
-              onSend={handleSend}
-              streaming={false}
-              disabled={!selectedProvider || waitingForLlmCapabilities}
-              attachmentsEnabled={selectedProvider?.kind === 'acp'}
-              placeholder={
-                selectedProvider
-                  ? `Ask ${selectedProvider.name} to handle a task...`
-                  : 'Loading providers...'
-              }
-            />
-          </div>
+          {hasNoChatTarget ? (
+            <NoChatTargetNotice className="min-h-0 max-w-md" />
+          ) : (
+            <div className="w-full max-w-3xl">
+              <ConversationInput
+                variant="home"
+                providers={providerOptions}
+                selectedProvider={selectedProvider}
+                onSelectProvider={selectProvider}
+                onSend={handleSend}
+                streaming={false}
+                disabled={!selectedProvider || waitingForLlmCapabilities}
+                attachmentsEnabled={selectedProvider?.kind === 'acp'}
+                placeholder={
+                  selectedProvider
+                    ? `Ask ${selectedProvider.name} to handle a task...`
+                    : 'Loading providers...'
+                }
+              />
+            </div>
+          )}
         </div>
 
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 pb-12">

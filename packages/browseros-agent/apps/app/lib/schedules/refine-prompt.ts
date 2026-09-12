@@ -4,6 +4,8 @@ import {
   defaultProviderIdStorage,
 } from '@/lib/llm-providers/storage'
 import type { LlmProviderConfig } from '@/lib/llm-providers/types'
+import { hostedProviderEnabled } from '@/lib/personal/personal-build'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { listProvidersOrNull } from '@/modules/llm-providers/llm-providers.api'
 import {
   findChatProviderById,
@@ -19,7 +21,7 @@ const resolveProvider = async (
   // already catch and surface this.
   if (loaded === null) {
     throw new Error(
-      'Cannot reach the BrowserOS server to load the selected provider',
+      `Cannot reach the ${PRODUCT_NAME} server to load the selected provider`,
     )
   }
 
@@ -31,6 +33,11 @@ const resolveProvider = async (
     const defaultProviderId = await defaultProviderIdStorage.getValue()
     const provider = resolveChatProvider(providers, defaultProviderId)
     if (provider) return provider
+  }
+  if (!hostedProviderEnabled()) {
+    throw new Error(
+      'No AI provider configured. Add one in Settings -> AI & Agents.',
+    )
   }
   return createDefaultBrowserOSProvider()
 }

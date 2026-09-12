@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { cn } from '@/lib/utils'
 
 export interface SidebarBrandingProps {
@@ -5,7 +6,7 @@ export interface SidebarBrandingProps {
 }
 
 /**
- * Compact BrowserOS neo mark in the top of the sidebar. The icon (a blue
+ * Compact product mark in the top of the sidebar. The icon (a blue
  * rounded-square tile with the white claw glyph) stays visible in the
  * collapsed state; the full wordmark appears as the sidebar expands.
  * The wordmark fades rather than sliding so the layout does not shift
@@ -34,7 +35,7 @@ export function SidebarBranding({ expanded = false }: SidebarBrandingProps) {
     <div className="flex h-14 shrink-0 items-center gap-3 px-3">
       <img
         src="/icons/browserclaw.svg"
-        alt="BrowserOS neo"
+        alt={PRODUCT_NAME}
         className="size-8 shrink-0 rounded-md shadow-card"
       />
       <span
@@ -43,7 +44,7 @@ export function SidebarBranding({ expanded = false }: SidebarBrandingProps) {
           expanded ? 'opacity-100' : 'opacity-0',
         )}
       >
-        BrowserOS neo
+        {PRODUCT_NAME}
       </span>
     </div>
   )

@@ -28,6 +28,7 @@ import { resolveChatProvider } from '@/lib/llm-providers/provider-runtime'
 import { createDefaultBrowserOSProvider } from '@/lib/llm-providers/storage'
 import type { ChatRequestBrowserContext } from '@/lib/messaging/server/buildChatRequestBody'
 import { track } from '@/lib/metrics/track'
+import { hostedProviderEnabled } from '@/lib/personal/personal-build'
 import { searchActionsStorage } from '@/lib/search-actions/searchActionsStorage'
 import { selectedTextStorage } from '@/lib/selected-text/selectedTextStorage'
 import { sentry } from '@/lib/sentry/sentry'
@@ -49,6 +50,8 @@ import {
   shouldPersistHistory,
 } from './chat-session-persistence'
 import {
+  missingLlmProvider,
+  NO_LLM_PROVIDER_MESSAGE,
   prepareSidepanelSendMessagesRequest,
   toProviderOption,
 } from './chat-session-request'
@@ -192,6 +195,7 @@ export const useChatSession = (options?: ChatSessionOptions) => {
     selectChatTarget,
     selectedLlmProvider,
     isLoadingProviders,
+    targetsSettled,
   } = useChatRefs()
   const invalidateCredits = useInvalidateCredits()
   const queryClient = useQueryClient()
@@ -399,12 +403,22 @@ export const useChatSession = (options?: ChatSessionOptions) => {
       },
       prepareSendMessagesRequest: async ({ messages }) => {
         const target = selectedChatTargetRef.current
+        const resolvedFallback = resolveChatProvider(
+          selectedLlmProviderRef.current
+            ? [selectedLlmProviderRef.current]
+            : [],
+        )
+        if (
+          missingLlmProvider({
+            target,
+            resolvedProvider: resolvedFallback,
+            hostedProviderEnabled: hostedProviderEnabled(),
+          })
+        ) {
+          throw new Error(NO_LLM_PROVIDER_MESSAGE)
+        }
         const fallbackProvider =
-          resolveChatProvider(
-            selectedLlmProviderRef.current
-              ? [selectedLlmProviderRef.current]
-              : [],
-          ) ?? createDefaultBrowserOSProvider()
+          resolvedFallback ?? createDefaultBrowserOSProvider()
         // A contextual panel sends from its owning tab even if another tab
         // becomes active while provider/server preparation is awaiting I/O.
         const tabId =
@@ -1052,6 +1066,7 @@ export const useChatSession = (options?: ChatSessionOptions) => {
     providers,
     selectedProvider,
     isLoading: isLoadingProviders || isLoadingAgentUrl,
+    targetsSettled,
     canSend,
     isSyncing: !isIntegrationsSynced,
     isIncognito,

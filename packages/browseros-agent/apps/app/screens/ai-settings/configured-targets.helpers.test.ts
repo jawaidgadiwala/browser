@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, mock } from 'bun:test'
 import type { LlmProviderConfig } from '@/lib/llm-providers/types'
+import { HOSTED_PROVIDER_DESCRIPTION } from '@/lib/personal/product'
 import type { AcpAgent } from '@/modules/agents/acp-agent-types'
 
 mock.module('@/components/agents/AdapterIcon', () => ({
@@ -87,8 +88,9 @@ describe('agentDescription', () => {
 describe('providerDescription', () => {
   it('describes the built-in provider without leaking config', () => {
     expect(helpers.providerDescription(provider, true)).toBe(
-      'BrowserOS-hosted model with strict rate limits',
+      HOSTED_PROVIDER_DESCRIPTION,
     )
+    expect(HOSTED_PROVIDER_DESCRIPTION).not.toContain('BrowserOS')
   })
 
   it('shows model and base url for a configured provider', () => {

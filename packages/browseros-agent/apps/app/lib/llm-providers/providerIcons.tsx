@@ -13,6 +13,7 @@ import {
 import { Bot, Github } from 'lucide-react'
 import type { FC, SVGProps } from 'react'
 import ProductLogoSvg from '@/assets/product_logo.svg'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import type { ProviderType } from './types'
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -63,7 +64,7 @@ export const ProviderIcon: FC<ProviderIconProps> = ({
 }
 
 /**
- * BrowserOS branded icon component
+ * Product branded icon component
  * @public
  */
 export const BrowserOSIcon: FC<{ size?: number; className?: string }> = ({
@@ -73,7 +74,7 @@ export const BrowserOSIcon: FC<{ size?: number; className?: string }> = ({
   return (
     <img
       src={ProductLogoSvg}
-      alt="BrowserOS"
+      alt={PRODUCT_NAME}
       width={size}
       height={size}
       className={className}

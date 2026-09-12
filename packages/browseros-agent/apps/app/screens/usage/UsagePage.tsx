@@ -6,6 +6,7 @@ import {
   getCreditTextColor,
 } from '@/lib/credits/credit-colors'
 import { BrowserOSIcon } from '@/lib/llm-providers/providerIcons'
+import { HOSTED_PROVIDER_NAME, PRODUCT_NAME } from '@/lib/personal/product'
 import { cn } from '@/lib/utils'
 import { useCredits } from '@/modules/credits/credits.hooks'
 
@@ -28,7 +29,7 @@ export const UsagePage: FC = () => {
           <div>
             <h2 className="font-semibold text-lg">Usage & Billing</h2>
             <p className="text-muted-foreground text-sm">
-              Monitor your BrowserOS AI credit usage
+              Monitor your {HOSTED_PROVIDER_NAME} credit usage
             </p>
           </div>
         </div>
@@ -53,7 +54,7 @@ export const UsagePage: FC = () => {
         <div>
           <h2 className="font-semibold text-lg">Usage & Billing</h2>
           <p className="text-muted-foreground text-sm">
-            Monitor your BrowserOS AI credit usage
+            Monitor your {HOSTED_PROVIDER_NAME} credit usage
           </p>
         </div>
       </div>
@@ -113,9 +114,10 @@ export const UsagePage: FC = () => {
                 Keep going with your own API keys
               </p>
               <p className="mt-1 text-muted-foreground text-xs leading-relaxed">
-                The BrowserOS provider is here to help you get started. We
-                recommend adding your own API keys to use BrowserOS without
-                daily credit limits.
+                The {HOSTED_PROVIDER_NAME} provider is here to help you get
+                started. We recommend adding your own API keys to use{' '}
+                {PRODUCT_NAME}
+                without daily credit limits.
               </p>
             </div>
           </div>

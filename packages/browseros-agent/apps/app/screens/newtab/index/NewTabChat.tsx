@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react'
 import { type FC, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
+import { NoChatTargetNotice } from '@/components/chat/NoChatTargetNotice'
 import {
   createAITabAction,
   createBrowserOSAction,
@@ -63,6 +64,7 @@ export const NewTabChat: FC = () => {
     handleSubmit,
     handleSuggestionClick,
     retryLastTurn,
+    targetsSettled,
   } = useChatActions({
     events: {
       modeChanged: NEWTAB_CHAT_MODE_CHANGED_EVENT,
@@ -135,7 +137,9 @@ export const NewTabChat: FC = () => {
     resetConversation()
   }
 
-  if (!selectedProvider) return null
+  if (!selectedProvider) {
+    return targetsSettled ? <NoChatTargetNotice /> : null
+  }
 
   return (
     <div className="absolute inset-0 flex flex-col overflow-hidden">

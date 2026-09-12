@@ -2,6 +2,7 @@ import type { ProviderRoutes } from '@browseros/server'
 import { hc } from 'hono/client'
 import { createDefaultBrowserOSProvider } from '@/lib/llm-providers/storage'
 import type { LlmProviderConfig } from '@/lib/llm-providers/types'
+import { hostedProviderEnabled } from '@/lib/personal/personal-build'
 import { resolveAgentServerUrlWithRetry } from '@/modules/browseros/agent-server-url.helpers'
 import { toProviderConfigs, toProviderPayload } from './llm-providers.helpers'
 import { bumpProviderRevision } from './llm-providers.revision'
@@ -67,12 +68,18 @@ export async function listProviders(): Promise<LlmProviderConfig[]> {
     throw new Error(`Failed to load providers (${response.status})`)
   }
   const { providers } = await response.json()
-  return toProviderConfigs(providers)
+  const configs = toProviderConfigs(providers)
+  // One choke point for every surface (settings list, composer picker, side
+  // panel, schedules): a hosted row left on the server by an earlier build
+  // must not come back as a selectable target.
+  return hostedProviderEnabled()
+    ? configs
+    : configs.filter((config) => config.type !== 'browseros')
 }
 
 /**
- * Loads the provider list, seeding the built-in BrowserOS provider when the
- * server has none.
+ * Loads the provider list, seeding the built-in hosted provider when the
+ * server has none and this build ships one.
  *
  * The seed lives here rather than in an effect so it can only run on a
  * confirmed empty response. Reacting to an empty list in the component would
@@ -83,6 +90,7 @@ export async function listProviders(): Promise<LlmProviderConfig[]> {
 export async function fetchProviders(): Promise<LlmProviderConfig[]> {
   const configs = await listProviders()
   if (configs.length > 0) return configs
+  if (!hostedProviderEnabled()) return configs
 
   const seeded = createDefaultBrowserOSProvider()
   await putProvider(seeded)

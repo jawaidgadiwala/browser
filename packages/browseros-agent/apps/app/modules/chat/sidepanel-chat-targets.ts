@@ -1,7 +1,10 @@
 import { agentBrandKey } from '@/components/agents/agent-brand-marks'
 import type { LlmProviderConfig, ProviderType } from '@/lib/llm-providers/types'
 import type { AcpAgent, AcpAgentType } from '@/modules/agents/acp-agent-types'
-import { resolveChatProvider } from '../../lib/llm-providers/provider-runtime'
+import {
+  resolveChatProvider,
+  selectableChatProviders,
+} from '../../lib/llm-providers/provider-runtime'
 
 export type SidepanelChatTarget =
   | {
@@ -103,7 +106,15 @@ export function resolveSidepanelChatTarget({
     const selected = targets.find(
       (target) => target.kind === selection.kind && target.id === selection.id,
     )
-    if (selected) return selected
+    // A stored selection is not a licence either: a profile that last chose the
+    // hosted provider must be repaired, not honoured.
+    if (
+      selected &&
+      (selected.kind === 'acp' ||
+        selectableChatProviders([selected.provider]).length > 0)
+    ) {
+      return selected
+    }
   }
 
   const llmTargets = targets.filter((target) => target.kind === 'llm')
@@ -111,9 +122,17 @@ export function resolveSidepanelChatTarget({
     llmTargets.map((target) => target.provider),
     defaultProviderId,
   )
-  return provider
-    ? llmTargets.find((target) => target.id === provider.id)
-    : undefined
+  if (provider) return llmTargets.find((target) => target.id === provider.id)
+  // No usable LLM provider is not the same as no target. This build ships no
+  // hosted provider, so a profile whose only target is a coding agent is
+  // normal, and falling back to nothing would strand it behind an empty
+  // composer. Withheld providers stay withheld here too — the fallback skips
+  // any LLM target `selectableChatProviders` would not hand back.
+  return targets.find(
+    (target) =>
+      target.kind === 'acp' ||
+      selectableChatProviders([target.provider]).length > 0,
+  )
 }
 
 export type RepairSelectionDecision =

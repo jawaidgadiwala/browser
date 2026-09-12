@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { MCP_SERVER_RESTARTED_EVENT } from '@/lib/constants/analyticsEvents'
 import { track } from '@/lib/metrics/track'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { ServerPortEditor } from './ServerPortEditor'
 import { waitForServerHealth } from './server-health'
 
@@ -76,7 +77,7 @@ export const MCPServerHeader: FC<MCPServerHeaderProps> = ({
         </div>
         <div className="flex-1">
           <div className="mb-1 flex items-center justify-between">
-            <h2 className="font-semibold text-xl">BrowserOS MCP Server</h2>
+            <h2 className="font-semibold text-xl">{PRODUCT_NAME} MCP Server</h2>
             <a
               href={DOCS_URL}
               target="_blank"
@@ -88,8 +89,8 @@ export const MCPServerHeader: FC<MCPServerHeaderProps> = ({
             </a>
           </div>
           <p className="mb-6 text-muted-foreground text-sm">
-            Connect BrowserOS to MCP clients like Claude Code, Gemini CLI and
-            others.
+            Connect {PRODUCT_NAME} to MCP clients like Claude Code, Gemini CLI
+            and others.
           </p>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

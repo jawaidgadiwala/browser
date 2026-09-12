@@ -6,6 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { cn } from '@/lib/utils'
 import { presentationFor } from './integrations-section.helpers'
 import {
@@ -72,8 +73,8 @@ export const IntegrationsSection: FC<IntegrationsSectionProps> = ({
             Connected agents
           </h2>
           <p className="text-muted-foreground text-sm">
-            Add BrowserOS as an MCP server in your AI agents — no copy-paste
-            required.
+            Add {PRODUCT_NAME} as an MCP server in your AI agents — no
+            copy-paste required.
           </p>
         </div>
         {detectedCount > 0 && (

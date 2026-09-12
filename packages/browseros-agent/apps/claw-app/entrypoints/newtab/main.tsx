@@ -19,9 +19,14 @@ import { createRoot } from 'react-dom/client'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { queryClient } from '@/modules/api/queryClient'
 import { App } from './App'
 import './styles.css'
+
+// index.html is static, so the tab and history entry would keep upstream's
+// name in an embedded build; the entry is the only place that can correct it.
+document.title = PRODUCT_NAME
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')

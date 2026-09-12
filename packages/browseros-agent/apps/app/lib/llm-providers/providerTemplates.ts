@@ -1,3 +1,4 @@
+import { HOSTED_PROVIDER_NAME } from '@/lib/personal/product'
 import { getModelsDevProvider } from './models-dev'
 import { CHATGPT_PROVIDER_DISPLAY_NAME } from './provider-display-names'
 import type { ProviderType } from './types'
@@ -161,7 +162,7 @@ export const providerTypeOptions: { value: ProviderType; label: string }[] = [
   { value: 'ollama', label: 'Ollama' },
   { value: 'lmstudio', label: 'LM Studio' },
   { value: 'bedrock', label: 'AWS Bedrock' },
-  { value: 'browseros', label: 'BrowserOS' },
+  { value: 'browseros', label: HOSTED_PROVIDER_NAME },
 ]
 
 /**

@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import {
   useCreateSkill,
   useSkill,
@@ -144,7 +145,7 @@ function CreateForm({ onClose }: { onClose: () => void }) {
         <DialogHeader>
           <DialogTitle>New task</DialogTitle>
           <DialogDescription>
-            A task is a skill BrowserOS neo links into your agents and you
+            A task is a skill {PRODUCT_NAME} links into your agents and you
             re-run by name.
           </DialogDescription>
         </DialogHeader>
