@@ -8,12 +8,15 @@ import {
   Layers,
   MessageSquare,
   Palette,
+  Radar,
   Server,
 } from 'lucide-react'
 import type { FC } from 'react'
 import { NavLink } from 'react-router'
 import { ThemeToggle } from '@/components/elements/theme-toggle'
 import { Feature } from '@/lib/browseros/capabilities'
+import { NEO_ROUTES, neoCockpitUrl } from '@/lib/personal/neo-extension'
+import { useNeoInstalled } from '@/lib/personal/useNeoInstalled'
 import { cn } from '@/lib/utils'
 import { useCapabilities } from '@/modules/browseros/capabilities.hooks'
 
@@ -31,6 +34,9 @@ type InternalNavItem = BaseNavItem & {
 type ExternalNavItem = BaseNavItem & {
   href: string
   to?: never
+  /** Same-tab navigation into another extension page. */
+  sameTab?: boolean
+  neo?: boolean
 }
 
 type NavItem = InternalNavItem | ExternalNavItem
@@ -79,6 +85,13 @@ const primarySettingsSections: NavSection[] = [
       { name: 'Spaces', to: '/settings/spaces', icon: Layers },
       { name: 'BrowserOS as MCP', to: '/settings/mcp', icon: Server },
       {
+        name: 'Agent connections',
+        href: neoCockpitUrl(NEO_ROUTES.mcp),
+        icon: Radar,
+        sameTab: true,
+        neo: true,
+      },
+      {
         name: 'Usage & Billing',
         to: '/settings/usage',
         icon: CreditCard,
@@ -96,12 +109,15 @@ const helpItems: NavItem[] = [
 
 export const SettingsSidebar: FC = () => {
   const { supports } = useCapabilities()
+  const neoInstalled = useNeoInstalled()
 
   const filteredSections = primarySettingsSections
     .map((section) => ({
       ...section,
       items: section.items.filter(
-        (item) => !item.feature || supports(item.feature),
+        (item) =>
+          (!item.feature || supports(item.feature)) &&
+          (!isExternalNavItem(item) || !item.neo || neoInstalled),
       ),
     }))
     .filter((section) => section.items.length > 0)
@@ -118,8 +134,8 @@ export const SettingsSidebar: FC = () => {
         <a
           key={item.href}
           href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
+          target={item.sameTab ? undefined : '_blank'}
+          rel={item.sameTab ? undefined : 'noopener noreferrer'}
           className={getNavLinkClassName(false)}
         >
           <Icon className="size-4 shrink-0" />

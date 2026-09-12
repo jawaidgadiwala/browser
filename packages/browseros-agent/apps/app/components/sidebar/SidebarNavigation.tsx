@@ -1,4 +1,4 @@
-import { CalendarClock, Home, PlugZap, Settings } from 'lucide-react'
+import { Bot, CalendarClock, Home, PlugZap, Settings } from 'lucide-react'
 import type { FC } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import {
@@ -8,6 +8,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Feature } from '@/lib/browseros/capabilities'
+import { NEO_ROUTES, neoCockpitUrl } from '@/lib/personal/neo-extension'
+import { useNeoInstalled } from '@/lib/personal/useNeoInstalled'
 import { cn } from '@/lib/utils'
 import { useCapabilities } from '@/modules/browseros/capabilities.hooks'
 import { SidebarHistory } from './SidebarHistory'
@@ -21,10 +23,20 @@ type NavItem = {
   name: string
   to: string
   icon: typeof Home
+  /** Plain link to another extension; bypasses the router. */
+  href?: string
+}
+
+const neoCockpitItem: NavItem = {
+  name: 'Agents',
+  to: '/agents',
+  href: neoCockpitUrl(NEO_ROUTES.cockpit),
+  icon: Bot,
 }
 
 const primaryNavItems: NavItem[] = [
   { name: 'Home', to: '/home', icon: Home },
+  neoCockpitItem,
   {
     name: 'Connect Apps',
     to: '/connect-apps',
@@ -53,25 +65,25 @@ export const SidebarNavigation: FC<SidebarNavigationProps> = ({
   const location = useLocation()
   const { supports } = useCapabilities()
   const showHistory = supports(Feature.NEWTAB_CHAT_HISTORY_SUPPORT)
+  const neoInstalled = useNeoInstalled()
+  const navItems = primaryNavItems.filter(
+    (item) => item !== neoCockpitItem || neoInstalled,
+  )
 
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
         <nav className="space-y-1">
-          {primaryNavItems.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon
             const isActive = isNavItemActive(item, location.pathname)
 
-            const navItem = (
-              <NavLink
-                to={item.to}
-                onClick={onNavigate}
-                className={cn(
-                  'flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                  isActive &&
-                    'bg-sidebar-accent text-sidebar-accent-foreground',
-                )}
-              >
+            const className = cn(
+              'flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
+            )
+            const content = (
+              <>
                 <Icon className="size-4 shrink-0" />
                 <span
                   className={cn(
@@ -81,6 +93,16 @@ export const SidebarNavigation: FC<SidebarNavigationProps> = ({
                 >
                   {item.name}
                 </span>
+              </>
+            )
+
+            const navItem = item.href ? (
+              <a href={item.href} className={className}>
+                {content}
+              </a>
+            ) : (
+              <NavLink to={item.to} onClick={onNavigate} className={className}>
+                {content}
               </NavLink>
             )
 
