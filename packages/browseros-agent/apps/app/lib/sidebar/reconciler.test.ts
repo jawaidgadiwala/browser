@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it } from 'bun:test'
 import { createInitialState, createSpace, pin } from './core/model'
-import type { SidebarState, Space } from './core/types'
+import { DEFAULTS, type SidebarState, type Space } from './core/types'
 import { FakeHost } from './host/fake-host'
-import { NO_GROUP, type TabEvent } from './host/host-adapter'
-import { createMemoryStores, SidebarReconciler } from './reconciler'
+import { NO_GROUP, type TabEvent, type TabInfo } from './host/host-adapter'
+import {
+  createMemoryStores,
+  SidebarReconciler,
+  type SidebarStore,
+} from './reconciler'
 
 /**
  * Recorded event sequences against `FakeHost`. Nothing here touches
@@ -570,5 +574,98 @@ describe('opening an essential', () => {
       true,
     )
     expect(fixture.host.tabs).toHaveLength(1)
+  })
+})
+
+describe('archive writes', () => {
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+  function slowStore(store: SidebarStore): SidebarStore {
+    return {
+      read: async () => {
+        await tick()
+        return store.read()
+      },
+      write: async (state) => {
+        await tick()
+        await store.write(state)
+      },
+    }
+  }
+
+  it('keeps the entry when the restored tab cannot be created', async () => {
+    class BrokenHost extends FakeHost {
+      override create(): Promise<TabInfo> {
+        return Promise.reject(new Error('tab creation failed'))
+      }
+    }
+    const host = new BrokenHost()
+    const stores = createMemoryStores(baseState().state)
+    const reconciler = new SidebarReconciler({
+      host,
+      store: stores.store,
+      session: stores.session,
+      now: () => START,
+      adoptDelayMs: 0,
+    })
+    const tab = host.addTab({ url: 'https://stale.example/' })
+    host.addGroup({ title: 'Work', color: 'blue', tabIds: [tab.id] })
+    await reconciler.reconcile()
+    await reconciler.archiveTabs([tab.id], 'manual', 'test')
+
+    const [entry] = (await stores.store.read()).archive
+    expect(entry).toBeDefined()
+
+    await expect(reconciler.restoreArchived(entry.item.id)).rejects.toThrow(
+      'tab creation failed',
+    )
+    expect((await stores.store.read()).archive).toHaveLength(1)
+  })
+
+  it('serialises a purge against an overlapping tab operation', async () => {
+    const host = new FakeHost()
+    const stores = createMemoryStores(baseState().state)
+    const clock = { now: START }
+    const reconciler = new SidebarReconciler({
+      host,
+      store: slowStore(stores.store),
+      session: stores.session,
+      now: () => clock.now,
+      adoptDelayMs: 0,
+    })
+    const old = host.addTab({ url: 'https://old.example/' })
+    const fresh = host.addTab({ url: 'https://fresh.example/' })
+    host.addGroup({ title: 'Work', color: 'blue', tabIds: [old.id, fresh.id] })
+    await reconciler.reconcile()
+    await reconciler.archiveTabs([old.id], 'manual', 'test')
+
+    clock.now = START + HOUR
+    const archiving = reconciler.archiveTabs([fresh.id], 'manual', 'test')
+    const purging = reconciler.purgeArchive(START + HOUR / 2)
+    await Promise.all([archiving, purging])
+
+    const archive = (await stores.store.read()).archive
+    expect(archive).toHaveLength(1)
+    expect(archive[0].item.data).toMatchObject({
+      url: 'https://fresh.example/',
+    })
+  })
+
+  it('merges a settings patch over the defaults inside the queue', async () => {
+    const host = new FakeHost()
+    const stores = createMemoryStores(baseState().state)
+    const reconciler = new SidebarReconciler({
+      host,
+      store: slowStore(stores.store),
+      session: stores.session,
+      now: () => START,
+      adoptDelayMs: 0,
+    })
+
+    await reconciler.updateSettings({ autoArchiveAfter: 'never' })
+
+    const settings = (await stores.store.read()).settings
+    expect(settings.autoArchiveAfter).toBe('never')
+    expect(settings.essentialsMax).toBe(DEFAULTS.essentialsMax)
   })
 })

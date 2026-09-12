@@ -3,6 +3,7 @@ import {
   captureDownloadPath,
   captureFilename,
   isCapturableUrl,
+  isCaptureTargetActive,
   maxCaptureHeight,
   planSlices,
 } from './capture.helpers'
@@ -76,5 +77,30 @@ describe('maxCaptureHeight', () => {
 
   it('respects the total area on very wide pages', () => {
     expect(maxCaptureHeight(5000, 3)).toBe(5777)
+  })
+})
+
+describe('isCaptureTargetActive', () => {
+  const target = { tabId: 7, windowId: 3 }
+
+  it('accepts the scrolled tab while it stays active in its window', () => {
+    expect(
+      isCaptureTargetActive(target, { id: 7, windowId: 3, active: true }),
+    ).toBe(true)
+  })
+
+  it('rejects another tab, another window, or a closed tab', () => {
+    expect(
+      isCaptureTargetActive(target, { id: 7, windowId: 3, active: false }),
+    ).toBe(false)
+    expect(
+      isCaptureTargetActive(target, { id: 8, windowId: 3, active: true }),
+    ).toBe(false)
+    expect(
+      isCaptureTargetActive(target, { id: 7, windowId: 4, active: true }),
+    ).toBe(false)
+    expect(isCaptureTargetActive(target, null)).toBe(false)
+    expect(isCaptureTargetActive(target, undefined)).toBe(false)
+    expect(isCaptureTargetActive(target, {})).toBe(false)
   })
 })

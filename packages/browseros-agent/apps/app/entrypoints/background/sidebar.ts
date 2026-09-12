@@ -4,6 +4,7 @@ import {
   SidebarMessageType,
   sendSidebarMessage,
 } from '@/lib/messaging/sidebar/sidebarMessages'
+import { ChromeHostAdapter } from '@/lib/sidebar/host/chrome-host-adapter'
 import type { HostAdapter } from '@/lib/sidebar/host/host-adapter'
 import {
   type SessionState,
@@ -133,13 +134,26 @@ async function openSwitcher() {
   })
 }
 
-export function registerSidebar(host: HostAdapter) {
-  const reconciler = new SidebarReconciler({
-    host,
+let instance: SidebarReconciler | null = null
+
+/**
+ * Shared with `sidebar-archive.ts` so archive and settings writes run inside
+ * the same serialization queue as tab work.
+ *
+ * @public
+ */
+export function sidebarReconciler(host?: HostAdapter): SidebarReconciler {
+  instance ??= new SidebarReconciler({
+    host: host ?? new ChromeHostAdapter(),
     store,
     session,
     behavior: () => spacesSettingsStorage.getValue(),
   })
+  return instance
+}
+
+export function registerSidebar(host: HostAdapter) {
+  const reconciler = sidebarReconciler(host)
 
   const ready = ensureMigrated()
   const guard = <T>(task: () => Promise<T>) =>

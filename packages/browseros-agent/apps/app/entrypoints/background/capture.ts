@@ -1,7 +1,9 @@
 import {
   CAPTURE_INTERVAL_MS,
+  CAPTURE_TAB_CHANGED_ERROR,
   captureDownloadPath,
   isCapturableUrl,
+  isCaptureTargetActive,
   MAX_CAPTURE_CSS_PX,
   maxCaptureHeight,
   planSlices,
@@ -117,6 +119,17 @@ async function captureVisible(windowId: number): Promise<string> {
   return dataUrl
 }
 
+/**
+ * A capture only belongs to the tab it was scrolled in while that tab is
+ * still active in its window; otherwise we would silently shoot a stranger.
+ */
+async function assertTargetActive(tab: Tab): Promise<void> {
+  const live = await chrome.tabs.get(tab.id).catch(() => null)
+  if (!isCaptureTargetActive({ tabId: tab.id, windowId: tab.windowId }, live)) {
+    throw new Error(CAPTURE_TAB_CHANGED_ERROR)
+  }
+}
+
 interface LayoutMetrics {
   cssContentSize?: { width: number; height: number }
   contentSize?: { width: number; height: number }
@@ -132,6 +145,7 @@ async function captureWithDebugger(tab: Tab): Promise<CaptureOutcome> {
     )) as LayoutMetrics
     const size = metrics.cssContentSize ?? metrics.contentSize
     if (!size) throw new Error('Page.getLayoutMetrics returned no size')
+    await assertTargetActive(tab)
     const height = Math.min(Math.ceil(size.height), MAX_CAPTURE_CSS_PX)
     const shot = (await chrome.debugger.sendCommand(
       target,
@@ -181,6 +195,7 @@ async function captureByStitching(tab: Tab): Promise<CaptureOutcome> {
       previousY = y
       const wait = lastCapture + CAPTURE_INTERVAL_MS - Date.now()
       if (wait > 0) await sleep(wait)
+      await assertTargetActive(tab)
       const dataUrl = await captureVisible(tab.windowId)
       lastCapture = Date.now()
       await sendCaptureMessage(CaptureMessageType.addSlice, { dataUrl, y })
@@ -203,6 +218,9 @@ async function capture(tab: Tab, mode: CaptureMode): Promise<CaptureOutcome> {
   try {
     return await captureWithDebugger(tab)
   } catch (error) {
+    if (error instanceof Error && error.message === CAPTURE_TAB_CHANGED_ERROR) {
+      throw error
+    }
     sentry.captureException(error, {
       extra: { message: 'Debugger capture failed, falling back to stitching' },
     })

@@ -32,6 +32,7 @@ import type {
   SpaceId,
   TabGroupColor,
 } from './core/types'
+import { DEFAULTS } from './core/types'
 import type {
   GroupInfo,
   HostAdapter,
@@ -1123,13 +1124,45 @@ export class SidebarReconciler {
       }
       // Today rows are derived from live tabs, so a restore reopens the tab
       // and drops the entry rather than re-inserting a node nothing renders.
+      // The tab comes first: if it cannot be opened the entry must survive.
+      if (entry.item.data.kind === 'tab') {
+        await this.newTabIn(entry.spaceId, entry.item.data.url)
+      }
       await this.deps.store.write({
         ...state,
         archive: state.archive.filter((candidate) => candidate !== entry),
       })
-      if (entry.item.data.kind === 'tab') {
-        await this.newTabIn(entry.spaceId, entry.item.data.url)
-      }
+    })
+  }
+
+  /**
+   * Archive purge and settings share the tab queue. Read-modify-write outside
+   * it can put back a snapshot taken before an overlapping tab event.
+   */
+  runExclusive<T>(task: () => Promise<T>): Promise<T> {
+    return this.run(task)
+  }
+
+  purgeArchive(olderThan: number | null): Promise<{ removed: number }> {
+    return this.run(async () => {
+      const state = await this.deps.store.read()
+      const kept =
+        olderThan === null
+          ? []
+          : state.archive.filter((entry) => entry.archivedAt >= olderThan)
+      const removed = state.archive.length - kept.length
+      if (removed > 0) await this.deps.store.write({ ...state, archive: kept })
+      return { removed }
+    })
+  }
+
+  updateSettings(patch: Partial<SidebarSettings>): Promise<void> {
+    return this.run(async () => {
+      const state = await this.deps.store.read()
+      await this.deps.store.write({
+        ...state,
+        settings: { ...DEFAULTS, ...state.settings, ...patch },
+      })
     })
   }
 

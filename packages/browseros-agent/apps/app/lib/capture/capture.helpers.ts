@@ -56,3 +56,32 @@ export function planSlices(
   offsets.push(Math.max(0, height - step))
   return { offsets, height, truncated }
 }
+
+/** @public */
+export const CAPTURE_TAB_CHANGED_ERROR = 'Capture cancelled: tab changed'
+
+/**
+ * @public
+ */
+export interface CaptureTargetState {
+  id?: number
+  windowId?: number
+  active?: boolean
+}
+
+/**
+ * `captureVisibleTab` shoots whichever tab is active in the window, not the
+ * tab we scrolled, so every slice is only valid while the target is still the
+ * active tab of the same window.
+ */
+export function isCaptureTargetActive(
+  target: { tabId: number; windowId: number },
+  live: CaptureTargetState | null | undefined,
+): boolean {
+  if (!live) return false
+  return (
+    live.id === target.tabId &&
+    live.windowId === target.windowId &&
+    live.active === true
+  )
+}
