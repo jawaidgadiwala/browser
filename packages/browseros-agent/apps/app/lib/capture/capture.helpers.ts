@@ -8,7 +8,7 @@ export function isCapturableUrl(url: string | undefined): boolean {
   return /^(https?|file):/.test(url)
 }
 
-/** Arc-style name: `BrowserOS Capture 2026-09-12 at 14.03.05.png`. */
+/** File name: `BrowserOS Capture 2026-09-12 at 14.03.05.png`. */
 export function captureFilename(date: Date): string {
   return `BrowserOS Capture ${dayjs(date).format('YYYY-MM-DD [at] HH.mm.ss')}.png`
 }

@@ -22,9 +22,9 @@ import {
 import { sentry } from '@/lib/sentry/sentry'
 
 /**
- * Arc-style page capture (Cmd+Shift+2). Full-page captures attach the
+ * Full-page capture (Cmd+Shift+2). Full-page captures attach the
  * debugger and let Chromium render beyond the viewport, the same primitive
- * Arc's native capture uses. If the debugger is unavailable (DevTools open
+ * some browsers use natively. If the debugger is unavailable (DevTools open
  * on the tab, another debugger attached) the tab is scrolled one viewport
  * at a time and the slices are stitched in the offscreen document, which
  * also owns the clipboard.

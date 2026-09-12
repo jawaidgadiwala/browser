@@ -74,7 +74,7 @@ export interface CreateSpaceInput {
 }
 
 /**
- * Create a space and insert it right after the active one (Zen semantics),
+ * Create a space and insert it right after the active one,
  * or at the end when nothing is active.
  */
 export function createSpace(
@@ -182,7 +182,7 @@ export function findSpaceForGroup(
 }
 
 /**
- * Which tab to activate when entering a space. Order (from Zen):
+ * Which tab to activate when entering a space. Order:
  * last active in that space, else first unpinned tab, else last tab.
  */
 export function pickTabToActivate(

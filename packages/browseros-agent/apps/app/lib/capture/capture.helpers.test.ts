@@ -24,7 +24,7 @@ describe('isCapturableUrl', () => {
 })
 
 describe('captureFilename', () => {
-  it('formats the Arc-style name with zero padding', () => {
+  it('formats the capture file name with zero padding', () => {
     const date = new Date(2026, 8, 3, 7, 4, 5)
     expect(captureFilename(date)).toBe(
       'BrowserOS Capture 2026-09-03 at 07.04.05.png',

@@ -40,7 +40,7 @@ export interface Space {
  * @public
  */
 export interface SpacesSettings {
-  /** New tabs are grouped into the active space (Zen: new tabs inherit the space). */
+  /** New tabs are grouped into the active space. */
   adoptNewTabs: boolean
   /** Activating a tab that belongs to another space switches to that space. */
   followActiveTab: boolean

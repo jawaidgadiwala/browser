@@ -53,8 +53,8 @@ export const SpacesSettingsPage: FC = () => {
           <div className="flex-1">
             <h2 className="mb-1 font-semibold text-xl">Spaces</h2>
             <p className="text-muted-foreground text-sm">
-              Arc-style workspaces built on tab groups. Each space is a colored
-              group in the sidebar; switching expands it and collapses the rest.
+              Workspaces built on tab groups. Each space is a colored group in
+              the sidebar; switching expands it and collapses the rest.
             </p>
           </div>
         </div>
