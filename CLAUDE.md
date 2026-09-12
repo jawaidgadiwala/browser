@@ -1,105 +1,74 @@
-# Personal AI Browser
+# Browser
 
-Personal, optimized, AI-driven browser for Jawaid. Not a product. One user, one machine (Apple M2 Pro, 16 GB RAM, macOS).
+Personal, AI-driven, sidebar-first browser for Jawaid. One user, one Mac (Apple M2 Pro, 16 GB RAM). Not a product. Repo: github.com/jawaidgadiwala/browser (public). Product name: **Browser**. Logo: blue folded "B" (`branding/`). Accent: #2C6BF2.
 
-## Decision (2026-09-12)
+## Goal
 
-**Base: BrowserOS (browseros-ai/BrowserOS, AGPL-3.0, Chromium 151 fork).**
-**Add-on layer: Zen-inspired UX, re-implemented by us. Zen code is NOT a base and is NOT copied.**
+A daily-driver browser that combines:
+- **Sidebar UX of the reference browsers**: spaces with per-space theme, essentials grid, folders, pinned tabs, today tabs, archive, swipe between spaces, compact mode, glance.
+- **AI agents as first-class**: Claude Code (and others) inside the browser chat and from the terminal driving the logged-in browser over MCP, with cockpit, replay, audit, tab isolation.
+- **Chromium under the hood**: Chrome extensions, CDP, tab groups, side panel.
+- Memory-efficient, stable, and easy to rebase onto upstream BrowserOS.
 
-Why BrowserOS over Zen as base:
-- Chromium engine: Chrome extensions, CDP, MCP, Claude-in-Chrome / DevTools MCP all work natively.
-- Agent stack already exists: MCP server, agent loop, CDP bindings, Claude Code / Codex one-click connect.
-- Vertical tab strip already on: `kVerticalTabs` flipped `ENABLED_BY_DEFAULT` in patch `chrome/browser/ui/tabs/features.cc`. Zen-like sidebar tabs come mostly free from upstream Chromium.
-- Zen is Firefox/Gecko (surfer build system, 266 Firefox patches, XUL/JS chrome). Adding a CDP/MCP agent stack to Gecko is far more work than restyling Chromium.
+## What we build on, and how each is used
 
-Why Zen still matters:
-- Reference for interaction design only: spaces/workspaces, compact mode, glance (peek), split view, pinned/essential tabs, folders, mods. Study `zen/src/zen/*` in scratchpad or upstream, then re-implement concepts.
+| Source | License | Role | Rule |
+|---|---|---|---|
+| **BrowserOS** (browseros-ai/BrowserOS), git remote `upstream` | AGPL-3.0 | The base. Chromium 151 fork + extension/server monorepo. Both "classic" and "neo" ship from it; we run classic as the browser and mount neo's cockpit + Rust server alongside | Keep LICENSE and attribution (`NOTICE`). Publish source (repo is public). Keep our changes small and feature-gated so `git rebase upstream/main` stays cheap |
+| **Chromium** | BSD-3 | The engine, checked out at `~/chromium/src` (151.0.7922.137) for native patches | Patches only, via `packages/browseros/chromium_patches` + `.features.yaml`. Never vendor the tree |
+| **ungoogled-chromium** patches | BSD-3 | Privacy patches upstream already applies | Keep notice; do not use their name to endorse |
+| **Zen Browser** (zen-browser/desktop) | MPL-2.0 | **Behavior reference only** for sidebar, spaces, essentials, compact mode, glance, split view, swipe physics, constants | No code, CSS, or assets copied. Studies: `docs/personal/zen-spaces-design-reference.md`, `docs/personal/zen-sidebar-implementation-review.md` |
+| **Reference browser A** | proprietary, closed | **Design reference only**: sidebar layout, spaces model, favorites, folders, archive, capture, paging | No code or assets. Notes stay in gitignored `docs/private/`. Its product name never appears in code, comments, or public docs |
+| Claude Code / ACP adapters, MCP | open specs/packages | Agent connectivity | Pinned exact versions (npx range specs re-resolve every launch) |
 
-## BrowserOS: two products, one repo
+## Architecture: native shell, extension content
 
-| Product | What it is | Status (Sept 2026) |
-|---|---|---|
-| **BrowserOS** ("classic") | Daily-driver browser. Side panel chat, new-tab agent, scheduled tasks, BYOK (Claude/OpenAI/Gemini/Ollama/LM Studio), uBlock MV2, 20+ tools, 40+ app integrations. | Actively released: server 0.0.164 and extension 0.0.156 shipped 2026-09-11. NOT maintenance mode. |
-| **BrowserOS neo** ("browserclaw") | Secondary browser for agents only. Cockpit dashboard, session replay video, Rust MCP server (`claw-server-rust`), harness auto-connect (Claude Code, Codex, Cursor, OpenClaw). | Marketing-primary since 2026-09-11 docs split. macOS + Windows only. |
+Two layers, each swappable, chosen so that upstream's daily releases rebase cleanly:
 
-Both share the same Chromium patch set and `packages/browseros-agent` monorepo. Build flag `--product browseros` vs `--product browserclaw` picks product.
+1. **Chromium patches** (`packages/browseros/chromium_patches`, registry `.features.yaml`) own the **shell**: branding (name, icon, About, menu bar), side panel docked left with no header, hidden tab strip, toolbar buttons, compact-mode hover reveal, glance overlay, window tint, `chrome.browserOS.*` API additions. Every patch is a named feature, pref-gated (`browseros.*`), small, prefers new files under `chromium_files/`. Plan: `docs/personal/native-patches-plan.md`.
+2. **Extension + servers** (`packages/browseros-agent`) own the **content**: sidebar UI, spaces model, essentials, folders, archive, chat, capture, cockpit. React with hot reload. Spec: `docs/personal/sidebar-spec.md` (core model → host adapter → background reconciler → panel surface). All personal-only behavior gated by `apps/app/lib/personal/personal-build.ts` and `product.ts`.
 
-**Our pick: BrowserOS classic** as the daily browser, plus neo's MCP/replay ideas where useful. Classic is the one meant for a human driving it. neo is explicitly "not a Chrome replacement".
+Storage and identity rules: persist by URL and our own ids, never Chromium tab or group ids; one tab group per space per window matched by title; agent sessions use `agent/label` groups that our code never touches, and agents cannot close user groups (MCP guard `protect_user_tab_groups`).
 
-## Repo layout (upstream, for reference)
+## Running it
 
-```
-packages/browseros/                 Chromium fork: 377 patch files, Python build CLI (uv), CHROMIUM_VERSION=151.0.7922.137
-  chromium_patches/.features.yaml   feature registry (vertical-tabs, llm-chat, side-panel, cdp-api, extensions-manifestv2, ...)
-packages/browseros-agent/           Bun monorepo
-  apps/server/                      Bun: MCP server + agent loop (classic). Connects to browser over CDP port from sidecar config.
-  apps/app/                         WXT + React extension: new tab, side panel chat, settings (classic)
-  apps/claw-server-rust/            Rust axum + rmcp: neo MCP endpoint + cockpit API
-  apps/claw-app/                    neo cockpit extension
-  apps/cli/                         Go CLI
-  packages/browser-mcp/             MCP tool surface: act, navigate, snapshot, screenshot, read, grep, evaluate, tabs, tab_groups, windows, wait, upload, download, pdf, history, diff, run
-  crates/                           browseros-cdp, browseros-core, browseros-mcp, claw-api, harness-integrations
-```
+- Daily driver: `cd packages/browseros-agent && bun run personal:build && bun run personal:start` (or `tools/personal/Browser.app` / `Browser.command`). Profile `~/Library/Application Support/Browser`. Ports: CDP 9005, chat server 9105, ext 9305, agent server 9205. Logs `~/Library/Logs/Browser/`. Docs: `docs/personal/daily-driver.md`.
+- Binary: prefers `/Applications/Browser.app` (re-signed copy from `tools/personal/make-branded-app.sh`) until the native build ships; then the built app.
+- Dev loop for extension work: `bun run dev:watch:full:new`, then `BROWSEROS_CDP_PORT=<port> bun scripts/dev/inspect-ui.ts targets|snapshot|click|fill|eval|screenshot <target>`. `fill` does not clear react-hook-form inputs; use eval with the native value setter. Never `chrome.runtime.reload()` in the dev loop (it disables the unpacked extension). Background state: `eval background.js "(async()=>JSON.stringify(await chrome.storage.local.get(null)))()"`. Debug a stuck service worker via chrome://extensions `chrome.developerPrivate.getExtensionsInfo` over CDP.
+- Native build: `cd packages/browseros && uv run browseros build --preset release --product browseros --arch arm64 --provision none --no-sign --no-upload --resource-mode published --chromium-src ~/chromium/src` (first build used `--provision shallow`). Needs ~100 GB free; 16 GB RAM works but links slowly. Logs `~/Library/Logs/Browser/chromium-build-*.log`. Patches go through `browseros extract` / `browseros dev doctor`.
 
-Where customization lives:
-- **UI shell (tabs, sidebar, toolbar, side panel, keyboard shortcuts):** C++ Views patches under `chromium_patches/chrome/browser/ui/`. Requires full Chromium build.
-- **Agent, chat, new tab, settings, MCP tools, providers:** TypeScript in `browseros-agent`. No Chromium build needed. Runs against a prebuilt BrowserOS binary.
+## Reference docs (`docs/personal/`, public)
 
-## Hard constraint: no local Chromium build right now
-
-Machine has ~18 GB free disk and 16 GB RAM. Chromium build needs ~100 GB disk, 16 GB+ RAM, 1 to 3 hours per build. Do not attempt locally until disk is freed or an external SSD is attached. Options when we get there: external NVMe, or fork repo and use upstream GitHub Actions workflows (`release-macos.yml`, `nightly-macos-browseros.yml`) to build in CI.
-
-## Plan
-
-### Phase 0: Use, don't build (now)
-1. `brew install --cask browseros`. Import Chrome profile.
-2. Enable vertical tabs, connect Claude Code via MCP, wire BYOK providers.
-3. Live in it 1 to 2 weeks. Keep a running list in `NOTES.md` of what is missing vs Zen (spaces, compact mode, glance, split view polish, command palette, theming).
-
-### Status log
-- 2026-09-12: Repo mirrored to github.com/jawaidgadiwala/browser (full upstream history, `upstream` remote = browseros-ai/BrowserOS). BrowserOS cask, Go, Lima installed. Dev loop `bun run dev:watch -- --new` verified.
-- 2026-09-12: **Spaces shipped** in extension layer (`apps/app`): `lib/spaces/*`, `entrypoints/background/spaces.ts`, `components/spaces/*`, `screens/spaces-settings/*`, `/settings/spaces`, manifest `commands` (⌥⇧→ ⌥⇧← ⌥⇧S, plus space-1..9 unbound). Tested live over CDP: create, switch, adopt new tabs, follow active tab, rename (group title follows), reorder, delete (tabs ungroup), settings toggles, cmdk switcher. Design: one Chromium tab group per space per window matched by title; switch = expand target + activate last tab + collapse others. Known gap: leaving a space by clicking a tab in another group does not record the old space's last tab (only pill/shortcut switches do).
-- 2026-09-12: Claude Code via ACP is opt-in in Settings → AI & Agents → Add Claude Code. Server launches `npx -y @agentclientprotocol/claude-agent-acp@^0.75.1` (no bundled Bun in dev). First install took ~5 min on this network and exceeded the 120s probe cap; warm the npx cache once before first setup.
-
-- 2026-09-12 (evening): **Neo mounted into classic.** `bun run dev:watch:full` (or `:new`) runs classic + neo cockpit extension (embedded mode, id `pjimfkbpehlcllblajnpfamdfjhhlgkc`) + Rust `claw-server-rust` (port 9205) in one browser. Sidebar "Agents" item opens the cockpit. Terminal Claude Code connects to `http://127.0.0.1:9205/mcp` (cockpit → Connect writes `~/.claude.json`).
-- 2026-09-12: **Full-page capture** ⌘⇧2 (Chromium rejects ⌘⇧F on mac): chrome.debugger `captureBeyondViewport` primary, scroll-stitch fallback, clipboard + `~/Downloads/Browser Captures/`, BrowserOS patch already hides the debugger infobar. **Promos stripped** behind `lib/personal/personal-build.ts`.
-- 2026-09-12: **Daily driver:** `bun run personal:build` then `bun run personal:start` (or `tools/personal/Browser.command`). Profile `~/Library/Application Support/Browser`, ports 9005/9105/9305/9205, logs `~/Library/Logs/Browser/`. See `docs/personal/daily-driver.md`.
-- 2026-09-12: **Sidebar project started.** Spec: `docs/personal/sidebar-spec.md` (single item tree, host adapter, reconciler, panel surface, 6 slices). Slice 1 landed (core model, storage schema v2 under `sidebar:*`, migration from `local:spaces`). Slices 2 (host adapter + reconciler) and 3 (panel skeleton in side panel, mode switch with chat) in progress. Research inputs: `docs/personal/zen-sidebar-implementation-review.md` (public, MPL source study) and local-only `docs/private/*` (gitignored; never publish).
-- Repo went **public** 2026-09-12 (free Actions minutes). Rules: no code or assets from non-open sources; no other-browser product names in code/comments; reverse-engineering notes stay in `docs/private/`.
-- Chromium build plan: native patches (left dock pref, hide tab strip, hide panel header, compact hover, glance, window tint) later via GitHub Actions macOS xlarge runner or self-hosted Mac; not locally (16 GB RAM, 19 GB disk).
-
-### Phase 1: Agent layer fork (no Chromium build)
-1. Fork `browseros-ai/BrowserOS` to own GitHub. Work only inside `packages/browseros-agent`.
-2. Dev loop: `bun install`, `bun run dev:watch` (classic). Needs Bun, Go, Lima, Rust. macOS only.
-3. Customize: side panel chat UX, new tab, default prompts, own MCP tools, provider defaults (Claude first), scheduled tasks, personal skills. Extension + server updates load into the prebuilt browser.
-4. Add own skills/prompts for Jawaid workflows (Gmail, GitHub, Jira, admin panels).
-
-### Phase 2: Shell UI (Chromium patches, CI or external disk)
-1. Fix disk. Set up `depot_tools` + Chromium 151 checkout matching `CHROMIUM_VERSION`.
-2. Add patches as new features in `.features.yaml`, mirroring upstream conventions so rebases stay easy.
-3. Zen-inspired features in priority order: workspaces/spaces on top of Chromium tab groups + profiles, compact mode (auto-hide sidebar and toolbar), command palette, glance/peek, split view polish, theme/accent system.
-4. Rebase onto upstream BrowserOS regularly. Keep our patches small and feature-scoped.
-
-### Phase 3: Optimize for one user
-- Strip what Jawaid does not use (metrics, onboarding, updater prompts, feedback button).
-- Local model path (Ollama / LM Studio) for cheap tasks, Claude for hard ones.
-- Everything local-first.
-
-## Evaluated and rejected (2026-09-12)
-
-| Project | What it is | Why not |
-|---|---|---|
-| **openbrowserclaw.com** (wexare-ai/openbrowserclaw, MIT, 600 stars) | Web app / PWA chat assistant. Claude API in a Web Worker, IndexedDB, OPFS, v86 WASM Linux sandbox, Telegram channel, cron tasks. "NanoClaw reimagined in a browser tab". | Not a browser. Runs inside a tab. No page automation, no CDP. Dead since 2026-02-26. Name collision with BrowserOS neo ("browserclaw") only. |
-| **browserclaw.com** | Hosted Chinese SaaS assistant (Feishu, WhatsApp, GitHub channels, cron, memory, $10/mo free credit). Closed source. | Cloud service, not open source, not a browser. Unrelated to BrowserOS despite name. |
-| **Zen (zen-browser/desktop, MPL-2.0, 44k stars, Firefox 155)** | Firefox fork via surfer build. 266 Firefox patches. UX in `src/zen/*`: spaces, compact-mode, glance, split-view, folders, live-folders, mods, tabs, urlbar, kbs. ~12k lines JS for tabs/spaces/split/compact alone. | Gecko. No CDP, no Chrome extensions, no MCP stack. Adding agent layer = build from scratch. Use as UX reference only. |
-| **ChromiumOS / chromium/chromium** | Raw engine. | BrowserOS already is a maintained Chromium 151 fork with patch tooling. Starting from raw Chromium throws away their build system, MCP server, and ungoogled patches. |
+- `sidebar-spec.md`: the build spec for the sidebar (model, adapter, reconciler, UI, constants, slices).
+- `native-patches-plan.md`: per-feature Chromium patch plan with files, prefs, risks, order.
+- `native-patches-batch1.md`: what batch 1 changes and how to verify (when landed).
+- `zen-spaces-design-reference.md`, `zen-sidebar-implementation-review.md`: behavior studies of the MPL reference.
+- `neo-features-usage.md`: how cockpit, connect, isolation, replay, skills work.
+- `browseros-extension-architecture.md`: map of the extension monorepo.
+- `daily-driver.md`: launcher, profile, ports, branded app.
+- `docs/private/` (gitignored, local only): proprietary-app studies. Never commit or quote in public docs.
 
 ## Rules for Claude working here
-- Never copy Zen source, CSS, icons, or assets. Concepts only.
-- Never run a Chromium fetch or build on this machine without confirming disk has 100 GB+ free.
-- Prefer changes in `browseros-agent` (TS) over Chromium patches when both can solve the problem.
-- Follow upstream conventions: Conventional Commits, Bun only (npm/yarn/pnpm rejected), `bun run check` before commits.
-- AGPL-3.0: fine for personal use. If binaries are ever shared, source must be published.
-- Zen source for UX reference: clone `zen-browser/desktop` into the scratchpad when needed. Upstream BrowserOS is the `upstream` git remote. This repo has LFS filters disabled (`filter.lfs.*` = cat); LFS gifs are pointer files, fine.
-- Dev loop testing: `bun run dev:watch -- --new`, read the CDP port, then `BROWSEROS_CDP_PORT=<port> bun scripts/dev/inspect-ui.ts targets|snapshot|click|fill|eval|screenshot <target>`. `fill` does not clear react-hook-form inputs; use eval with the native value setter + `input` event for renames. Background state: `eval background.js "(async()=>JSON.stringify(await chrome.storage.local.get(null)))()"`.
+
+- No code or assets from non-open sources. No other-browser product names in code, comments, UI strings, or public docs (say "reference browser").
+- Keep upstream attribution; never edit LICENSE files; `NOTICE` lists bases.
+- Prefer extension changes over Chromium patches when both work. Prefer new files over editing upstream files. Gate personal behavior behind flags/prefs.
+- Follow upstream conventions: Conventional Commits, Bun only, `bun run check` + `bun run test` before commits; Rust `cargo fmt/clippy/test`; Go `go vet/test`.
+- Subagents run on Opus (user rule), disjoint file ownership when parallel, commit but do not push; main session pushes after gates.
+- Confirm before deleting anything outside caches; never touch `~/chromium/src` while a build runs.
+
+## Status log
+
+- 2026-09-12: Repo mirrored (full history) and pushed; BrowserOS cask, Go, Lima installed; dev loop verified.
+- 2026-09-12: Spaces on tab groups shipped. Claude Code via ACP in-browser (adapter pinned to exact version after a range-spec timeout bug).
+- 2026-09-12: Neo mounted into classic (`--with-claw`): cockpit ext `pjimfkbpehlcllblajnpfamdfjhhlgkc`, Rust server 9205, terminal Claude Code connected. Full-page capture ⌘⇧2. Promos stripped. MCP guard for user tab groups.
+- 2026-09-12: Daily-driver launcher; repo public; proprietary notes moved to `docs/private/`; product renamed to Browser; logo applied to extensions, launcher app, and staged Chromium branding; `/Applications/Browser.app` re-signed copy.
+- 2026-09-12: Sidebar shipped, 6 slices: core model + storage v2, host adapter + reconciler, panel skeleton with chat mode, essentials/folders/pinned/dnd, carousel/swipe/theme, archive/undo/settings. 620+ app tests.
+- 2026-09-13: Disk freed to ~100 GB; first local Chromium build started (`chromium-build-1.log`). Native patch plan written; batch 1 patches (branding, left panel, no header, hidden strip, toolbar cleanup, blue accent, B vector icon, all strings) and extension rebrand (blue accent, verbiage, logo remnants) in progress.
+
+## Next
+
+1. Finish build 1 (pipeline proof). Apply batch 1 patches, build 2, install via launcher.
+2. Batch 2 native: window tint, glance, compact mode. Then spaces in the macOS menu bar.
+3. Sidebar polish from daily use; command palette; split-view shortcuts.
+4. Optional: GitHub Actions mac build for reproducibility once the local flow is stable.
