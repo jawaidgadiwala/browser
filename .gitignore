@@ -42,3 +42,6 @@ packages/browseros/build/extensions/
 .devtools/
 .omc/
 .llm/
+
+# Local-only study notes (never publish)
+docs/private/
