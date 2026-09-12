@@ -204,3 +204,6 @@ test-results/
 .agent/
 .llm/
 .grove/
+
+# Bun runtime binaries fetched from official GitHub releases
+third_party/bun/

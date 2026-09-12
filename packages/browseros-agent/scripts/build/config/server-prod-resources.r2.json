@@ -3,8 +3,8 @@
     {
       "name": "Bun - macOS ARM64",
       "source": {
-        "type": "local",
-        "path": "third_party/bun/bun-darwin-arm64"
+        "type": "r2",
+        "key": "third_party/bun/bun-darwin-arm64"
       },
       "destination": "resources/bin/third_party/bun",
       "os": ["macos"],
@@ -14,8 +14,8 @@
     {
       "name": "Bun - macOS x64",
       "source": {
-        "type": "local",
-        "path": "third_party/bun/bun-darwin-x64"
+        "type": "r2",
+        "key": "third_party/bun/bun-darwin-x64"
       },
       "destination": "resources/bin/third_party/bun",
       "os": ["macos"],
@@ -25,8 +25,8 @@
     {
       "name": "Bun - Linux ARM64",
       "source": {
-        "type": "local",
-        "path": "third_party/bun/bun-linux-arm64"
+        "type": "r2",
+        "key": "third_party/bun/bun-linux-arm64"
       },
       "destination": "resources/bin/third_party/bun",
       "os": ["linux"],
@@ -36,8 +36,8 @@
     {
       "name": "Bun - Linux x64 baseline",
       "source": {
-        "type": "local",
-        "path": "third_party/bun/bun-linux-x64-baseline"
+        "type": "r2",
+        "key": "third_party/bun/bun-linux-x64-baseline"
       },
       "destination": "resources/bin/third_party/bun",
       "os": ["linux"],
@@ -47,8 +47,8 @@
     {
       "name": "Bun - Windows x64 baseline",
       "source": {
-        "type": "local",
-        "path": "third_party/bun/bun-windows-x64-baseline.exe"
+        "type": "r2",
+        "key": "third_party/bun/bun-windows-x64-baseline.exe"
       },
       "destination": "resources/bin/third_party/bun.exe",
       "os": ["windows"],

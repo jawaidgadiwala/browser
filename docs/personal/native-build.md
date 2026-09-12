@@ -199,3 +199,47 @@ uv run browseros build --preset release --product browseros --arch arm64 \
 
 Tests: `cd packages/browseros && uv run python -m unittest discover -s bos_build
 -t . -p "*_test.py"` (there is no pytest in this environment).
+
+## Bundled Bun runtime (no R2)
+
+The server artifact ships a Bun runtime next to `browseros_server`
+(`resources/bin/third_party/bun`). Upstream pulls those five per-platform
+binaries from their private R2 bucket, which made
+`bun scripts/build/server.ts --target=darwin-arm64 --no-upload` — the command
+`prepare_server_resources` runs — fail with
+`Missing required env: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY`:
+`manifestNeedsR2()` in `packages/build-server-tools/src/orchestrator.ts` demands
+credentials as soon as any manifest rule is `r2`, even with `--no-upload`.
+
+We fetch the same binaries from the official `oven-sh/bun` GitHub releases
+instead:
+
+```
+cd packages/browseros-agent
+bun scripts/build/fetch-bun-binaries.ts                      # all five platforms
+bun scripts/build/fetch-bun-binaries.ts --only darwin-arm64  # one platform
+```
+
+- Version comes from `packageManager` (falling back to `engines.bun`) in
+  `packages/browseros-agent/package.json`.
+- Each zip is verified against the release's `SHASUMS256.txt` when it is
+  published; the verified zip hash is stamped beside the binary
+  (`bun-darwin-arm64.sha256`) so repeat runs are idempotent and offline.
+- Output lands in `packages/browseros-agent/third_party/bun/` (gitignored).
+- `scripts/build/server.ts` calls the fetcher automatically for the requested
+  `--target`s, so no manual step is needed for a normal build.
+- The Chromium build uses the clean worktree at
+  `~/chromium/browser-src`; copy or re-run the fetcher there so
+  `~/chromium/browser-src/packages/browseros-agent/third_party/bun/` is
+  populated too.
+
+`scripts/build/config/server-prod-resources.json` therefore lists the Bun rules
+as `{"type": "local", "path": "third_party/bun/<file>"}`. Names, destinations,
+`os`/`arch`, and `executable` are unchanged, and `getTargetRules()` filters by
+`os`/`arch`, so a `darwin-arm64` build only needs the macOS ARM64 file — the
+Linux and Windows binaries may be absent.
+
+JSON has no comments, so the note lives here: the untouched upstream manifest is
+kept as `scripts/build/config/server-prod-resources.r2.json`. Pass
+`--manifest scripts/build/config/server-prod-resources.r2.json` (with R2
+credentials) to build exactly the way upstream CI does.
