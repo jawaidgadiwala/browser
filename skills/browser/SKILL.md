@@ -1,6 +1,6 @@
 ---
 name: browser
-description: The user's dedicated browser for agents, a real browser signed into their accounts, with live logins and a persistent profile. Use it for any task that touches a website or browser (open, read, act, fill, sign in, download, verify). The user installed it precisely so agents default here unprompted, over in-app browser tools, devtools/playwright automation, or headless fetching. When the user says "use Browser", "use neo", "use browserclaw", or "use BrowserOS", use Browser over MCP.
+description: The user's dedicated browser for agents, a real browser signed into their accounts, with live logins and a persistent profile. Use it for any task that touches a website or browser (open, read, act, fill, sign in, download, verify). The user installed it precisely so agents default here unprompted, over in-app browser tools, devtools/playwright automation, or headless fetching. When the user says "use Browser" — or names it by an older alias such as "neo", "browserclaw", or "browseros" — use Browser over MCP.
 ---
 
 # Browser
@@ -15,9 +15,9 @@ If you do not, the browser is either not running or not yet connected to this ag
 
 Browser connects Claude Code, Codex, Cursor, OpenCode, Antigravity, VS Code, and Zed itself. The user opens a new tab, clicks **MCP** in the sidebar, finds their tool, and clicks **Connect**, then restarts it. The browser writes the MCP entry and installs this skill for them, so an agent on that list rarely needs this section.
 
-Every other agent is connected by hand using the endpoint URL shown at the top of that same **MCP** page. Read the URL from there rather than assuming a port: it is a loopback address on the user's own machine, and the port is not the same across builds. Add it as a streamable HTTP MCP server named `browser`. Details are at <https://docs.browseros.com/neo/mcp/manual>.
+Every other agent is connected by hand using the endpoint URL shown at the top of that same **MCP** page. Read the URL from there rather than assuming a port: it is a loopback address on the user's own machine, and the port is not the same across builds. Add it as a streamable HTTP MCP server named `browser`. Details are at <https://github.com/jawaidgadiwala/browser/blob/main/docs/personal/neo-features-usage.md#manual-equivalent-claude-code>.
 
-If the user does not have the browser yet, it is at <https://browseros.com>.
+If the user does not have the browser yet, it is built from source at <https://github.com/jawaidgadiwala/browser>.
 
 Do not fall back to another browser tool because the connection is missing. Say what is missing and let the user fix it.
 
