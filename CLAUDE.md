@@ -69,10 +69,12 @@ Storage and identity rules: persist by URL and our own ids, never Chromium tab o
 - 2026-09-12: Daily-driver launcher; repo public; proprietary notes moved to `docs/private/`; product renamed to Browser; logo applied to extensions, launcher app, and staged Chromium branding; `/Applications/Browser.app` re-signed copy.
 - 2026-09-12: Sidebar shipped, 6 slices: core model + storage v2, host adapter + reconciler, panel skeleton with chat mode, essentials/folders/pinned/dnd, carousel/swipe/theme, archive/undo/settings. 620+ app tests.
 - 2026-09-13: Disk freed to ~100 GB; first local Chromium build started (`chromium-build-1.log`). Native patch plan written; batch 1 patches (branding, left panel, no header, hidden strip, toolbar cleanup, blue accent, B vector icon, all strings) and extension rebrand (blue accent, verbiage, logo remnants) in progress.
+- 2026-09-13: Batch 1 patches and extension rebrand landed. Review handoff R1–R6 fixed (archive restore, capture guards, migration retry, pin space resolution, Bun stamp). Clean step now protects every DEPS-declared gclient path (build 13 died at configure after `git clean` wiped CIPD deps; fixed by `gclient sync` + `clean.py` change). Build 14 running from worktree `~/chromium/browser-src` (source mode needs a clean tracked checkout; resume checkpoints are tied to the source commit, so moving the worktree forces a full run).
 
 ## Next
 
-1. Finish build 1 (pipeline proof). Apply batch 1 patches, build 2, install via launcher.
+1. Finish build 14, install via launcher, verify native shell (name, icon, blue, left panel, no header, hidden strip, toolbar).
+1b. Whitelabel audit (upstream endpoints, keys, feeds, ids) → fix list; then performance and security passes (user goal 2026-09-13: run end to end → whitelabel → optimize → secure).
 2. Batch 2 native: window tint, glance, compact mode. Then spaces in the macOS menu bar.
 3. Sidebar polish from daily use; command palette; split-view shortcuts.
 4. Windows and Linux lanes via upstream's GitHub Actions workflows (free ubuntu/windows runners on the public repo); signing certs; our own update feed and installer branding.
