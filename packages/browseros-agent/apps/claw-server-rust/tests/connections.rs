@@ -10,12 +10,14 @@ use claw_server_rust::{
     config::Config,
     services::harness::{
         BROWSERCLAW_LEGACY_MCP_SERVER_NAME, BROWSEROS_MCP_SERVER_NAME,
-        BROWSEROS_NEO_LEGACY_MCP_SERVER_NAME, Harness, HarnessService,
+        BROWSEROS_NEO_LEGACY_MCP_SERVER_NAME, BROWSEROS_NEO_SLUG_LEGACY_MCP_SERVER_NAME,
+        BROWSEROS_SLUG_LEGACY_MCP_SERVER_NAME, Harness, HarnessService,
     },
 };
 use harness_integrations::{
     AgentId, AgentScope, InspectEntryInput, LinkInput, McpManager, McpServer, McpServerSpec,
-    SkillSpec, resolve_agent_mcp_config_path,
+    SkillEnvironment, SkillReconciler, SkillSpec, resolve_agent_mcp_config_path,
+    resolve_agent_skill_target,
 };
 use serde_json::{Value, json};
 use std::{
@@ -96,7 +98,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
         browserclaw_dir.join("mcp-manager"),
         browserclaw_dir.join("harness-integrations"),
         home.clone(),
-        SkillSpec::new("browseros-neo", "managed skill v1\n")?,
+        SkillSpec::new("browser", "managed skill v1\n")?,
         analytics.clone(),
     );
     let paths = config_paths()?;
@@ -108,6 +110,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
     }
 
     assert_identity_migration(&home, &paths, analytics.clone()).await?;
+    assert_slug_legacy_migration(&home, &paths).await?;
     assert_legacy_manifest_migration(&home, &paths).await?;
 
     let not_installed = service
@@ -146,9 +149,26 @@ async fn run_connections_case() -> anyhow::Result<()> {
         claude_path,
         r#"{"mcpServers":{"BrowserOS neo":{"command":"foreign"},"BrowserClaw":{"command":"unrelated"}}}"#,
     )?;
+
+    // Seed the managed skill under its pre-rename directory name so the connect below
+    // has a legacy install to migrate onto `browser`.
+    let skill_environment = SkillEnvironment::current(&home);
+    let legacy_skill_dir =
+        resolve_agent_skill_target(AgentId::ClaudeCode, "browseros-neo", &skill_environment)?;
+    SkillReconciler::new(browserclaw_dir.join("harness-integrations")).reconcile(
+        &SkillSpec::new("browseros-neo", "legacy managed skill\n")?,
+        &std::collections::BTreeSet::from([AgentId::ClaudeCode]),
+        &skill_environment,
+    )?;
+    assert!(legacy_skill_dir.join("SKILL.md").exists());
+
     let claude = service
         .connect_browseros(Harness::ClaudeCode, MCP_URL)
         .await?;
+    assert!(
+        !legacy_skill_dir.exists(),
+        "legacy browseros-neo skill directory survived the connect"
+    );
     assert!(claude.installed);
     assert_eq!(claude.agent_id, AgentId::ClaudeCode);
     assert_eq!(claude.config_path.as_deref(), Some("~/.claude.json"));
@@ -156,7 +176,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
         claude.message,
         "BrowserOS registered as an MCP server in Claude Code."
     );
-    let claude_skill = home.join("skills/browseros-neo");
+    let claude_skill = home.join("skills/browser");
     assert_eq!(
         fs::read_to_string(claude_skill.join("SKILL.md"))?,
         "managed skill v1\n"
@@ -165,12 +185,12 @@ async fn run_connections_case() -> anyhow::Result<()> {
     let codex = service.connect_browseros(Harness::Codex, MCP_URL).await?;
     let zed = service.connect_browseros(Harness::Zed, MCP_URL).await?;
     assert!(codex.installed && zed.installed);
-    let shared_skill = home.join(".agents/skills/browseros-neo");
+    let shared_skill = home.join(".agents/skills/browser");
     assert_eq!(
         fs::read_to_string(shared_skill.join("SKILL.md"))?,
         "managed skill v1\n"
     );
-    let shared_target_path = fs::canonicalize(parent(&shared_skill)?)?.join("browseros-neo");
+    let shared_target_path = fs::canonicalize(parent(&shared_skill)?)?.join("browser");
     let skill_manifest_path = browserclaw_dir.join("harness-integrations/skills.json");
     let skill_manifest: Value = serde_json::from_str(&fs::read_to_string(&skill_manifest_path)?)?;
     let shared_record = skill_manifest["targets"]
@@ -198,7 +218,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
     );
 
     let codex_raw = fs::read_to_string(path_for(&paths, AgentId::Codex)?)?;
-    assert!(codex_raw.contains("[mcp_servers.browseros-neo]"));
+    assert!(codex_raw.contains("[mcp_servers.browser]"));
     let codex_toml: toml::Value = toml::from_str(&codex_raw)?;
     assert_eq!(
         codex_toml["mcp_servers"][BROWSEROS_MCP_SERVER_NAME]["url"].as_str(),
@@ -272,7 +292,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
         browserclaw_dir.join("mcp-manager"),
         browserclaw_dir.join("harness-integrations"),
         home.clone(),
-        SkillSpec::new("browseros-neo", "managed skill v2\n")?,
+        SkillSpec::new("browser", "managed skill v2\n")?,
         analytics.clone(),
     );
     let ota_update = ota_service.run_skill_reconciliation().await?;
@@ -366,7 +386,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
     assert!(!codex.installed);
     assert_eq!(codex.message, "Codex is not configured.");
 
-    let antigravity_skill = home.join(".gemini/config/skills/browseros-neo");
+    let antigravity_skill = home.join(".gemini/config/skills/browser");
     fs::create_dir_all(&antigravity_skill)?;
     fs::write(antigravity_skill.join("SKILL.md"), "foreign skill")?;
     fs::write(antigravity_skill.join("keep.txt"), "keep")?;
@@ -515,6 +535,74 @@ async fn run_connections_case() -> anyhow::Result<()> {
                 json!({ "harness": harness.as_str() }),
             )
         );
+    }
+    Ok(())
+}
+
+/// The pre-rename slug entries (`browseros-neo`, `browseros`) are adopted onto the
+/// canonical `browser` name on connect, and a disconnect sweeps every legacy name.
+async fn assert_slug_legacy_migration(
+    home: &Path,
+    paths: &[(AgentId, std::path::PathBuf)],
+) -> anyhow::Result<()> {
+    const STALE_URL: &str = "http://127.0.0.1:7778/mcp";
+    let cursor_path = path_for(paths, AgentId::Cursor)?;
+    for legacy_name in [
+        BROWSEROS_NEO_SLUG_LEGACY_MCP_SERVER_NAME,
+        BROWSEROS_SLUG_LEGACY_MCP_SERVER_NAME,
+    ] {
+        let workspace = home.join(format!("claw/slug-{legacy_name}-manager"));
+        let manager = McpManager::new(&workspace);
+        let seed_manager = McpManager::new(home.join(format!("claw/slug-{legacy_name}-seed")));
+        let mut input = LinkInput::new(
+            McpServer {
+                name: legacy_name.to_string(),
+                spec: McpServerSpec::Http {
+                    url: STALE_URL.to_string(),
+                    headers: Default::default(),
+                },
+            },
+            AgentId::Cursor,
+        );
+        input.config_path = Some(cursor_path.to_path_buf());
+        seed_manager.link(input)?;
+
+        let service = HarnessService::new(workspace.clone(), home.to_path_buf());
+        let connection = service.connect_browseros(Harness::Cursor, MCP_URL).await?;
+        assert!(connection.installed, "{legacy_name}");
+        assert!(
+            manager
+                .inspect_entry(
+                    InspectEntryInput::new(legacy_name, AgentId::Cursor).at_path(cursor_path)
+                )?
+                .is_none(),
+            "{legacy_name} should have been replaced by the canonical name"
+        );
+        assert_eq!(
+            manager
+                .inspect_entry(
+                    InspectEntryInput::new(BROWSEROS_MCP_SERVER_NAME, AgentId::Cursor)
+                        .at_path(cursor_path),
+                )?
+                .map(|entry| entry.spec),
+            Some(McpServerSpec::Http {
+                url: MCP_URL.to_string(),
+                headers: Default::default(),
+            }),
+            "{legacy_name}"
+        );
+
+        service.disconnect_browseros(Harness::Cursor).await?;
+        let raw = fs::read_to_string(cursor_path)?;
+        assert!(
+            !raw.contains(legacy_name),
+            "{legacy_name} survived disconnect: {raw}"
+        );
+        assert!(
+            !raw.contains(BROWSEROS_MCP_SERVER_NAME),
+            "canonical name survived disconnect: {raw}"
+        );
+        fs::remove_file(cursor_path)?;
     }
     Ok(())
 }

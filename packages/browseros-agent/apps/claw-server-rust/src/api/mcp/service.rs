@@ -44,8 +44,8 @@ use tracing::warn;
 use ulid::Ulid;
 use uuid::Uuid;
 
-const SERVER_NAME: &str = "browseros-neo";
-const SERVER_TITLE: &str = "BrowserOS neo";
+const SERVER_NAME: &str = "browser";
+const SERVER_TITLE: &str = "Browser";
 const NAME_SESSION_TOOL_NAME: &str = "name_session";
 const NAME_SESSION_DESCRIPTION: &str = "Name this browser session at the start of a task: a small lowercase 2-3 word label for what it is doing, e.g. \"invoice processing\", a `category` for the kind of task, and a short `summary`. Tabs are grouped as <agentName>/<name>; the label stays on this machine, the summary powers audit search and is also recorded for analytics, and the category is used for anonymous aggregate analytics. Call again to update.";
 const NAME_SESSION_CATEGORY_DESCRIPTION: &str = "The kind of task, for anonymous aggregate analytics only; the free-form name is never sent. Pick the closest fit from the list.";
@@ -60,9 +60,9 @@ const AGENT_NAME_ARG: &str = "agentName";
 const SESSION_ARG_DESCRIPTION: &str = "Opaque session handle for this browser session. The server returns it in every tool result's `_meta` under the key `com.browseros.neo/session`; read it from there and pass it back as this `session` argument on every later call to keep the same browser session and its tab ownership. Omit it only on your first call to start a new session.";
 const AGENT_NAME_ARG_DESCRIPTION: &str = "Your own agent name, e.g. \"claude-code\", \"codex\", \"cursor\". Send it on every call. It names this browser session, titles and colours the tab group your tabs live in, and is how the operator filters your runs in the audit log. 2026-07-28 removed the initialize handshake, so this argument is the only way the server can learn who you are.";
 const SAVE_SKILL_TOOL_NAME: &str = "save_skill";
-const SAVE_SKILL_DESCRIPTION: &str = "When you finish a repeatable browser task the user is likely to run again, save it as a BrowserOS neo skill so it can be re-run by name later; save genuinely repeatable, user-valuable tasks, not one-offs. Give a lowercase-hyphen name, a one-line description, the ordered steps, and any shortcuts learned this run. In the steps, name the exact browser SDK calls you actually used this session (e.g. browser.wait, browser.read, browser.pages.newPage) so a later run reuses them verbatim; never invent, rename, or guess a method that is not in the run tool's SDK (there is no browser.waitFor, for example). The skill is saved and linked into your agents under a neo- prefix (neo-<name>) so it never clobbers your own skills and you can list them all by typing /neo; a name given without the prefix is namespaced automatically. Call again with the same name to update it in place.";
+const SAVE_SKILL_DESCRIPTION: &str = "When you finish a repeatable browser task the user is likely to run again, save it as a Browser skill so it can be re-run by name later; save genuinely repeatable, user-valuable tasks, not one-offs. Give a lowercase-hyphen name, a one-line description, the ordered steps, and any shortcuts learned this run. In the steps, name the exact browser SDK calls you actually used this session (e.g. browser.wait, browser.read, browser.pages.newPage) so a later run reuses them verbatim; never invent, rename, or guess a method that is not in the run tool's SDK (there is no browser.waitFor, for example). The skill is saved and linked into your agents under a neo- prefix (neo-<name>) so it never clobbers your own skills and you can list them all by typing /neo; a name given without the prefix is namespaced automatically. Call again with the same name to update it in place.";
 const MARK_SKILL_RUN_TOOL_NAME: &str = "mark_skill_run";
-const MARK_SKILL_RUN_DESCRIPTION: &str = "Mark this browser session as a run of a saved skill so BrowserOS neo records the run and its cost once the session ends. Call this once, at the start, when you are running a skill, with the skill's name.";
+const MARK_SKILL_RUN_DESCRIPTION: &str = "Mark this browser session as a run of a saved skill so Browser records the run and its cost once the session ends. Call this once, at the start, when you are running a skill, with the skill's name.";
 
 /// Owns one MCP transport lifetime. Drop best-effort schedules removal of a started
 /// server session, which records its end and begins retained-group handling.
@@ -148,7 +148,7 @@ impl ClawMcpService {
             .await
         {
             return CallToolResult::error(vec![rmcp::model::ContentBlock::text(
-                "BrowserOS neo session is no longer live",
+                "Browser session is no longer live",
             )]);
         }
         let started_at = StdInstant::now();
@@ -255,7 +255,7 @@ impl ClawMcpService {
             .await
         {
             return CallToolResult::error(vec![rmcp::model::ContentBlock::text(
-                "BrowserOS neo session is no longer live",
+                "Browser session is no longer live",
             )]);
         }
         let started_at = StdInstant::now();
@@ -301,7 +301,7 @@ impl ClawMcpService {
             .await
         {
             return CallToolResult::error(vec![rmcp::model::ContentBlock::text(
-                "BrowserOS neo session is no longer live",
+                "Browser session is no longer live",
             )]);
         }
         let started_at = StdInstant::now();
@@ -406,7 +406,7 @@ impl ClawMcpService {
                 .await
                 .ok_or_else(|| {
                     McpError::invalid_request(
-                        format!("BrowserOS neo session {session_id} is no longer live"),
+                        format!("Browser session {session_id} is no longer live"),
                         None,
                     )
                 })?;
@@ -1089,7 +1089,7 @@ fn attach_session_handle(
             .get_or_insert_with(MetaObject::new)
             .insert(SESSION_META_KEY.to_string(), Value::String(handle.clone()));
         call_result.content.push(rmcp::model::ContentBlock::text(format!(
-            "[browseros-neo session: {handle}. Pass this exact value as the `session` argument on every following call to keep this browser session and its tab ownership.]"
+            "[browser session: {handle}. Pass this exact value as the `session` argument on every following call to keep this browser session and its tab ownership.]"
         )));
         call_result
     })
@@ -1421,8 +1421,8 @@ mod tests {
         let instructions = info
             .instructions
             .as_deref()
-            .ok_or_else(|| anyhow::anyhow!("BrowserOS neo instructions missing"))?;
-        assert!(instructions.contains("BrowserOS neo — the browser for agents"));
+            .ok_or_else(|| anyhow::anyhow!("Browser instructions missing"))?;
+        assert!(instructions.contains("Browser — the browser for agents"));
         assert!(instructions.contains("Reach for run first"));
         assert!(instructions.contains(
             "- Say who you are (e.g. \"claude-code\", \"codex\"): send it as the agentName\n  argument on every call if your tools take one, otherwise it comes from the\n  initialize handshake. It names this session, titles and colours your tab\n  group, and is how the user filters your runs in the audit log."
@@ -1750,7 +1750,7 @@ mod tests {
                 .body
                 .contains("Read the DOM snapshot, not screenshots")
         );
-        assert!(created.body.contains("tools: browseros-neo"));
+        assert!(created.body.contains("tools: browser"));
 
         // Same name again updates in place and bumps the version.
         service

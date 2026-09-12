@@ -152,7 +152,7 @@ fn handler<'a>(
                         [
                             wrap_untrusted(&excerpt, &origin),
                             format!(
-                                "Evaluate result truncated at {INLINE_PAGE_CONTENT_MAX_CHARS} chars. Full result ({} chars) could not be saved to a BrowserOS output file: {save_error}",
+                                "Evaluate result truncated at {INLINE_PAGE_CONTENT_MAX_CHARS} chars. Full result ({} chars) could not be saved to a Browser output file: {save_error}",
                                 text.len()
                             ),
                         ]

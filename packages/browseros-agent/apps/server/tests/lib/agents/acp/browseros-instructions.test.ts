@@ -43,7 +43,8 @@ describe('ensureAcpWorkspace', () => {
     expect(claude).toBe(BROWSEROS_ACP_INSTRUCTIONS)
     expect(agents).toBe(BROWSEROS_ACP_INSTRUCTIONS)
     expect(claude).toContain('use only the MCP server named')
-    expect(claude).toContain('browseros-neo')
+    expect(claude).toContain('the MCP server named `browser`')
+    expect(claude).not.toContain('named `browseros`')
   })
 
   it('is idempotent across repeated calls', async () => {

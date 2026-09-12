@@ -111,7 +111,7 @@ async fn skill_crud_round_trips_and_writes_the_canonical_file() -> anyhow::Resul
         .join("SKILL.md");
     let content = std::fs::read_to_string(&skill_md)?;
     assert!(content.contains("name: neo-inbox-sweep"));
-    assert!(content.contains("tools: browseros-neo"));
+    assert!(content.contains("tools: browser"));
     assert!(content.contains("## Steps"));
     assert!(content.contains("Read the DOM snapshot, not screenshots"));
 
@@ -139,7 +139,7 @@ async fn skill_crud_round_trips_and_writes_the_canonical_file() -> anyhow::Resul
         "/api/v1/skills/neo-inbox-sweep",
         Some(json!({
             "description": "Updated description",
-            "body": "---\nname: neo-inbox-sweep\ndescription: Updated\ntools: browseros-neo\n---\n\n## Steps\n1. A brand new step\n"
+            "body": "---\nname: neo-inbox-sweep\ndescription: Updated\ntools: browser\n---\n\n## Steps\n1. A brand new step\n"
         })),
     )
     .await?;
@@ -278,7 +278,7 @@ async fn skill_update_rejects_ambiguous_field_combinations() -> anyhow::Result<(
         "PUT",
         "/api/v1/skills/neo-inbox-sweep",
         Some(json!({
-            "body": "---\nname: neo-inbox-sweep\ndescription: X\ntools: browseros-neo\n---\n",
+            "body": "---\nname: neo-inbox-sweep\ndescription: X\ntools: browser\n---\n",
             "steps": ["New step"],
             "learnedNotes": []
         })),

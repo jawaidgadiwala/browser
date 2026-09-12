@@ -95,12 +95,12 @@ describe('buildAcpAgentPolicy', () => {
       '@agentclientprotocol/claude-agent-acp@^0.75.1',
     )
     expect(policy.mcpServers.map((server) => server.name)).toEqual([
-      'browseros',
+      'browser',
       'github',
     ])
     expect(policy.mcpServers[0]).toEqual({
       type: 'http',
-      name: 'browseros',
+      name: 'browser',
       url: 'http://127.0.0.1:9001/mcp?read_only=1',
       headers: {
         [BROWSEROS_TOOL_LEASE_HEADER]: 'lease-1',
@@ -128,7 +128,7 @@ describe('buildAcpAgentPolicy', () => {
       browserosDir: '/state/browseros',
       browserContext: {
         customMcpServers: [
-          { name: 'browseros', url: 'https://wrong.example.com/mcp' },
+          { name: 'browser', url: 'https://wrong.example.com/mcp' },
         ],
       },
     })
@@ -174,14 +174,12 @@ describe('buildAcpAgentPolicy', () => {
     expect(renderedArgv).not.toContain('CODEX_HOME')
     expect(renderedArgv).toContain('CODEX_CONFIG=')
     expect(renderedArgv).toContain('INITIAL_AGENT_MODE=agent-full-access')
-    expect(renderedArgv).toContain('"developer_instructions":"# BrowserOS')
-    expect(renderedArgv).toContain('browseros-neo')
+    expect(renderedArgv).toContain('"developer_instructions":"# Browser')
+    expect(renderedArgv).toContain('the MCP server named `browser`')
     expect(renderedArgv).toContain('"model":"gpt-5.4"')
     expect(renderedArgv).toContain('"model_reasoning_effort":"high"')
     expect(renderedArgv).toContain('"browser@openai-bundled":{"enabled":false}')
-    expect(policy.mcpServers.map((server) => server.name)).toEqual([
-      'browseros',
-    ])
+    expect(policy.mcpServers.map((server) => server.name)).toEqual(['browser'])
     expect(policy.fullAccessModeCandidates).toEqual([
       'agent-full-access',
       'full-access',
@@ -223,7 +221,7 @@ describe('buildAcpAgentPolicy', () => {
     })
     expect(policy.fullAccessModeCandidates).toEqual(['bypass'])
     // BrowserOS MCP is injected regardless of agent type.
-    expect(policy.mcpServers[0]?.name).toBe('browseros')
+    expect(policy.mcpServers[0]?.name).toBe('browser')
   })
 
   it('gives a custom agent no full-access modes when none are configured', async () => {

@@ -246,7 +246,7 @@ async fn dispatch_tool_call_with(
         call.dispatch_cancel.cancel();
         call.cancel.cancel();
         return Err(McpError::invalid_request(
-            "BrowserOS neo session is no longer live",
+            "Browser session is no longer live",
             None,
         ));
     }
@@ -450,7 +450,7 @@ async fn execute_with_cancellation(call: &ToolCall) -> DispatchExecution {
             }
         }
         None => ToolResult::error(
-            "browser session not connected; the agent browser is not running or paired. Tell the user to start BrowserOS neo and check the cockpit connection status; do not fall back to another browser tool.",
+            "browser session not connected; the agent browser is not running or paired. Tell the user to start Browser and check the cockpit connection status; do not fall back to another browser tool.",
         ),
     };
     let duration_ms = i64::try_from(started.elapsed().as_millis()).unwrap_or(i64::MAX);
@@ -1015,10 +1015,7 @@ mod tests {
         let Err(error) = result else {
             panic!("stopped session must reject dispatch");
         };
-        assert_eq!(
-            error.message.as_ref(),
-            "BrowserOS neo session is no longer live"
-        );
+        assert_eq!(error.message.as_ref(), "Browser session is no longer live");
         assert!(
             call.state
                 .audit_log

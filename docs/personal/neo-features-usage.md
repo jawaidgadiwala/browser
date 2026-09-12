@@ -23,8 +23,9 @@ Everything is loopback-only — the server binds `127.0.0.1` (`pba/apps/claw-ser
 
 ### What "Connect" writes for Claude Code
 
-- Server entry name: `browseros-neo` (`BROWSEROS_MCP_SERVER_NAME`, `services/harness.rs:27`). Legacy
-  names `BrowserOS neo` / `BrowserClaw` are recognized and migrated (`:28`, `:822`).
+- Server entry name: `browser` (`BROWSEROS_MCP_SERVER_NAME`, `services/harness.rs:27`). Legacy
+  names `browseros-neo`, `browseros`, `BrowserOS neo` and `BrowserClaw` are recognized and migrated
+  onto `browser` (`BROWSEROS_LEGACY_MCP_SERVER_NAMES`).
 - Config file: `$CLAUDE_CONFIG_DIR/.claude.json`, else `$HOME/.claude.json`
   (`pba/crates/harness-integrations/src/catalog.rs:239-247`); the first *existing* candidate wins
   (`mcp/paths.rs:29-44`). Written at the **top level** under `mcpServers` (catalog.rs:250).
@@ -34,7 +35,7 @@ Everything is loopback-only — the server binds `127.0.0.1` (`pba/apps/claw-ser
 ```json
 {
   "mcpServers": {
-    "browseros-neo": {
+    "browser": {
       "type": "http",
       "url": "http://127.0.0.1:9200/mcp"
     }
@@ -53,12 +54,12 @@ Everything is loopback-only — the server binds `127.0.0.1` (`pba/apps/claw-ser
 - `PUT /api/v1/connections/{harness}` → connect, `DELETE` → disconnect (`api/http/mod.rs:86-90`,
   `api/http/connections.rs:27-55`).
 - **Link** (`connect_browseros`, `services/harness.rs:295-389`): migrates legacy identities, upserts
-  the `browseros-neo` entry into the harness config, records the link in neo's own manifest
+  the `browser` entry into the harness config, records the link in neo's own manifest
   (`~/.browserclaw/mcp-manager/manifest.json`, `app.rs:90` + `mcp/io.rs:161`), then reconciles the
   managed skill onto disk for that harness. Foreign entries neo did not write are refused, not
   clobbered (`ManagerError::ForeignEntry`, harness.rs:317-319).
 - **Unlink** (`disconnect_browseros`, harness.rs:391-453): removes every known server name
-  (`browseros-neo`, `BrowserOS neo`, `BrowserClaw`) from the harness config, drops the manifest row,
+  (`browser`, `browseros-neo`, `browseros`, `BrowserOS neo`, `BrowserClaw`) from the harness config, drops the manifest row,
   and re-reconciles the skill so the unlinked harness loses it.
 - The UI row is a toggle and shows the config path it wrote
   (`pba/apps/claw-app/screens/mcp/ConnectionRow.tsx:41`, `:60-62`).
@@ -68,7 +69,7 @@ Everything is loopback-only — the server binds `127.0.0.1` (`pba/apps/claw-ser
 ### Manual equivalent (Claude Code)
 
 ```bash
-claude mcp add browseros-neo http://127.0.0.1:9200/mcp --transport http --scope user
+claude mcp add browser http://127.0.0.1:9200/mcp --transport http --scope user
 ```
 
 This exact string is what the MCP screen offers to copy —
@@ -221,10 +222,10 @@ Root: `BROWSERCLAW_DIR` env override, else `~/.browserclaw` (release) or `~/.bro
 
 ## 4. Skills and skill runs
 
-- Two kinds. **(a)** The managed product skill `browseros-neo`, shipped at
+- Two kinds. **(a)** The managed product skill `browser`, shipped at
   `pba/resources/skills/browserclaw/SKILL.md` with a compiled-in fallback
   (`services/harness_skills.rs:13-15`) and a hand-install copy at repo-root
-  `skills/browseros-neo/SKILL.md`. **(b)** User/agent skills, always namespaced `neo-*`.
+  `skills/browser/SKILL.md`. **(b)** User/agent skills, always namespaced `neo-*`.
 - SKILL.md format: YAML frontmatter fenced by `---`. The only Rust parser is
   `parse_browserclaw_skill` (`harness_skills.rs:53-77`), requiring `name` and a non-empty
   `description`. User skills are *rendered*, never parsed back (`services/skills.rs:534-563`):
@@ -233,7 +234,7 @@ Root: `BROWSERCLAW_DIR` env override, else `~/.browserclaw` (release) or `~/.bro
 ---
 name: neo-<name>
 description: "<json-encoded>"
-tools: browseros-neo
+tools: browser
 ---
 
 ## Steps
@@ -354,7 +355,7 @@ not env vars, despite the prefix.
   (config.rs:251-261; a blank value is ignored).
 - Consequence: a locally built debug server and the shipped browser keep **completely separate**
   databases, recordings, skills and MCP manifests — but write to the **same** harness config files
-  (`~/.claude.json`, `~/.claude/skills/`), so they fight over the `browseros-neo` entry.
+  (`~/.claude.json`, `~/.claude/skills/`), so they fight over the `browser` entry.
 
 ---
 
@@ -383,7 +384,7 @@ not env vars, despite the prefix.
    group can be picked up by *our* code as a space — namespace Spaces titles, or filter out anything
    matching `^[a-z0-9-]{1,20}/`.
 6. **Dev and packaged builds both write `~/.claude.json`.** `~/.browserclaw-dev` isolates data but not
-   harness configs, so running both flips the `browseros-neo` URL between the dev port and the
+   harness configs, so running both flips the `browser` URL between the dev port and the
    packaged proxy port. Disconnect one before using the other.
 7. **`first_run_connect` auto-links every installed harness** on a fresh state dir (`main.rs:198`,
    `harness.rs:513`). Deleting `~/.browserclaw-dev` and restarting silently rewrites

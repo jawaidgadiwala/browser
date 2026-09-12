@@ -31,6 +31,7 @@ import {
 } from '@browseros/agent-mcp-manager'
 import { logger } from '../logger'
 import {
+  BROWSEROS_LEGACY_MCP_SERVER_NAMES,
   BROWSEROS_MCP_SERVER_NAME,
   BROWSEROS_MCP_STDIO_SERVER_NAME,
   getMcpManager,
@@ -71,14 +72,16 @@ export const CURATED_AGENTS: readonly AgentId[] = [
 ]
 
 /**
- * The two server-names BrowserOS manages in the manifest. Every
- * surfaced agent supports HTTP, so installs only ever write the HTTP
- * entry; the stdio name is swept on uninstall to clean up any legacy
- * link left by an earlier catalog version.
+ * Every server-name BrowserOS manages in the manifest: the two current
+ * ones plus the pre-rename names earlier builds wrote. Every surfaced
+ * agent supports HTTP, so installs only ever write the HTTP entry; the
+ * stdio and legacy names are swept on install and uninstall to clean up
+ * any link left by an earlier catalog version or an earlier name.
  */
 const BROWSEROS_SERVER_NAMES: readonly string[] = [
   BROWSEROS_MCP_SERVER_NAME,
   BROWSEROS_MCP_STDIO_SERVER_NAME,
+  ...BROWSEROS_LEGACY_MCP_SERVER_NAMES,
 ]
 
 interface AgentServerPlan {
@@ -157,12 +160,12 @@ export async function listAgents(
  * Stdio-only agents are linked under a separate server name so each
  * transport keeps its own manifest entry.
  *
- * Also sweeps the OPPOSITE server name's link for this agent. Without
- * this, an agent that was first installed under the http server
- * `browseros` and later re-routed to stdio by the upstream catalog
- * (or vice versa) would end up double-linked, with the stale entry
- * surviving every uninstall click that targets only the current
- * planFor() server.
+ * Also sweeps every OTHER managed server name's link for this agent.
+ * Without this, an agent that was first installed under the http server
+ * (or under a pre-rename name such as `browseros`) and later re-routed
+ * to stdio by the upstream catalog would end up double-linked, with the
+ * stale entry surviving every uninstall click that targets only the
+ * current planFor() server.
  */
 export async function installInto(
   agentId: string,
@@ -194,11 +197,11 @@ export async function installInto(
 /**
  * Uninstall BrowserOS from the given agent's config. Tries every
  * server name BrowserOS manages because the same agent may be linked
- * under either `browseros` (http) or `browseros-stdio` depending on
- * when it was last installed: the upstream catalog's transport
- * classification for a given agent can flip between library versions,
- * and a stale link under the prior server name would otherwise survive
- * forever.
+ * under `browser` (http), `browser-stdio`, or a pre-rename name such as
+ * `browseros`, depending on when it was last installed: the upstream
+ * catalog's transport classification for a given agent can flip between
+ * library versions, and a stale link under a prior server name would
+ * otherwise survive forever.
  *
  * Returns success when no foreign-entry conflict blocked a removal.
  * A missing manifest entry for a server name is a no-op, not an error.

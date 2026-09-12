@@ -6,8 +6,8 @@
  * Boot-time self-heal for the BrowserOS MCP integration.
  *
  * Two managed manifest entries carry BrowserOS's server spec:
- *   - `browseros` (HTTP spec for HTTP-native agents)
- *   - `browseros-stdio` (stdio spec wrapping `npx mcp-remote <url>`)
+ *   - `browser` (HTTP spec for HTTP-native agents)
+ *   - `browser-stdio` (stdio spec wrapping `npx mcp-remote <url>`)
  *
  * When BrowserOS restarts on a different port every agent config that
  * previously linked to BrowserOS still points at the stale URL. The

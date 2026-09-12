@@ -98,11 +98,11 @@ pub async fn format_diff_result(diff: &SnapshotDiff, origin: &str, ctx: &ToolCtx
                 let save_error = err.to_string();
                 let text = if diff.url_changed {
                     format!(
-                        "URL changed; full current snapshot is {token_estimate} estimated tokens, over the {MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a BrowserOS output file failed: {save_error}"
+                        "URL changed; full current snapshot is {token_estimate} estimated tokens, over the {MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a Browser output file failed: {save_error}"
                     )
                 } else {
                     format!(
-                        "Diff is {token_estimate} estimated tokens, over the {MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a BrowserOS output file failed: {save_error}"
+                        "Diff is {token_estimate} estimated tokens, over the {MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a Browser output file failed: {save_error}"
                     )
                 };
                 add_fields(

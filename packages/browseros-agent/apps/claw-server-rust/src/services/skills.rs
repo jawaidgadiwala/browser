@@ -28,7 +28,7 @@ const DEFAULT_RUN_LIMIT: u64 = 25;
 const MAX_RUN_LIMIT: u64 = 100;
 
 /// Where the agent gets told to drive the browser from a skill's frontmatter.
-const SKILL_TOOLS: &str = "browseros-neo";
+const SKILL_TOOLS: &str = "browser";
 
 /// Skill creation surface, independent of transport. The MCP tool and the REST
 /// handler both build this.
@@ -544,7 +544,7 @@ fn render_skill_markdown(
     let mut out = format!(
         "---\nname: {name}\ndescription: {description}\ntools: {SKILL_TOOLS}\n---\n\n## Steps\n"
     );
-    // Every run marks itself so BrowserOS neo records the run and its cost.
+    // Every run marks itself so Browser records the run and its cost.
     out.push_str(&format!(
         "1. Call the mark_skill_run tool with name: {name} so this run is recorded.\n"
     ));

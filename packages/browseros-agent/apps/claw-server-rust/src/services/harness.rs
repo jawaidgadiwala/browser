@@ -24,16 +24,25 @@ use std::{
 use tokio::sync::Mutex;
 use url::Url;
 
-pub const BROWSEROS_MCP_SERVER_NAME: &str = "browseros-neo";
+pub const BROWSEROS_MCP_SERVER_NAME: &str = "browser";
+pub const BROWSEROS_NEO_SLUG_LEGACY_MCP_SERVER_NAME: &str = "browseros-neo";
+pub const BROWSEROS_SLUG_LEGACY_MCP_SERVER_NAME: &str = "browseros";
 pub const BROWSEROS_NEO_LEGACY_MCP_SERVER_NAME: &str = "BrowserOS neo";
 pub const BROWSERCLAW_LEGACY_MCP_SERVER_NAME: &str = "BrowserClaw";
 
-const BROWSEROS_LEGACY_MCP_SERVER_NAMES: [&str; 2] = [
+/// Every name earlier builds wrote into harness configs. A managed entry under any
+/// of these is migrated onto `BROWSEROS_MCP_SERVER_NAME` on connect, and all of them
+/// are swept on disconnect so a rename never strands a stale entry.
+const BROWSEROS_LEGACY_MCP_SERVER_NAMES: [&str; 4] = [
+    BROWSEROS_NEO_SLUG_LEGACY_MCP_SERVER_NAME,
+    BROWSEROS_SLUG_LEGACY_MCP_SERVER_NAME,
     BROWSEROS_NEO_LEGACY_MCP_SERVER_NAME,
     BROWSERCLAW_LEGACY_MCP_SERVER_NAME,
 ];
-const BROWSEROS_MCP_SERVER_NAMES: [&str; 3] = [
+const BROWSEROS_MCP_SERVER_NAMES: [&str; 5] = [
     BROWSEROS_MCP_SERVER_NAME,
+    BROWSEROS_NEO_SLUG_LEGACY_MCP_SERVER_NAME,
+    BROWSEROS_SLUG_LEGACY_MCP_SERVER_NAME,
     BROWSEROS_NEO_LEGACY_MCP_SERVER_NAME,
     BROWSERCLAW_LEGACY_MCP_SERVER_NAME,
 ];
@@ -278,7 +287,7 @@ impl HarnessService {
         .await?
     }
 
-    /// The agents currently linked to BrowserOS neo over MCP, i.e. the set a
+    /// The agents currently linked to Browser over MCP, i.e. the set a
     /// newly authored skill links into by default.
     pub async fn connected_agents(&self) -> AppResult<BTreeSet<AgentId>> {
         let _guard = self.mutex.lock().await;
@@ -366,7 +375,7 @@ impl HarnessService {
 
         match result {
             Ok((created, config_path, skill_warning)) => {
-                tracing::info!(harness = %harness, agent = %agent, "connected BrowserOS neo to harness");
+                tracing::info!(harness = %harness, agent = %agent, "connected Browser to harness");
                 if created {
                     self.analytics.capture(
                         events::HARNESS_CONNECTED,
@@ -429,7 +438,7 @@ impl HarnessService {
                     agent = %agent,
                     unlinked,
                     removed_manifest,
-                    "disconnected BrowserOS neo from harness"
+                    "disconnected Browser from harness"
                 );
                 if unlinked {
                     self.analytics.capture(
@@ -642,17 +651,20 @@ fn reconcile_managed_skill(
     managed_skill: &ManagedSkill,
 ) -> Result<SkillReconcileOutcome, ManagerError> {
     // Heal installs from before the skill directory was renamed: remove the legacy
-    // `browserclaw` directories (marker-verified) so the reconcile below replants the
-    // skill under its current `browseros-neo` name. Idempotent and a no-op once done.
-    let migrated = managed_skill.reconciler.remove_legacy_directories(
-        super::harness_skills::LEGACY_SKILL_DIRECTORY_NAME,
-        &managed_skill.environment,
-    )?;
-    if !migrated.is_empty() {
-        tracing::info!(
-            agents = ?migrated,
-            "migrated legacy BrowserOS neo skill directories to the current name"
-        );
+    // `browserclaw` / `browseros-neo` directories (marker-verified) so the reconcile
+    // below replants the skill under its current `browser` name. Idempotent and a
+    // no-op once done.
+    for legacy_name in super::harness_skills::LEGACY_SKILL_DIRECTORY_NAMES {
+        let migrated = managed_skill
+            .reconciler
+            .remove_legacy_directories(legacy_name, &managed_skill.environment)?;
+        if !migrated.is_empty() {
+            tracing::info!(
+                agents = ?migrated,
+                legacy_name,
+                "migrated legacy Browser skill directories to the current name"
+            );
+        }
     }
     let consumers = recognized_browseros_links(manager, workspace_dir)?
         .into_iter()
@@ -690,7 +702,7 @@ fn reconcile_skill_warning(
 fn with_skill_retry_message(message: String, warning: Option<String>) -> String {
     match warning {
         Some(warning) => format!(
-            "{message} BrowserOS neo skill reconciliation needs a retry on restart or reconnect: {warning}"
+            "{message} Browser skill reconciliation needs a retry on restart or reconnect: {warning}"
         ),
         None => message,
     }
@@ -837,7 +849,7 @@ fn migrate_browseros_identity(
         ) {
             Ok(true) => {
                 outcome.migrated += 1;
-                tracing::info!(harness = %harness, agent = %agent, "migrated BrowserOS neo MCP identity");
+                tracing::info!(harness = %harness, agent = %agent, "migrated Browser MCP identity");
             }
             Ok(false) => outcome.skipped += 1,
             Err(error) => {

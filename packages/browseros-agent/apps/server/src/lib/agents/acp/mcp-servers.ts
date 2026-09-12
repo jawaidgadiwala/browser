@@ -8,7 +8,7 @@ import type { AcpxMcpServerConfig } from '@browseros/acpx-ai-provider'
 import type { BrowserContext } from '@browseros/shared/schemas/browser-context'
 import { BROWSEROS_TOOL_LEASE_HEADER } from '../../browser-tool-lease'
 
-const BROWSEROS_MCP_NAME = 'browseros'
+const BROWSEROS_MCP_NAME = 'browser'
 
 export interface BuildAcpMcpServersInput {
   serverPort: number

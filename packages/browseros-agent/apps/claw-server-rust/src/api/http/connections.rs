@@ -24,7 +24,7 @@ pub(super) async fn list(
 }
 
 /// Connecting a harness also reconciles the managed skill onto disk for it. Agents that
-/// cannot be connected here install `skills/browseros-neo/SKILL.md` from the repo root
+/// cannot be connected here install `skills/browser/SKILL.md` from the repo root
 /// instead, so any edit to the skill text has to land in both copies.
 pub(super) async fn connect(
     Extension(request_id): Extension<RequestId>,

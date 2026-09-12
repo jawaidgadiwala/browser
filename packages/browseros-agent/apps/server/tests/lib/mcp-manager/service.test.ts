@@ -92,7 +92,7 @@ describe('listAgents', () => {
     ]
     const stub = createStubMcpManager()
     stub.seedServer(
-      'browseros',
+      'browser',
       { transport: 'http', url: 'http://127.0.0.1:9100/mcp' },
       [{ agent: 'claude-code' }],
     )
@@ -141,7 +141,7 @@ describe('listAgents', () => {
     stubAgents = [agent('codex', 'Codex', true)]
     const stub = createStubMcpManager()
     stub.seedServer(
-      'browseros-stdio',
+      'browser-stdio',
       { transport: 'stdio', command: 'npx', args: ['mcp-remote', 'x'] },
       [{ agent: 'codex' }],
     )
@@ -169,7 +169,7 @@ describe('listAgents', () => {
     stubAgents = [agent('claude-code', 'Claude Code', false)]
     const stub = createStubMcpManager()
     stub.seedServer(
-      'browseros',
+      'browser',
       { transport: 'http', url: 'http://127.0.0.1:9100/mcp' },
       [{ agent: 'claude-code' }],
     )
@@ -184,7 +184,7 @@ describe('listAgents', () => {
 })
 
 describe('installInto', () => {
-  it('links the browseros http entry for claude-code in a single call', async () => {
+  it('links the browser http entry for claude-code in a single call', async () => {
     const stub = createStubMcpManager()
     setMcpManagerForTesting(stub)
 
@@ -195,7 +195,7 @@ describe('installInto', () => {
       agent: string
     }>
     expect(linkCalls).toHaveLength(1)
-    expect(linkCalls[0].server.name).toBe('browseros')
+    expect(linkCalls[0].server.name).toBe('browser')
     expect(linkCalls[0].server.spec).toEqual({
       transport: 'http',
       url: 'http://127.0.0.1:9100/mcp',
@@ -217,7 +217,7 @@ describe('installInto', () => {
 
       expect(result.success).toBe(true)
       const config = JSON.parse(await readFile(claudeConfigPath, 'utf8'))
-      expect(config.mcpServers.browseros).toEqual({
+      expect(config.mcpServers.browser).toEqual({
         url: 'http://127.0.0.1:9100/mcp',
         type: 'http',
       })
@@ -237,7 +237,7 @@ describe('installInto', () => {
       agent: string
     }>
     expect(linkCalls).toHaveLength(1)
-    expect(linkCalls[0].server.name).toBe('browseros')
+    expect(linkCalls[0].server.name).toBe('browser')
     expect(linkCalls[0].server.spec).toEqual({
       transport: 'http',
       url: 'http://127.0.0.1:9100/mcp',
@@ -262,7 +262,7 @@ describe('installInto', () => {
       agent: string
     }>
     expect(linkCalls).toHaveLength(1)
-    expect(linkCalls[0].server.name).toBe('browseros-stdio')
+    expect(linkCalls[0].server.name).toBe('browser-stdio')
     expect(linkCalls[0].server.spec).toEqual({
       transport: 'stdio',
       command: 'npx',
@@ -284,14 +284,53 @@ describe('installInto', () => {
       serverName: string
       agent: string
     }>
-    expect(unlinkCalls).toHaveLength(1)
-    expect(unlinkCalls[0].serverName).toBe('browseros')
-    expect(unlinkCalls[0].agent).toBe('claude-desktop')
+    // Every managed name other than the one being linked is swept, so a
+    // rename or a transport flip can never leave a second entry behind.
+    expect(unlinkCalls.map((c) => c.serverName).sort()).toEqual([
+      'browser',
+      'browseros',
+      'browseros-neo',
+      'browseros-stdio',
+    ])
+    for (const call of unlinkCalls) expect(call.agent).toBe('claude-desktop')
     const linkCalls = callsOf(stub, 'link') as Array<{
       server: { name: string }
     }>
     expect(linkCalls).toHaveLength(1)
-    expect(linkCalls[0].server.name).toBe('browseros-stdio')
+    expect(linkCalls[0].server.name).toBe('browser-stdio')
+  })
+
+  it('replaces a pre-rename browseros/browseros-neo entry with the browser entry', async () => {
+    const stub = createStubMcpManager()
+    stub.seedServer(
+      'browseros',
+      { transport: 'http', url: 'http://127.0.0.1:9100/mcp' },
+      [{ agent: 'claude-code' }],
+    )
+    stub.seedServer(
+      'browseros-neo',
+      { transport: 'http', url: 'http://127.0.0.1:9200/mcp' },
+      [{ agent: 'claude-code' }],
+    )
+    setMcpManagerForTesting(stub)
+
+    const result = await installInto('claude-code', 'http://127.0.0.1:9101/mcp')
+    expect(result.success).toBe(true)
+
+    const unlinkCalls = callsOf(stub, 'unlink') as Array<{
+      serverName: string
+      agent: string
+    }>
+    expect(unlinkCalls.map((c) => c.serverName)).toContain('browseros')
+    expect(unlinkCalls.map((c) => c.serverName)).toContain('browseros-neo')
+    const linkCalls = callsOf(stub, 'link') as Array<{
+      server: { name: string }
+    }>
+    expect(linkCalls).toHaveLength(1)
+    expect(linkCalls[0].server.name).toBe('browser')
+    // The legacy links are gone; only the renamed entry survives.
+    const links = (await stub.listLinks()) as Array<{ serverName: string }>
+    expect(links.map((l) => l.serverName)).toEqual(['browser'])
   })
 
   it('rejects unsupported agent ids', async () => {
@@ -313,9 +352,12 @@ describe('uninstallFrom', () => {
       serverName: string
       agent: string
     }>
-    expect(disconnectCalls).toHaveLength(2)
+    expect(disconnectCalls).toHaveLength(5)
     expect(disconnectCalls.map((c) => c.serverName).sort()).toEqual([
+      'browser',
+      'browser-stdio',
       'browseros',
+      'browseros-neo',
       'browseros-stdio',
     ])
     for (const call of disconnectCalls) expect(call.agent).toBe('claude-code')
@@ -330,16 +372,16 @@ describe('uninstallFrom', () => {
     setMcpManagerForTesting(stub)
     const out = await uninstallFrom('codex')
     expect(out.success).toBe(true)
-    expect(callsOf(stub, 'disconnect')).toHaveLength(2)
+    expect(callsOf(stub, 'disconnect')).toHaveLength(5)
   })
 
   it('returns a human message on ForeignEntryError instead of throwing', async () => {
     const stub = createStubMcpManager({
       removeThrowsByServer: new Map([
         [
-          'browseros',
+          'browser',
           new ForeignEntryError(
-            'browseros',
+            'browser',
             'claude-code',
             '/tmp/fake/claude-code.json',
           ),
@@ -357,12 +399,12 @@ describe('cleanupNonCuratedLinks', () => {
   it('disconnects agents no longer in the curated surface and leaves curated ones', async () => {
     const stub = createStubMcpManager()
     stub.seedServer(
-      'browseros',
+      'browser',
       { transport: 'http', url: 'http://127.0.0.1:9100/mcp' },
       [{ agent: 'claude-code' }, { agent: 'gemini' }],
     )
     stub.seedServer(
-      'browseros-stdio',
+      'browser-stdio',
       { transport: 'stdio', command: 'npx', args: ['mcp-remote', 'x'] },
       [{ agent: 'claude-desktop' }],
     )
@@ -383,7 +425,7 @@ describe('cleanupNonCuratedLinks', () => {
   it('is a no-op when only curated agents are linked', async () => {
     const stub = createStubMcpManager()
     stub.seedServer(
-      'browseros',
+      'browser',
       { transport: 'http', url: 'http://127.0.0.1:9100/mcp' },
       [{ agent: 'claude-code' }, { agent: 'cursor' }],
     )

@@ -26,7 +26,7 @@ import { getBrowserosDir } from '../browseros-dir'
  * Antigravity, VS Code, Zed). Stdio-only agents, when supported, get
  * a separate entry under `BROWSEROS_MCP_STDIO_SERVER_NAME` below.
  */
-export const BROWSEROS_MCP_SERVER_NAME = 'browseros'
+export const BROWSEROS_MCP_SERVER_NAME = 'browser'
 
 /**
  * Server-name BrowserOS registers itself under for stdio-only agents.
@@ -37,7 +37,19 @@ export const BROWSEROS_MCP_SERVER_NAME = 'browseros'
  * HTTP, so this entry only exists to sweep legacy stdio links left by
  * earlier installs.
  */
-export const BROWSEROS_MCP_STDIO_SERVER_NAME = 'browseros-stdio'
+export const BROWSEROS_MCP_STDIO_SERVER_NAME = 'browser-stdio'
+
+/**
+ * Names earlier builds registered BrowserOS under, before the
+ * agent-facing rename to `browser`. A managed link under any of these
+ * is swept on install (so the entry is replaced by the current name)
+ * and on uninstall (so a rename never strands a stale entry).
+ */
+export const BROWSEROS_LEGACY_MCP_SERVER_NAMES: readonly string[] = [
+  'browseros',
+  'browseros-stdio',
+  'browseros-neo',
+]
 
 let cached: BoundApi | null = null
 

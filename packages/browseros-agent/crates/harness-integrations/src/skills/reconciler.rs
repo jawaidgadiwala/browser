@@ -174,7 +174,7 @@ impl SkillReconciler {
                 outcome.warnings.push(SkillWarning {
                     target: target.clone(),
                     message: format!(
-                        "Existing {} directory is not managed by BrowserOS neo; left unchanged",
+                        "Existing {} directory is not managed by Browser; left unchanged",
                         spec.name
                     ),
                 });

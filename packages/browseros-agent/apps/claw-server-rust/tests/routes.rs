@@ -1639,11 +1639,11 @@ async fn initialize_mcp(app: &TestApp) -> anyhow::Result<String> {
     let (status, headers, body) =
         request_json_with_headers(&app.router, "POST", "/mcp", Some(initialize), &[]).await?;
     assert_eq!(status, StatusCode::OK, "initialize body: {body:?}");
-    assert_eq!(body["result"]["serverInfo"]["name"], "browseros-neo");
-    assert_eq!(body["result"]["serverInfo"]["title"], "BrowserOS neo");
+    assert_eq!(body["result"]["serverInfo"]["name"], "browser");
+    assert_eq!(body["result"]["serverInfo"]["title"], "Browser");
     assert!(
         body["result"]["instructions"].as_str().is_some_and(
-            |instructions| instructions.starts_with("BrowserOS neo — the browser for agents")
+            |instructions| instructions.starts_with("Browser — the browser for agents")
         )
     );
     let session_id = headers

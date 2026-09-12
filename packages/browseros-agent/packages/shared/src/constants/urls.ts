@@ -7,7 +7,7 @@
 import { CLAW_API_PORT_DEFAULT } from './ports'
 
 export const MCP_PATH = '/mcp'
-export const BROWSEROS_MCP_SERVER_NAME = 'browseros-neo'
+export const BROWSEROS_MCP_SERVER_NAME = 'browser'
 
 export function canonicalMcpUrlForPort(port = CLAW_API_PORT_DEFAULT): string {
   return `http://127.0.0.1:${port}${MCP_PATH}`

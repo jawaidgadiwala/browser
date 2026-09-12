@@ -146,8 +146,8 @@ export class BrowserMcpModule {
     const selectedServerNames = lease?.browserContext?.enabledMcpServers ?? []
 
     const server = createBrowserMcpServer({
-      name: 'browseros_mcp',
-      title: 'BrowserOS MCP server',
+      name: 'browser',
+      title: 'Browser MCP server',
       version: this.deps.version,
       browserSession: this.deps.browserSession,
       defaultWindowId: lease?.browserContext?.windowId,

@@ -210,7 +210,7 @@ fn detail_to_dto(detail: SkillDetailView, token_savings: models::SkillTokenSavin
 }
 
 /// Aggregates the token efficiency of the skill's run sessions into the detail
-/// DTO: how many tokens BrowserOS neo saved versus a screenshot-first agent,
+/// DTO: how many tokens Browser saved versus a screenshot-first agent,
 /// what those runs used, and what other browsers would have spent. Unmeasured
 /// runs contribute nothing and are excluded from `measuredRunCount`.
 async fn skill_token_savings(
