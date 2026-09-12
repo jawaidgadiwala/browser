@@ -20,8 +20,9 @@ export const INLINED_ENV = {
   BROWSEROS_CONFIG_URL: process.env.BROWSEROS_CONFIG_URL,
 } as const
 
+// Telemetry is opt-in for the Browser product: an empty SENTRY_DSN or
+// POSTHOG_API_KEY disables the client at its feature boundary, so only the
+// config URL is mandatory for a production build.
 export const REQUIRED_FOR_PRODUCTION = [
-  'SENTRY_DSN',
-  'POSTHOG_API_KEY',
   'BROWSEROS_CONFIG_URL',
 ] as const satisfies readonly (keyof typeof INLINED_ENV)[]
