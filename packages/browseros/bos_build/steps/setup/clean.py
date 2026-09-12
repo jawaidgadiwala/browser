@@ -133,6 +133,14 @@ class CleanModule(Step):
                 "--exclude=buildtools/",
                 "--exclude=tools/",
                 "--exclude=build/",
+                # gclient hook downloads: keep them or every clean forces a
+                # full `gclient runhooks` before gn can configure.
+                "--exclude=third_party/llvm-build/",
+                "--exclude=third_party/rust-toolchain/",
+                "--exclude=third_party/rust-src/",
+                "--exclude=third_party/node/",
+                "--exclude=third_party/depot_tools/",
+                "--exclude=third_party/ninja/",
             ],
             cwd=ctx.chromium_src,
         )
