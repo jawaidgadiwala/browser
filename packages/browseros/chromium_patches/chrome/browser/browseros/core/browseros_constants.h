@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000..e7b9a3a608cde
 --- /dev/null
 +++ b/chrome/browser/browseros/core/browseros_constants.h
-@@ -0,0 +1,242 @@
+@@ -0,0 +1,247 @@
 +// Copyright 2024 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -27,10 +27,14 @@ index 0000000000000..e7b9a3a608cde
 +      kDisableUrlOverrides);
 +}
 +
-+inline constexpr char kBrowserOSConfigUrl[] =
-+    "https://cdn.browseros.com/extensions/extensions.json";
-+inline constexpr char kBrowserOSAlphaConfigUrl[] =
-+    "https://cdn.browseros.com/extensions/extensions.alpha.json";
++// Remote extension catalog feeds. Empty by default: no product CDN is
++// configured, so BrowserOSExtensionMaintainer::CheckForUpdates() rejects the
++// invalid URL and completes with an empty config without any network request,
++// and the browser runs on the CRXs bundled into the app at build time. The
++// --browseros-extensions-url / --disable-browseros-extensions switches still
++// apply. Point these at a feed to opt in to remote extension updates.
++inline constexpr char kBrowserOSConfigUrl[] = "";
++inline constexpr char kBrowserOSAlphaConfigUrl[] = "";
 +
 +inline constexpr char kAgentExtensionId[] = "lmihdclmhdopaeappmadgmglglcabodf";
 +
@@ -40,10 +44,11 @@ index 0000000000000..e7b9a3a608cde
 +inline constexpr char kBrowserClawExtensionId[] =
 +    "jllpmhghjcbaccmpindcmpkddjekbnmm";
 +
-+inline constexpr char kBrowserOSUpdateUrl[] =
-+    "https://cdn.browseros.com/extensions/update-manifest.xml";
-+inline constexpr char kBrowserOSAlphaUpdateUrl[] =
-+    "https://cdn.browseros.com/extensions/update-manifest.alpha.xml";
++// Omaha update manifests for the catalog extensions. Empty by default, which
++// leaves the catalog on Chromium's stock update behaviour (see
++// ExtensionManagement::GetEffectiveUpdateURL).
++inline constexpr char kBrowserOSUpdateUrl[] = "";
++inline constexpr char kBrowserOSAlphaUpdateUrl[] = "";
 +
 +inline constexpr char kBrowserOSHost[] = "browseros";
 +
@@ -237,11 +242,11 @@ index 0000000000000..e7b9a3a608cde
 +         info->is_labelled;
 +}
 +
-+// Sentry crash reporting
-+// https://9a76046fcfbcfe69a3580f4d204579f1@o4510545525932032.ingest.us.sentry.io/4510938172620800
-+inline constexpr char kSentryMinidumpUrl[] =
-+    "https://o4510545525932032.ingest.us.sentry.io/api/4510938172620800/"
-+    "minidump/?sentry_key=9a76046fcfbcfe69a3580f4d204579f1";
++// Crash-report upload endpoint. Empty by default: crashpad still captures
++// minidumps locally but starts no upload thread (the same state as an
++// unbranded Chromium build, see CrashReporterClient::GetUploadUrl()).
++// Set a minidump endpoint here to opt a build in to crash uploads.
++inline constexpr char kSentryMinidumpUrl[] = "";
 +
 +}  // namespace browseros
 +

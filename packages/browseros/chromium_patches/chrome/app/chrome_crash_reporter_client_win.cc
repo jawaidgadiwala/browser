@@ -7,9 +7,9 @@ index e59af188c8140cbbc16f14bf49ef162cace60dc9..35320334dd983e87415fe1166edd68c2
  #include "components/version_info/channel.h"
  
 +namespace {
-+constexpr char kSentryMinidumpUrl[] =
-+    "https://o4510545525932032.ingest.us.sentry.io/api/4510938172620800/"
-+    "minidump/?sentry_key=9a76046fcfbcfe69a3580f4d204579f1";
++// Empty by default: crashpad captures minidumps locally and starts no upload
++// thread. Set a minidump endpoint here to opt in to crash uploads.
++constexpr char kSentryMinidumpUrl[] = "";
 +}  // namespace
 +
  ChromeCrashReporterClient::ChromeCrashReporterClient() = default;
@@ -20,7 +20,7 @@ index e59af188c8140cbbc16f14bf49ef162cace60dc9..35320334dd983e87415fe1166edd68c2
    GetProductNameAndVersion(exe_file, &product_name, &version, &special_build,
                             &channel_name);
 -  product_info->product_name = base::WideToUTF8(product_name);
-+  product_info->product_name = "BrowserOS";
++  product_info->product_name = "Browser";
    product_info->version = base::WideToUTF8(version);
    product_info->channel = base::WideToUTF8(channel_name);
  }

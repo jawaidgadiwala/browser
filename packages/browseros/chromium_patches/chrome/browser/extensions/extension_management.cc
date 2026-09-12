@@ -38,7 +38,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    }
    // Fall back to default installation mode setting.
    return default_settings_->installation_mode;
-@@ -274,6 +278,15 @@ bool ExtensionManagement::IsUpdateUrlOverridden(const ExtensionId& id) {
+@@ -274,6 +278,22 @@ bool ExtensionManagement::IsUpdateUrlOverridden(const ExtensionId& id) {
  }
  
  GURL ExtensionManagement::GetEffectiveUpdateURL(const Extension& extension) {
@@ -46,15 +46,22 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
 +  // even when the CRX omits update_url (as BrowserClaw does). Choose the
 +  // channel here so mid-session flips apply on the next update check.
 +  if (browseros::IsActiveBrowserOSExtension(extension.id())) {
-+    return GURL(base::FeatureList::IsEnabled(features::kBrowserOsAlphaFeatures)
-+                    ? browseros::kBrowserOSAlphaUpdateUrl
-+                    : browseros::kBrowserOSUpdateUrl);
++    const GURL product_update_url(
++        base::FeatureList::IsEnabled(features::kBrowserOsAlphaFeatures)
++            ? browseros::kBrowserOSAlphaUpdateUrl
++            : browseros::kBrowserOSUpdateUrl);
++    // No product manifest configured: fall through to Chromium's own choice
++    // rather than returning an empty URL, which would send the update check
++    // to the Web Store.
++    if (product_update_url.is_valid()) {
++      return product_update_url;
++    }
 +  }
 +
    if (IsUpdateUrlOverridden(extension.id())) {
      DCHECK(!extension.was_installed_by_default())
          << "Update URL should not be overridden for default-installed "
-@@ -322,8 +335,9 @@ bool ExtensionManagement::IsInstallationExplicitlyBlocked(
+@@ -322,8 +342,9 @@ bool ExtensionManagement::IsInstallationExplicitlyBlocked(
      const ExtensionId& id) {
    auto* setting = GetSettingsForId(id);
    // No settings explicitly specified for |id|.
@@ -65,7 +72,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    // Checks if the extension is listed as blocked or removed.
    ManagedInstallationMode mode = setting->installation_mode;
    return mode == ManagedInstallationMode::kBlocked ||
-@@ -334,13 +348,15 @@ bool ExtensionManagement::IsOffstoreInstallAllowed(
+@@ -334,13 +355,15 @@ bool ExtensionManagement::IsOffstoreInstallAllowed(
      const GURL& url,
      const GURL& referrer_url) const {
    // No allowed install sites specified, disallow by default.
@@ -83,7 +90,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
  
    // The referrer URL must also be allowlisted, unless the URL has the file
    // scheme (there's no referrer for those URLs).
-@@ -359,8 +375,9 @@ bool ExtensionManagement::IsAllowedManifestType(
+@@ -359,8 +382,9 @@ bool ExtensionManagement::IsAllowedManifestType(
    }
  #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
  
@@ -94,7 +101,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    const std::vector<Manifest::Type>& allowed_types =
        *global_settings_->allowed_types;
    return std::ranges::contains(allowed_types, manifest_type);
-@@ -502,8 +519,9 @@ APIPermissionSet ExtensionManagement::GetBlockedAPIPermissions(
+@@ -502,8 +526,9 @@ APIPermissionSet ExtensionManagement::GetBlockedAPIPermissions(
  
    // Fetch per-update-url blocked permissions setting.
    auto iter_update_url = settings_by_update_url_.end();
@@ -105,7 +112,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
  
    if (setting && iter_update_url != settings_by_update_url_.end()) {
      // Blocked permissions setting are specified in both per-extension and
-@@ -515,10 +533,12 @@ APIPermissionSet ExtensionManagement::GetBlockedAPIPermissions(
+@@ -515,10 +540,12 @@ APIPermissionSet ExtensionManagement::GetBlockedAPIPermissions(
      return merged;
    }
    // Check whether if in one of them, setting is specified.
@@ -120,7 +127,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    // Fall back to the default blocked permissions setting.
    return default_settings_->blocked_permissions.Clone();
  }
-@@ -534,16 +554,18 @@ const URLPatternSet& ExtensionManagement::GetDefaultPolicyAllowedHosts() const {
+@@ -534,16 +561,18 @@ const URLPatternSet& ExtensionManagement::GetDefaultPolicyAllowedHosts() const {
  const URLPatternSet& ExtensionManagement::GetPolicyBlockedHosts(
      const Extension* extension) {
    auto* setting = GetSettingsForId(extension->id());
@@ -141,7 +148,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    return default_settings_->policy_allowed_hosts;
  }
  
-@@ -574,8 +596,9 @@ bool ExtensionManagement::IsPermissionSetAllowed(
+@@ -574,8 +603,9 @@ bool ExtensionManagement::IsPermissionSetAllowed(
      const PermissionSet& perms) {
    for (const APIPermission* blocked_api :
         GetBlockedAPIPermissions(extension_id, update_url)) {
@@ -152,7 +159,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    }
    return true;
  }
-@@ -583,8 +606,9 @@ bool ExtensionManagement::IsPermissionSetAllowed(
+@@ -583,8 +613,9 @@ bool ExtensionManagement::IsPermissionSetAllowed(
  const std::string ExtensionManagement::BlockedInstallMessage(
      const ExtensionId& id) {
    auto* setting = GetSettingsForId(id);
@@ -163,7 +170,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    return default_settings_->blocked_install_message;
  }
  
-@@ -595,6 +619,14 @@ ExtensionIdSet ExtensionManagement::GetForcePinnedList() const {
+@@ -595,6 +626,14 @@ ExtensionIdSet ExtensionManagement::GetForcePinnedList() const {
        force_pinned_list.insert(entry.first);
      }
    }
@@ -178,7 +185,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    return force_pinned_list;
  }
  
-@@ -613,13 +645,15 @@ bool ExtensionManagement::CheckMinimumVersion(const Extension* extension,
+@@ -613,13 +652,15 @@ bool ExtensionManagement::CheckMinimumVersion(const Extension* extension,
                                                std::string* required_version) {
    auto* setting = GetSettingsForId(extension->id());
    // If there are no minimum version required for |extension|, return true.
@@ -196,7 +203,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    return meets_requirement;
  }
  
-@@ -673,28 +707,34 @@ void ExtensionManagement::Refresh() {
+@@ -673,28 +714,34 @@ void ExtensionManagement::Refresh() {
      // Settings from new preference have higher priority over legacy ones.
      const base::ListValue* list_value =
          subdict->FindList(schema_constants::kInstallSources);
@@ -235,7 +242,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
      }
    }
  
-@@ -754,11 +794,13 @@ void ExtensionManagement::Refresh() {
+@@ -754,11 +801,13 @@ void ExtensionManagement::Refresh() {
          std::move(installed_extension_ids));
  
      for (auto iter : *dict_pref) {
@@ -251,7 +258,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
        std::optional<std::string_view> remainder =
            base::RemovePrefix(iter.first, schema_constants::kUpdateUrlPrefix);
        if (remainder) {
-@@ -814,8 +856,9 @@ void ExtensionManagement::Refresh() {
+@@ -814,8 +863,9 @@ void ExtensionManagement::Refresh() {
            internal::IndividualSettings* by_id = AccessById(extension_id);
            const bool included_in_forcelist =
                by_id->installation_mode == ManagedInstallationMode::kForced;
@@ -262,7 +269,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
  
            // If applying the ExtensionSettings policy changes installation mode
            // from force-installed to anything else, the extension might not get
-@@ -836,8 +879,9 @@ void ExtensionManagement::Refresh() {
+@@ -836,8 +886,9 @@ void ExtensionManagement::Refresh() {
  bool ExtensionManagement::ParseById(const std::string& extension_id,
                                      const base::DictValue& subdict) {
    internal::IndividualSettings* by_id = AccessById(extension_id);
@@ -273,7 +280,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
  
    settings_by_id_.erase(extension_id);
    InstallStageTrackerFactory::GetForBrowserContext(profile_)->ReportFailure(
-@@ -856,8 +900,9 @@ internal::IndividualSettings* ExtensionManagement::GetSettingsForId(
+@@ -856,8 +907,9 @@ internal::IndividualSettings* ExtensionManagement::GetSettingsForId(
    }
  
    auto iter_id = settings_by_id_.find(extension_id);
@@ -284,7 +291,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
  
    return iter_id->second.get();
  }
-@@ -879,8 +924,9 @@ void ExtensionManagement::LoadDeferredExtensionSetting(
+@@ -879,8 +931,9 @@ void ExtensionManagement::LoadDeferredExtensionSetting(
        continue;
      }
      const base::DictValue* subdict = iter.second.GetIfDict();
@@ -295,7 +302,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
  
      auto extension_ids = base::SplitStringPiece(
          iter.first, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-@@ -898,15 +944,17 @@ const base::Value* ExtensionManagement::LoadPreference(
+@@ -898,15 +951,17 @@ const base::Value* ExtensionManagement::LoadPreference(
      const char* pref_name,
      bool force_managed,
      base::Value::Type expected_type) const {
@@ -315,7 +322,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
    }
    return nullptr;
  }
-@@ -937,8 +985,9 @@ void ExtensionManagement::NotifyExtensionManagementPrefChanged() {
+@@ -937,8 +992,9 @@ void ExtensionManagement::NotifyExtensionManagementPrefChanged() {
        InstallStageTracker::InstallCreationStage::NOTIFIED_FROM_MANAGEMENT,
        InstallStageTracker::InstallCreationStage::
            NOTIFIED_FROM_MANAGEMENT_NOT_FORCED);
@@ -326,7 +333,7 @@ index 58dd92c0f076db9622ad563e22c060c0bd474f1b..db0adf5a6f26bc5b6a3ddb8346849aa3
  }
  
  void ExtensionManagement::ReportExtensionManagementInstallCreationStage(
-@@ -976,8 +1025,9 @@ base::DictValue ExtensionManagement::GetInstallListByMode(
+@@ -976,8 +1032,9 @@ base::DictValue ExtensionManagement::GetInstallListByMode(
  
  void ExtensionManagement::UpdateForcedExtensions(
      const base::DictValue* extension_dict) {

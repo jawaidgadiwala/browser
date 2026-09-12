@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..41fdd3a227f0fd68f3d3fc725713f1553ec41550
 --- /dev/null
 +++ b/chrome/browser/browseros/server/browseros_server_updater.cc
-@@ -0,0 +1,1127 @@
+@@ -0,0 +1,1135 @@
 +// Copyright 2024 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -452,6 +452,14 @@ index 0000000000000000000000000000000000000000..41fdd3a227f0fd68f3d3fc725713f155
 +    appcast_url = std::string(descriptor_->updater.alpha_appcast_url);
 +  } else {
 +    appcast_url = std::string(descriptor_->updater.appcast_url);
++  }
++
++  if (appcast_url.empty()) {
++    // No feed configured: stay inert rather than reporting a fetch error.
++    VLOG(1) << "browseros: No server appcast configured; skipping check";
++    state_ = State::kIdle;
++    update_in_progress_ = false;
++    return;
 +  }
 +
 +  GURL url(appcast_url);

@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..08612fa1795d97550c56f02254ea89168fc5b9e6
 --- /dev/null
 +++ b/chrome/browser/win/winsparkle_glue.cc
-@@ -0,0 +1,377 @@
+@@ -0,0 +1,381 @@
 +// Copyright 2024 BrowserOS Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -47,20 +47,20 @@ index 0000000000000000000000000000000000000000..08612fa1795d97550c56f02254ea8916
 +constexpr char kEdDSAPublicKey[] =
 +    "LzQmcNuTsdB3/dsivo0eeN+jPfDoriRHAkkEJcfFs2A=";
 +
-+// Windows builds are single-arch, so the arch half of the feed is chosen at
-+// compile time (macOS picks at runtime because of universal binaries); the
-+// product half follows browseros::GetProduct(). Feed keys are owned by
-+// release/feeds/spec.py (_BROWSER_FEED_SLUGS) in the BrowserOS repo; keep
-+// the two in lockstep.
++// Windows appcast feeds. Empty means "no update feed is configured", the same
++// shipping default as macOS (chrome/browser/mac/sparkle_glue.mm,
++// kDefaultFeedBaseURL): WinSparkle stays compiled in but the updater is left
++// disabled rather than pointed at somebody else's binaries. Windows builds are
++// single-arch, so the arch half of the feed is chosen at compile time (macOS
++// picks at runtime because of universal binaries); the product half follows
++// browseros::GetProduct(). Feed keys are owned by release/feeds/spec.py
++// (_BROWSER_FEED_SLUGS); keep the two in lockstep once a feed exists.
 +#if defined(ARCH_CPU_ARM64)
-+constexpr char kAppcastURL[] =
-+    "https://cdn.browseros.com/appcast-win-arm64.xml";
-+constexpr char kClawAppcastURL[] =
-+    "https://cdn.browseros.com/appcast-claw-win-arm64.xml";
++constexpr char kAppcastURL[] = "";
++constexpr char kClawAppcastURL[] = "";
 +#else
-+constexpr char kAppcastURL[] = "https://cdn.browseros.com/appcast-win.xml";
-+constexpr char kClawAppcastURL[] =
-+    "https://cdn.browseros.com/appcast-claw-win.xml";
++constexpr char kAppcastURL[] = "";
++constexpr char kClawAppcastURL[] = "";
 +#endif
 +
 +const char* GetAppcastURL() {
@@ -297,6 +297,10 @@ index 0000000000000000000000000000000000000000..08612fa1795d97550c56f02254ea8916
 +  ui_task_runner_ = content::GetUIThreadTaskRunner({});
 +
 +  const char* appcast_url = GetAppcastURL();
++  if (appcast_url[0] == '\0') {
++    VLOG(1) << "WinSparkle: no appcast configured; updater disabled";
++    return false;
++  }
 +  win_sparkle_set_appcast_url(appcast_url);
 +  if (!win_sparkle_set_eddsa_public_key(kEdDSAPublicKey)) {
 +    LOG(ERROR) << "WinSparkle: invalid EdDSA public key; updater disabled";

@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..97180c8484b889a9eb8a77b832300cb8cf8b0543
 --- /dev/null
 +++ b/chrome/browser/browseros/metrics/browseros_metrics_service.cc
-@@ -0,0 +1,274 @@
+@@ -0,0 +1,283 @@
 +// Copyright 2025 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -38,10 +38,11 @@ index 0000000000000000000000000000000000000000..97180c8484b889a9eb8a77b832300cb8
 +namespace browseros_metrics {
 +namespace {
 +
-+constexpr std::string_view kBrowserOSPostHogApiKey =
-+    "phc_PRrpVnBMVJgUumvaXzUnwKZ1dDs3L8MSICLhTdnc8jC";
-+constexpr std::string_view kBrowserClawPostHogApiKey =
-+    "phc_mafRaZD4djbUnfNzKx9iKWyzW583UAbmZGepvxDiPcZx";
++// Empty keys keep the metrics feature compiled but inert: no PostHog project
++// is configured for this product, so no event is ever uploaded. Set a key here
++// to opt a build in to product analytics.
++constexpr std::string_view kBrowserOSPostHogApiKey = "";
++constexpr std::string_view kBrowserClawPostHogApiKey = "";
 +constexpr char kPostHogEndpoint[] = "https://us.i.posthog.com/i/v0/e/";
 +constexpr size_t kMaxUploadSize = 256 * 1024;
 +constexpr size_t kMaxPendingEvents = 256;
@@ -128,6 +129,11 @@ index 0000000000000000000000000000000000000000..97180c8484b889a9eb8a77b832300cb8
 +    return;
 +  }
 +
++  // No analytics project configured: drop the event before it is queued.
++  if (GetPostHogApiKey(product_).empty()) {
++    return;
++  }
++
 +  if (!installation_load_complete_) {
 +    if (pending_events_.size() >= kMaxPendingEvents) {
 +      LOG(WARNING) << "browseros: Metrics startup queue is full; dropping "
@@ -190,6 +196,9 @@ index 0000000000000000000000000000000000000000..97180c8484b889a9eb8a77b832300cb8
 +void BrowserOSMetricsService::SendEventToPostHog(std::string event_name,
 +                                                 base::DictValue properties) {
 +  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  if (GetPostHogApiKey(product_).empty()) {
++    return;
++  }
 +  AddDefaultProperties(properties);
 +
 +  base::DictValue payload;
