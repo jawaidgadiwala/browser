@@ -45,3 +45,6 @@ packages/browseros/build/extensions/
 
 # Local-only study notes (never publish)
 docs/private/
+
+# Local design concepts
+output/
