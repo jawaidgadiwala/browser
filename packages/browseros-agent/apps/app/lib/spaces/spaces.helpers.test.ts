@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test'
+import { themeSpecForColor } from '@/lib/sidebar/core/theme'
 import {
   adjacentSpaceId,
   createSpace,
@@ -16,11 +17,18 @@ import {
 } from './spaces.helpers'
 import type { Space } from './spaces.types'
 
-const space = (id: string, name: string, color: Space['color'] = 'blue') => ({
+const space = (
+  id: string,
+  name: string,
+  color: Space['color'] = 'blue',
+): Space => ({
   id,
   name,
-  emoji: '',
+  icon: '',
   color,
+  theme: themeSpecForColor(color),
+  containers: { pinned: `${id}-pinned`, today: `${id}-today` },
+  pinnedCollapsed: false,
   createdAt: 0,
 })
 
@@ -145,10 +153,10 @@ describe('pickTabToActivate', () => {
 })
 
 describe('spaceGlyph / pruneLastActive', () => {
-  it('uses the emoji or the first letter', () => {
-    expect(spaceGlyph({ name: 'work', emoji: '' })).toBe('W')
-    expect(spaceGlyph({ name: 'work', emoji: '🧠' })).toBe('🧠')
-    expect(spaceGlyph({ name: '  ', emoji: '' })).toBe('·')
+  it('uses the icon or the first letter', () => {
+    expect(spaceGlyph({ name: 'work', icon: '' })).toBe('W')
+    expect(spaceGlyph({ name: 'work', icon: '🧠' })).toBe('🧠')
+    expect(spaceGlyph({ name: '  ', icon: '' })).toBe('·')
   })
 
   it('drops dead tabs and dead spaces', () => {

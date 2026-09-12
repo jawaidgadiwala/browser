@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid'
+import { newSpace } from '@/lib/sidebar/core/model'
 import { SPACE_COLORS, type Space, type SpaceColor } from './spaces.types'
 
 /**
@@ -69,7 +69,7 @@ export function nextColor(spaces: Space[]): SpaceColor {
 
 export interface CreateSpaceInput {
   name: string
-  emoji?: string
+  icon?: string
   color?: SpaceColor
 }
 
@@ -87,13 +87,10 @@ export function createSpace(
   if (!name) throw new Error('Space name is required')
   if (isNameTaken(spaces, name)) throw new Error('Space name already in use')
   if (spaces.length >= MAX_SPACES) throw new Error('Too many spaces')
-  const space: Space = {
-    id: nanoid(10),
-    name,
-    emoji: (input.emoji ?? '').trim(),
-    color: input.color ?? nextColor(spaces),
-    createdAt: now,
-  }
+  const space = newSpace(
+    { name, icon: input.icon, color: input.color ?? nextColor(spaces) },
+    { now },
+  )
   const activeIndex = spaces.findIndex((s) => s.id === activeId)
   const insertAt = activeIndex === -1 ? spaces.length : activeIndex + 1
   const next = [...spaces]
@@ -104,7 +101,7 @@ export function createSpace(
 export function updateSpace(
   spaces: Space[],
   id: string,
-  patch: Partial<Pick<Space, 'name' | 'emoji' | 'color'>>,
+  patch: Partial<Pick<Space, 'name' | 'icon' | 'color'>>,
 ): Space[] {
   if (patch.name !== undefined) {
     const name = normalizeSpaceName(patch.name)
@@ -199,9 +196,9 @@ export function pickTabToActivate(
   return ordered.at(-1)?.id
 }
 
-/** Display glyph: the emoji, else the first character of the name. */
-export function spaceGlyph(space: Pick<Space, 'name' | 'emoji'>): string {
-  if (space.emoji) return space.emoji
+/** Display glyph: the icon, else the first character of the name. */
+export function spaceGlyph(space: Pick<Space, 'name' | 'icon'>): string {
+  if (space.icon) return space.icon
   const first = Array.from(space.name.trim())[0]
   return first ? first.toUpperCase() : '·'
 }

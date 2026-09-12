@@ -94,7 +94,7 @@ async function switchTo(spaceId: string) {
 
 async function update(
   spaceId: string,
-  patch: { name?: string; emoji?: string; color?: SpaceColor },
+  patch: { name?: string; icon?: string; color?: SpaceColor },
 ) {
   await sendSpacesMessage(SpacesMessageType.update, { spaceId, ...patch })
 }

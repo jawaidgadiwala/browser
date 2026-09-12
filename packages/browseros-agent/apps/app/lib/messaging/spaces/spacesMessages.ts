@@ -27,7 +27,7 @@ export interface SpaceIdData {
 
 export interface SpaceUpdateData extends SpaceIdData {
   name?: string
-  emoji?: string
+  icon?: string
   color?: SpaceColor
 }
 

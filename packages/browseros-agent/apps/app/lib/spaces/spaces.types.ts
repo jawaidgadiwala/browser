@@ -1,25 +1,21 @@
+import {
+  type Space as SidebarSpace,
+  TAB_GROUP_COLORS,
+  type TabGroupColor,
+} from '@/lib/sidebar/core/types'
+
 /**
- * Tab group colors Chromium accepts. Mirrors `chrome.tabGroups.ColorEnum`
- * as string literals so pure helpers and tests never touch `chrome.*`.
+ * The Spaces surface is a view over the sidebar model: one type, one store.
+ * These aliases keep the existing call sites readable.
  *
  * @public
  */
-export const SPACE_COLORS = [
-  'grey',
-  'blue',
-  'red',
-  'yellow',
-  'green',
-  'pink',
-  'purple',
-  'cyan',
-  'orange',
-] as const
+export const SPACE_COLORS = TAB_GROUP_COLORS
 
 /**
  * @public
  */
-export type SpaceColor = (typeof SPACE_COLORS)[number]
+export type SpaceColor = TabGroupColor
 
 /**
  * A Space is a named workspace. It does not own its tabs: membership lives
@@ -28,13 +24,7 @@ export type SpaceColor = (typeof SPACE_COLORS)[number]
  *
  * @public
  */
-export interface Space {
-  id: string
-  name: string
-  emoji: string
-  color: SpaceColor
-  createdAt: number
-}
+export type Space = SidebarSpace
 
 /**
  * @public

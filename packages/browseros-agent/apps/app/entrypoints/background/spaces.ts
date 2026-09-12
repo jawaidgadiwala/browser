@@ -197,7 +197,7 @@ async function updateSpaceEverywhere(data: SpaceUpdateData) {
   if (!before) return
   const next = updateSpace(spaces, data.spaceId, {
     name: data.name,
-    emoji: data.emoji,
+    icon: data.icon,
     color: data.color,
   })
   const after = next.find((space) => space.id === data.spaceId)

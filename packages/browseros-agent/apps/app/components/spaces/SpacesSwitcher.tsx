@@ -74,7 +74,7 @@ export const SpacesSwitcher: FC = () => {
             {spaces.map((space, index) => (
               <CommandItem
                 key={space.id}
-                value={`${space.name} ${space.emoji}`}
+                value={`${space.name} ${space.icon}`}
                 onSelect={() => {
                   setOpen(false)
                   void api.switchTo(space.id)

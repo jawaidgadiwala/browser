@@ -31,7 +31,7 @@ import { SPACE_COLOR_HEX, SPACE_COLOR_LABEL } from './space-colors'
 
 const spaceSchema = z.object({
   name: z.string().transform(normalizeSpaceName).pipe(z.string().min(1)),
-  emoji: z.string().trim().max(4),
+  icon: z.string().trim().max(4),
   color: z.enum(SPACE_COLORS),
 })
 
@@ -66,14 +66,14 @@ export const SpaceDialog: FC<SpaceDialogProps> = ({
         { path: ['name'], message: 'A space with this name already exists.' },
       ),
     ),
-    defaultValues: { name: '', emoji: '', color: defaultColor },
+    defaultValues: { name: '', icon: '', color: defaultColor },
   })
 
   useEffect(() => {
     if (!open) return
     form.reset({
       name: space?.name ?? '',
-      emoji: space?.emoji ?? '',
+      icon: space?.icon ?? '',
       color: space?.color ?? defaultColor,
     })
   }, [open, space, defaultColor, form])
@@ -99,7 +99,7 @@ export const SpaceDialog: FC<SpaceDialogProps> = ({
             <div className="grid grid-cols-[4.5rem_1fr] gap-3">
               <FormField
                 control={form.control}
-                name="emoji"
+                name="icon"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Icon</FormLabel>

@@ -25,6 +25,7 @@ import { onOpenSidePanelWithSearch } from '@/lib/messaging/sidepanel/openSidepan
 import { authRedirectPathStorage } from '@/lib/onboarding/onboardingStorage'
 import { searchActionsStorage } from '@/lib/search-actions/searchActionsStorage'
 import { selectedTextStorage } from '@/lib/selected-text/selectedTextStorage'
+import { ensureMigrated } from '@/lib/sidebar/storage'
 import { stopAgentStorage } from '@/lib/stop-agent/stop-agent-storage'
 import { startLocalFirstMigration } from '@/modules/local-first-migration/start-local-first-migration'
 import { scheduledJobRuns } from './scheduledJobRuns'
@@ -74,6 +75,9 @@ export default defineBackground(() => {
   startLocalFirstMigration()
 
   scheduledJobRuns()
+  // Listeners register synchronously for MV3 wake-ups; the store adapters
+  // await the same promise, so nothing reads a pre-migration document.
+  void ensureMigrated()
   registerSpaces()
   registerCapture()
 
