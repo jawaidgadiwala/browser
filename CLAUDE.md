@@ -1,6 +1,6 @@
 # Browser
 
-An AI-driven, sidebar-first browser. A product by KoderLabs for many users, macOS first, then Windows and Linux. Repo: github.com/jawaidgadiwala/browser (public, AGPL-3.0). Product name: **Browser**. Bundle id `net.koderlabs.browser`. Logo: blue folded "B" (`branding/`). Accent: #2C6BF2. Dev machine: Apple M2 Pro, 16 GB RAM.
+An AI-driven, sidebar-first browser. A product by Jawaid Gadiwala for many users, macOS first, then Windows and Linux. Repo: github.com/jawaidgadiwala/browser (public, AGPL-3.0). Product name: **Browser**. Bundle id `com.jawaidgadiwala.browser`. Logo: blue folded "B" (`branding/`). Accent: #2C6BF2. Dev machine: Apple M2 Pro, 16 GB RAM.
 
 ## Goal
 

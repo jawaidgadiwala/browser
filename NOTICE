@@ -4,3 +4,6 @@ Browser is based on BrowserOS (AGPL-3.0, Felafax, Inc.) and Chromium
 All upstream LICENSE files and copyright notices are retained unchanged:
 see LICENSE (AGPL-3.0), LICENSE.ungoogled_chromium (BSD-3-Clause), and the
 license headers in packages/browseros/ and packages/browseros-agent/.
+
+Browser modifications and additions are Copyright (c) 2026 Jawaid Gadiwala,
+licensed under AGPL-3.0 like the base.
