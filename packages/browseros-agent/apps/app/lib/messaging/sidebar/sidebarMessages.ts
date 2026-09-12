@@ -18,6 +18,10 @@ export const SidebarMessageType = {
   updateSpace: 'sidebar.updateSpace',
   deleteSpace: 'sidebar.deleteSpace',
   moveSpace: 'sidebar.moveSpace',
+  /** Move the active tab of the focused window into a space, then switch. */
+  assignActiveTab: 'sidebar.assignActiveTab',
+  /** Group every ungrouped tab of the focused window into a space. */
+  adoptLooseTabs: 'sidebar.adoptLooseTabs',
   activateTab: 'sidebar.activateTab',
   closeTabs: 'sidebar.closeTabs',
   openItem: 'sidebar.openItem',
@@ -71,6 +75,8 @@ type SidebarMessagesProtocol = {
     spaceId: SpaceId
     direction: -1 | 1
   }): void
+  [SidebarMessageType.assignActiveTab](data: { spaceId: SpaceId }): void
+  [SidebarMessageType.adoptLooseTabs](data: { spaceId: SpaceId }): void
   [SidebarMessageType.activateTab](data: { tabId: number }): void
   [SidebarMessageType.closeTabs](data: {
     tabIds: number[]

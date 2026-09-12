@@ -49,14 +49,6 @@ export const spacesStorage = {
 
 export const activeSpaceIdStorage = sidebarActiveSpaceIdStorage
 
-/**
- * Per-space memory of the tab to reselect on switch, keyed by space id.
- * Tab ids are session-scoped; stale entries are ignored on read.
- */
-export const spaceLastActiveTabStorage = storage.defineItem<
-  Record<string, number>
->('local:spaceLastActiveTab', { fallback: {} })
-
 export const spacesSettingsStorage = storage.defineItem<SpacesSettings>(
   'local:spacesSettings',
   { fallback: DEFAULT_SPACES_SETTINGS },

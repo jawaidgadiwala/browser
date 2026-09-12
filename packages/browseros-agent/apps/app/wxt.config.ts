@@ -95,6 +95,8 @@ export default defineConfig({
       'scripting',
       'tabs',
       'tabGroups',
+      'favicon',
+      'sessions',
       'sidePanel',
       'bookmarks',
       'history',

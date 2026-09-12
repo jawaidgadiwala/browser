@@ -25,6 +25,7 @@ import { onOpenSidePanelWithSearch } from '@/lib/messaging/sidepanel/openSidepan
 import { authRedirectPathStorage } from '@/lib/onboarding/onboardingStorage'
 import { searchActionsStorage } from '@/lib/search-actions/searchActionsStorage'
 import { selectedTextStorage } from '@/lib/selected-text/selectedTextStorage'
+import { ChromeHostAdapter } from '@/lib/sidebar/host/chrome-host-adapter'
 import { ensureMigrated } from '@/lib/sidebar/storage'
 import { stopAgentStorage } from '@/lib/stop-agent/stop-agent-storage'
 import { startLocalFirstMigration } from '@/modules/local-first-migration/start-local-first-migration'
@@ -45,7 +46,7 @@ const cleanupLegacyToolApprovalStorage = async () => {
 }
 
 import { registerCapture } from './capture'
-import { registerSpaces } from './spaces'
+import { registerSidebar } from './sidebar'
 
 export default defineBackground(() => {
   registerDiagnostics('browseros', getAgentServerUrl)
@@ -78,7 +79,7 @@ export default defineBackground(() => {
   // Listeners register synchronously for MV3 wake-ups; the store adapters
   // await the same promise, so nothing reads a pre-migration document.
   void ensureMigrated()
-  registerSpaces()
+  registerSidebar(new ChromeHostAdapter())
   registerCapture()
 
   chrome.action.onClicked.addListener(async (tab) => {

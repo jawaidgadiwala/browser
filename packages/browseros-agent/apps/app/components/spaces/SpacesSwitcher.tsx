@@ -11,9 +11,9 @@ import {
   CommandShortcut,
 } from '@/components/ui/command'
 import {
-  onSpacesMessage,
-  SpacesMessageType,
-} from '@/lib/messaging/spaces/spacesMessages'
+  onSidebarMessage,
+  SidebarMessageType,
+} from '@/lib/messaging/sidebar/sidebarMessages'
 import { nextColor, spaceGlyph } from '@/lib/spaces/spaces.helpers'
 import { useSpaces } from '@/modules/spaces/spaces.hooks'
 import { SpaceDialog } from './SpaceDialog'
@@ -42,10 +42,13 @@ export const SpacesSwitcher: FC = () => {
   }, [searchParams, setSearchParams])
 
   useEffect(() => {
-    const unsubscribe = onSpacesMessage(SpacesMessageType.openSwitcher, () => {
-      setOpen(true)
-      return true
-    })
+    const unsubscribe = onSidebarMessage(
+      SidebarMessageType.openSwitcher,
+      () => {
+        setOpen(true)
+        return true
+      },
+    )
     const onKey = (event: KeyboardEvent) => {
       if (event.altKey && event.shiftKey && event.code === 'KeyS') {
         event.preventDefault()

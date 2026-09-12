@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
-  SpacesMessageType,
-  sendSpacesMessage,
-} from '@/lib/messaging/spaces/spacesMessages'
-import {
-  type CreateSpaceInput,
-  createSpace,
-  moveSpace,
-} from '@/lib/spaces/spaces.helpers'
+  SidebarMessageType,
+  sendSidebarMessage,
+} from '@/lib/messaging/sidebar/sidebarMessages'
+import type { CreateSpaceInput } from '@/lib/spaces/spaces.helpers'
 import {
   DEFAULT_SPACES_SETTINGS,
   type Space,
@@ -22,8 +18,8 @@ import {
 
 /**
  * Every surface reads spaces from extension storage and watches it, so the
- * new tab, the settings page and the background never disagree. Mutations
- * that touch tabs go through the background; pure list edits write storage.
+ * new tab, the settings page and the background never disagree. Every
+ * mutation is an intent sent to the background, the single writer.
  */
 export function useSpaces() {
   const [spaces, setSpaces] = useState<Space[]>([])
@@ -70,50 +66,43 @@ export function useSpaces() {
   }
 }
 
-async function create(
-  input: CreateSpaceInput,
-  switchTo = true,
-): Promise<Space> {
-  const [list, active] = await Promise.all([
-    spacesStorage.getValue(),
-    activeSpaceIdStorage.getValue(),
-  ])
-  const result = createSpace(list, active, input)
-  await spacesStorage.setValue(result.spaces)
-  if (switchTo) {
-    await sendSpacesMessage(SpacesMessageType.switch, {
-      spaceId: result.space.id,
-    })
-  }
-  return result.space
+async function create(input: CreateSpaceInput, switchTo = true): Promise<void> {
+  await sendSidebarMessage(SidebarMessageType.createSpace, {
+    name: input.name,
+    icon: input.icon,
+    color: input.color,
+    switchTo,
+  })
 }
 
 async function switchTo(spaceId: string) {
-  await sendSpacesMessage(SpacesMessageType.switch, { spaceId })
+  await sendSidebarMessage(SidebarMessageType.switchSpace, { spaceId })
 }
 
 async function update(
   spaceId: string,
   patch: { name?: string; icon?: string; color?: SpaceColor },
 ) {
-  await sendSpacesMessage(SpacesMessageType.update, { spaceId, ...patch })
+  await sendSidebarMessage(SidebarMessageType.updateSpace, {
+    spaceId,
+    ...patch,
+  })
 }
 
 async function remove(spaceId: string) {
-  await sendSpacesMessage(SpacesMessageType.delete, { spaceId })
+  await sendSidebarMessage(SidebarMessageType.deleteSpace, { spaceId })
 }
 
 async function move(spaceId: string, direction: -1 | 1) {
-  const list = await spacesStorage.getValue()
-  await spacesStorage.setValue(moveSpace(list, spaceId, direction))
+  await sendSidebarMessage(SidebarMessageType.moveSpace, { spaceId, direction })
 }
 
 async function assignActiveTab(spaceId: string) {
-  await sendSpacesMessage(SpacesMessageType.assignActiveTab, { spaceId })
+  await sendSidebarMessage(SidebarMessageType.assignActiveTab, { spaceId })
 }
 
 async function adoptLooseTabs(spaceId: string) {
-  await sendSpacesMessage(SpacesMessageType.adoptLooseTabs, { spaceId })
+  await sendSidebarMessage(SidebarMessageType.adoptLooseTabs, { spaceId })
 }
 
 async function setSettings(patch: Partial<SpacesSettings>) {
