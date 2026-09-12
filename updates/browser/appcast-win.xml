@@ -1,26 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Placeholder feed. Browser does not publish an update feed yet: this file is
+  intentionally empty (no <item>) so any updater that reads it finds no update.
+  See updates/README.md.
+-->
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>BrowserOS Windows Updates</title>
-    <link>https://cdn.browseros.com/appcast-win.xml</link>
-    <description>Most recent changes with links to updates.</description>
+    <title>Browser (Windows x64)</title>
+    <link>https://github.com/jawaidgadiwala/browser/tree/main/updates</link>
+    <description>No updates published yet.</description>
     <language>en</language>
-
-    <item>
-      <title>BrowserOS - 0.50.3</title>
-      <description sparkle:format="plain-text">
-      </description>
-      <sparkle:version>10000.0.50.3.0</sparkle:version>
-      <sparkle:shortVersionString>0.50.3</sparkle:shortVersionString>
-      <pubDate>Sun, 06 Sep 2026 09:28:47 +0000</pubDate>
-      <link>https://www.browseros.com/</link>
-      <enclosure
-        url="http://cdn.browseros.com/releases/browseros/0.50.3/win/BrowserOS_v0.50.3_x64_installer.exe"
-        sparkle:os="windows"
-        sparkle:edSignature="XDdY6rO9TnDESzq9zQupqDKpyQ3g7OQY6e2fkAgITrk+2FLxhDoCJdjq0HrmI/bU1qXlqG0pXErYOaYxNDUrBw=="
-        length="152070712"
-        type="application/octet-stream" />
-    </item>
-
   </channel>
 </rss>

@@ -1,13 +1,3 @@
 {
-  "extensions": {
-    "adlpneommgkgeanpaekgoaolcpncohkf": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
-    },
-    "jllpmhghjcbaccmpindcmpkddjekbnmm": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
-    },
-    "lmihdclmhdopaeappmadgmglglcabodf": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
-    }
-  }
+  "extensions": {}
 }

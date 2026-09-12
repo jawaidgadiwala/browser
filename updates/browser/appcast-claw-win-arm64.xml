@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
-  xmlns:dc="http://purl.org/dc/elements/1.1/">
+<!--
+  Placeholder feed. Browser does not publish an update feed yet: this file is
+  intentionally empty (no <item>) so any updater that reads it finds no update.
+  See updates/README.md.
+-->
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>BrowserOS neo Windows Updates</title>
-    <link>https://cdn.browseros.com/appcast-claw-win-arm64.xml</link>
-    <description>Most recent changes with links to updates.</description>
+    <title>Browser neo (Windows arm64)</title>
+    <link>https://github.com/jawaidgadiwala/browser/tree/main/updates</link>
+    <description>No updates published yet.</description>
     <language>en</language>
-
-    <item>
-    </item>
-
   </channel>
 </rss>
