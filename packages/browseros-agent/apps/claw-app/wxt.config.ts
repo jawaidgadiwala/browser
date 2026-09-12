@@ -23,7 +23,7 @@ export default defineConfig({
     name: productName,
     externally_connectable: { ids: [REPORTER_EXTENSION_ID] },
     description: 'BrowserOS neo — the browser for AI agents.',
-    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyXbY2XVCs1/yJqGd53ei1rHdoUGIvZ8uq+x9YKmUc+jnb6NogIrq0USPeRNb6uzszio45GR8BW0O0pgbFKmhlhrCwgs9gEW8mufksE29E1g8Q2ug1sowzj38X6jmitO4I9cBbQMx7+gJZJS8pS5DZ+V7Bl8Uka2LWHMTP/Pf10YjbeNNCA0wj6kQkkTb8lg80r5Vm+gFqyo2xDFaxj8lN2kE73yFBjCt6B4ycntXvnnUTPX4IJqH+eQuwsFWPuqdYEwdvaaIOQ+lCxcYyZusX58zhxr0pkMxQjnEoJqAk6Av5O/JiNIOZYzbwUjm6aA+p9j9/6xzvmG+Lvp74Dk9pwIDAQAB',
+    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyndydRTtd3xudG65Tj5OURAVUveCV+5WMBDvzqGT6lZ2XMMsE2QaOGqofEfgIZG2fP0oQE3Ckjm8VK62WbZ5e1tUUOnsMQS0CUwJf2TF2ELwonL1XC7OISKYmrCutenPBh3kBMpdMvJWwn7oHddQX2P998TJLUsveeo531P5NEs73/CZ9uZQlPYsg8uLaaJU4ZKzutgvGkngsqbdRnc4e4xCxGa4+2FBcB5M+wzKHBHr0lQpCRgBrTqZL9/uVeKpY38yQF2mOqYqxVAwZDDQfmpAHSHso/yfYeVgtdBXdL5j2cg0dD+YPtDs+gDE1OEC74z21cCL2spgV7M7T8ckkwIDAQAB',
     update_url: 'https://cdn.browseros.com/extensions/update-manifest.xml',
     // Keep shared permissions in sync with apps/app/wxt.config.ts; additions
     // re-prompt or disable existing installs on update.

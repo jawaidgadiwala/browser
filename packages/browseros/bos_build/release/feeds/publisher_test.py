@@ -1268,10 +1268,10 @@ class PublisherTestCase(unittest.TestCase):
                     if name != "browserclaw"
                 }
             ),
-            canonical.replace("pjimfkbpehlcllblajnpfamdfjhhlgkc", "a" * 32),
+            canonical.replace("jllpmhghjcbaccmpindcmpkddjekbnmm", "a" * 32),
             canonical.replace(
-                "pjimfkbpehlcllblajnpfamdfjhhlgkc",
-                "bflpfmnmnokmjhmgnolecpppdbdophmk",
+                "jllpmhghjcbaccmpindcmpkddjekbnmm",
+                "lmihdclmhdopaeappmadgmglglcabodf",
             ),
             canonical.replace(
                 "agent-0.0.118.0.crx",

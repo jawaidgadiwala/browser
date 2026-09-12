@@ -31,6 +31,10 @@ nxtscape-cli-access.json
 gclient.json
 .env
 .env.production
+
+# Extension signing keys — the real PEMs live in ~/.config/browser/keys
+**/*.pem
+
 .grove/
 AGENTS.md
 **/resources/binaries/

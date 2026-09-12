@@ -12,9 +12,9 @@ from ...core.step import ValidationError
 from ..feeds.render import extract_manifest_versions, render_update_manifest
 from .manifests import ExtensionsFeedModule, parse_set_options
 
-AGENT_ID = "bflpfmnmnokmjhmgnolecpppdbdophmk"
+AGENT_ID = "lmihdclmhdopaeappmadgmglglcabodf"
 BUGREPORTER_ID = "adlpneommgkgeanpaekgoaolcpncohkf"
-BROWSERCLAW_ID = "pjimfkbpehlcllblajnpfamdfjhhlgkc"
+BROWSERCLAW_ID = "jllpmhghjcbaccmpindcmpkddjekbnmm"
 
 LIVE_ALPHA_MANIFEST = render_update_manifest(
     {"agent": "0.0.117.0", "bugreporter": "54.0.0.0"}

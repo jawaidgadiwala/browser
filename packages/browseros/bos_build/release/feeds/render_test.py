@@ -129,7 +129,7 @@ GOLDEN_UPDATE_MANIFEST = """\
   <app appid="adlpneommgkgeanpaekgoaolcpncohkf">
     <updatecheck codebase="https://cdn.browseros.com/extensions/bugreporter-54.0.0.0.crx" version="54.0.0.0" />
   </app>
-  <app appid="bflpfmnmnokmjhmgnolecpppdbdophmk">
+  <app appid="lmihdclmhdopaeappmadgmglglcabodf">
     <updatecheck codebase="https://cdn.browseros.com/extensions/agent-0.0.118.0.crx" version="0.0.118.0" />
   </app>
 </gupdate>
@@ -141,10 +141,10 @@ GOLDEN_EXTENSIONS_JSON = """\
     "adlpneommgkgeanpaekgoaolcpncohkf": {
       "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
     },
-    "bflpfmnmnokmjhmgnolecpppdbdophmk": {
+    "jllpmhghjcbaccmpindcmpkddjekbnmm": {
       "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
     },
-    "pjimfkbpehlcllblajnpfamdfjhhlgkc": {
+    "lmihdclmhdopaeappmadgmglglcabodf": {
       "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
     }
   }
@@ -293,7 +293,7 @@ class ExtensionsRenderTest(unittest.TestCase):
 
     def test_extensions_json_prod_points_at_prod_manifest(self):
         content = render_extensions_json("prod")
-        self.assertIn("pjimfkbpehlcllblajnpfamdfjhhlgkc", content)
+        self.assertIn("jllpmhghjcbaccmpindcmpkddjekbnmm", content)
         self.assertIn(
             "https://cdn.browseros.com/extensions/update-manifest.xml", content
         )
@@ -351,8 +351,8 @@ class ExtensionsRenderTest(unittest.TestCase):
             ),
             {
                 "adlpneommgkgeanpaekgoaolcpncohkf",
-                "bflpfmnmnokmjhmgnolecpppdbdophmk",
-                "pjimfkbpehlcllblajnpfamdfjhhlgkc",
+                "lmihdclmhdopaeappmadgmglglcabodf",
+                "jllpmhghjcbaccmpindcmpkddjekbnmm",
             },
         )
 
@@ -364,12 +364,12 @@ class ExtensionsRenderTest(unittest.TestCase):
             }
         )
         unknown = canonical.replace(
-            "pjimfkbpehlcllblajnpfamdfjhhlgkc",
+            "jllpmhghjcbaccmpindcmpkddjekbnmm",
             "a" * 32,
         )
         duplicate = canonical.replace(
-            "pjimfkbpehlcllblajnpfamdfjhhlgkc",
-            "bflpfmnmnokmjhmgnolecpppdbdophmk",
+            "jllpmhghjcbaccmpindcmpkddjekbnmm",
+            "lmihdclmhdopaeappmadgmglglcabodf",
         )
         swapped = canonical.replace(
             "agent-0.0.118.0.crx",
@@ -432,7 +432,7 @@ class VersionHelpersTest(unittest.TestCase):
             extract_manifest_versions(GOLDEN_UPDATE_MANIFEST),
             {
                 "adlpneommgkgeanpaekgoaolcpncohkf": "54.0.0.0",
-                "bflpfmnmnokmjhmgnolecpppdbdophmk": "0.0.118.0",
+                "lmihdclmhdopaeappmadgmglglcabodf": "0.0.118.0",
             },
         )
 

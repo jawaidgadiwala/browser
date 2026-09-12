@@ -12,7 +12,7 @@ forbids npm/yarn/pnpm at `package.json:130-136`). Rust crates + Go tools live al
 
 ### WXT config — `apps/app/wxt.config.ts`
 - `outDir: 'dist'` (line 21), `modules: ['@wxt-dev/module-react']` (line 22).
-- Manifest name `Assistant`, pinned `key` (fixed extension id `bflpfmnmnokmjhmgnolecpppdbdophmk`), self-hosted
+- Manifest name `Assistant`, pinned `key` (fixed extension id `lmihdclmhdopaeappmadgmglglcabodf`), self-hosted
   `update_url` on cdn.browseros.com (lines 29-32).
 - `externally_connectable` (33-36): diagnostics reporter extension id + the BrowserOS API host.
 - `web_accessible_resources` (37-46): `app.html` exposed to the product web host and the legacy agent extension.

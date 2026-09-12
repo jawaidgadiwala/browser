@@ -35,7 +35,7 @@ Closing that Terminal window (or quitting the browser) stops the stack.
 `chrome-mv3-dev`, so `bun run dev:watch` and the personal launcher never fight
 over the same dist directory. Embedded mode strips the cockpit's newtab
 override, so the classic extension keeps `chrome://newtab` and the cockpit is
-reached at `chrome-extension://pjimfkbpehlcllblajnpfamdfjhhlgkc/newtab.html#/`.
+reached at `chrome-extension://jllpmhghjcbaccmpindcmpkddjekbnmm/newtab.html#/`.
 The cockpit's API URL (`VITE_BROWSEROS_CLAW_API_URL`) is baked in at build time
 from the configured claw port, so re-run `personal:build` after changing it.
 
@@ -104,7 +104,7 @@ four ports.
 Note: MV3 service workers idle out, so `curl http://127.0.0.1:9005/json` may
 list only the classic worker. The neo extension is confirmed loaded by its
 cockpit page answering with `chrome.runtime.id ===
-"pjimfkbpehlcllblajnpfamdfjhhlgkc"`.
+"jllpmhghjcbaccmpindcmpkddjekbnmm"`.
 
 ## App icon and name in the Dock
 

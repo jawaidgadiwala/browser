@@ -3,8 +3,8 @@
  * wxt.config.ts (sha256 of the DER key, first 32 hex chars mapped 0-f -> a-p).
  * @public
  */
-export const CLASSIC_EXTENSION_ID = 'bflpfmnmnokmjhmgnolecpppdbdophmk'
-export const NEO_EXTENSION_ID = 'pjimfkbpehlcllblajnpfamdfjhhlgkc'
+export const CLASSIC_EXTENSION_ID = 'lmihdclmhdopaeappmadgmglglcabodf'
+export const NEO_EXTENSION_ID = 'jllpmhghjcbaccmpindcmpkddjekbnmm'
 
 /** Hash routes of apps/claw-app/entrypoints/newtab/App.tsx. */
 export const NEO_ROUTES = {

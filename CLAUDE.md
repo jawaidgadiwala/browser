@@ -48,6 +48,7 @@ Storage and identity rules: persist by URL and our own ids, never Chromium tab o
 - `zen-spaces-design-reference.md`, `zen-sidebar-implementation-review.md`: behavior studies of the MPL reference.
 - `neo-features-usage.md`: how cockpit, connect, isolation, replay, skills work.
 - `browseros-extension-architecture.md`: map of the extension monorepo.
+- `native-build.md`: source-mode build steps, our extension signing keys and ids, build env vars.
 - `daily-driver.md`: launcher, profile, ports, branded app.
 - `docs/private/` (gitignored, local only): proprietary-app studies. Never commit or quote in public docs.
 
@@ -64,7 +65,7 @@ Storage and identity rules: persist by URL and our own ids, never Chromium tab o
 
 - 2026-09-12: Repo mirrored (full history) and pushed; BrowserOS cask, Go, Lima installed; dev loop verified.
 - 2026-09-12: Spaces on tab groups shipped. Claude Code via ACP in-browser (adapter pinned to exact version after a range-spec timeout bug).
-- 2026-09-12: Neo mounted into classic (`--with-claw`): cockpit ext `pjimfkbpehlcllblajnpfamdfjhhlgkc`, Rust server 9205, terminal Claude Code connected. Full-page capture ⌘⇧2. Promos stripped. MCP guard for user tab groups.
+- 2026-09-12: Neo mounted into classic (`--with-claw`): cockpit ext `jllpmhghjcbaccmpindcmpkddjekbnmm`, Rust server 9205, terminal Claude Code connected. Full-page capture ⌘⇧2. Promos stripped. MCP guard for user tab groups.
 - 2026-09-12: Daily-driver launcher; repo public; proprietary notes moved to `docs/private/`; product renamed to Browser; logo applied to extensions, launcher app, and staged Chromium branding; `/Applications/Browser.app` re-signed copy.
 - 2026-09-12: Sidebar shipped, 6 slices: core model + storage v2, host adapter + reconciler, panel skeleton with chat mode, essentials/folders/pinned/dnd, carousel/swipe/theme, archive/undo/settings. 620+ app tests.
 - 2026-09-13: Disk freed to ~100 GB; first local Chromium build started (`chromium-build-1.log`). Native patch plan written; batch 1 patches (branding, left panel, no header, hidden strip, toolbar cleanup, blue accent, B vector icon, all strings) and extension rebrand (blue accent, verbiage, logo remnants) in progress.

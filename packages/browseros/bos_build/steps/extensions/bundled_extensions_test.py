@@ -122,7 +122,7 @@ class BundledExtensionsTest(unittest.TestCase):
             path.write_text(
                 """<?xml version="1.0"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
-  <app appid="bflpfmnmnokmjhmgnolecpppdbdophmk">
+  <app appid="lmihdclmhdopaeappmadgmglglcabodf">
     <updatecheck codebase="https://cdn.browseros.com/extensions/agent-0.0.125.0.crx" version="0.0.125.0" />
   </app>
 </gupdate>

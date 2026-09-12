@@ -17,7 +17,7 @@ const apiPattern = apiUrl.port
   : apiUrl.hostname
 
 // See https://wxt.dev/api/config.html
-// Extension ID will be bflpfmnmnokmjhmgnolecpppdbdophmk
+// Extension ID will be lmihdclmhdopaeappmadgmglglcabodf
 export default defineConfig({
   outDir: 'dist',
   modules: ['@wxt-dev/module-react'],
@@ -28,7 +28,7 @@ export default defineConfig({
   },
   manifest: {
     name: PRODUCT_NAME,
-    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvBDAaDRvv61NpBeLR8etBRw82lv9VJO3sz/mA26gDzWKtVuzW4DXCl8Zfj5oWmoXLTfv3aiTigUXo/LHOoGpSucEVroMmAc7cgu2KuQ1fZPpMvYa0npD/m4h89360q8Oz0oKKaZGS905IJ04M2IkF4CuU3YEHFJBWb+cUyK9H8YVugelYbPD0IVs63T1SkGbh/t/Tfb2DpkinduSO8+x26sKydm30SRt+iZ2+7Nolcdum3LExInUiX2Pgb65Jb+mVw8NqyTVJyCEp8uq0cSHomWFQirSJ80tsDhISp4btwaRKHrXqovQx9XHQv4hCd+3LuB830eUEVMUNuCO+OyPxQIDAQAB',
+    key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlfNMhaIv8bdRian2xb8+SMXdeOE6DwmdisT4V97qSTlq1gvlS6DrtZvI9u9vC7ZGFCEZ4nXi9S5U9sJxF9HIOA5vG1B6MulGsjB2xdZSRMSUoy2WAJ+e3RphgBKHIN6JtZCPbxkJUGovPtgCaUhG3LbgP6E6JNQFDzfYZrbkXP6K1znl8nkFKc4Q/VNgRRbU+rnhZmvACvF8C0/l/TI8MxpcfNTPqMrRUr/jdNTXOPPWloU/8IIA+NMLZnVlvLzpgCLwjfyShoC98Tnw0XgO3EID6Qo0wKgu4vLRkS/lW1C4qb3kP11bwsYIiQCfQdigGYu4Lt7kmvSc5kVjIqMj/wIDAQAB',
     update_url: 'https://cdn.browseros.com/extensions/update-manifest.xml',
     // update_url: 'https://cdn.browseros.com/extensions/update-manifest.alpha.xml',
     externally_connectable: {

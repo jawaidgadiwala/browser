@@ -13,9 +13,9 @@ from bos_build.core.products import (
 )
 from bos_build.products import DEFAULT_PRODUCT_ID, PRODUCTS
 
-BROWSEROS_AGENT_EXTENSION_ID = "bflpfmnmnokmjhmgnolecpppdbdophmk"
+BROWSEROS_AGENT_EXTENSION_ID = "lmihdclmhdopaeappmadgmglglcabodf"
 BROWSEROS_BUG_REPORTER_EXTENSION_ID = "adlpneommgkgeanpaekgoaolcpncohkf"
-BROWSERCLAW_EXTENSION_ID = "pjimfkbpehlcllblajnpfamdfjhhlgkc"
+BROWSERCLAW_EXTENSION_ID = "jllpmhghjcbaccmpindcmpkddjekbnmm"
 
 EXPECTED_BROWSEROS = ProductDescriptor(
     id="browseros",

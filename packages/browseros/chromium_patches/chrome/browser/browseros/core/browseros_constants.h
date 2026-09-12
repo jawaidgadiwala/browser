@@ -32,13 +32,13 @@ index 0000000000000..e7b9a3a608cde
 +inline constexpr char kBrowserOSAlphaConfigUrl[] =
 +    "https://cdn.browseros.com/extensions/extensions.alpha.json";
 +
-+inline constexpr char kAgentExtensionId[] = "bflpfmnmnokmjhmgnolecpppdbdophmk";
++inline constexpr char kAgentExtensionId[] = "lmihdclmhdopaeappmadgmglglcabodf";
 +
 +inline constexpr char kBugReporterExtensionId[] =
 +    "adlpneommgkgeanpaekgoaolcpncohkf";
 +
 +inline constexpr char kBrowserClawExtensionId[] =
-+    "pjimfkbpehlcllblajnpfamdfjhhlgkc";
++    "jllpmhghjcbaccmpindcmpkddjekbnmm";
 +
 +inline constexpr char kBrowserOSUpdateUrl[] =
 +    "https://cdn.browseros.com/extensions/update-manifest.xml";
