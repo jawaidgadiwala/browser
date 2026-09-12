@@ -17,6 +17,7 @@ export interface SpaceHeaderProps {
   onAssignActiveTab: () => void
   onAdoptLooseTabs: () => void
   onNewFolder: () => void
+  onOpenTheme: () => void
 }
 
 export const SpaceHeader: FC<SpaceHeaderProps> = ({
@@ -27,6 +28,7 @@ export const SpaceHeader: FC<SpaceHeaderProps> = ({
   onAssignActiveTab,
   onAdoptLooseTabs,
   onNewFolder,
+  onOpenTheme,
 }) => {
   const [draft, setDraft] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -107,6 +109,7 @@ export const SpaceHeader: FC<SpaceHeaderProps> = ({
           <DropdownMenuItem onSelect={() => setDraft(space.name)}>
             Rename
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onOpenTheme}>Theme…</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

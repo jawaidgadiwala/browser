@@ -11,7 +11,8 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { type FC, type ReactNode, useState } from 'react'
+import { type FC, type ReactNode, useEffect, useRef, useState } from 'react'
+import { EDGE_HOLD_MS, edgeDirection } from '@/lib/sidebar/core/paging'
 import { applyDropIntents } from '@/modules/sidebar/sidebar-actions'
 import { type DragSource, type DropTarget, planDrop } from './drop-plan'
 
@@ -43,10 +44,38 @@ function dataOf(value: unknown): SidebarDndData {
   return (value ?? {}) as SidebarDndData
 }
 
-export const SidebarDndContext: FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+export const SidebarDndContext: FC<{
+  children: ReactNode
+  /** Held against a panel edge mid-drag, a drag switches space. */
+  onEdgeHold?: (direction: -1 | 1) => void
+}> = ({ children, onEdgeHold }) => {
   const [dragging, setDragging] = useState<DragSource | null>(null)
+  const edgeHandler = useRef(onEdgeHold)
+  edgeHandler.current = onEdgeHold
+
+  // dnd-kit reports collisions, not raw coordinates, so the edge zone needs
+  // its own pointer stream — only while something is actually being dragged.
+  useEffect(() => {
+    if (!dragging) return
+    let held: -1 | 0 | 1 = 0
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const onPointerMove = (event: PointerEvent) => {
+      const direction = edgeDirection(event.clientX, window.innerWidth)
+      if (direction === held) return
+      held = direction
+      clearTimeout(timer)
+      if (direction === 0) return
+      timer = setTimeout(() => {
+        edgeHandler.current?.(direction)
+        held = 0
+      }, EDGE_HOLD_MS)
+    }
+    window.addEventListener('pointermove', onPointerMove)
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      clearTimeout(timer)
+    }
+  }, [dragging])
   // dnd-kit keeps sensor instances by identity; recreating them mid-drag
   // aborts it, so `useSensors` is the required memo here.
   const sensors = useSensors(

@@ -38,6 +38,16 @@ export const sidebarActions = {
       'Updating the space',
       sendSidebarMessage(SidebarMessageType.updateSpace, data),
     ),
+  deleteSpace: (spaceId: SpaceId) =>
+    run(
+      'Deleting the space',
+      sendSidebarMessage(SidebarMessageType.deleteSpace, { spaceId }),
+    ),
+  moveSpace: (spaceId: SpaceId, direction: -1 | 1) =>
+    run(
+      'Reordering spaces',
+      sendSidebarMessage(SidebarMessageType.moveSpace, { spaceId, direction }),
+    ),
   assignActiveTab: (spaceId: SpaceId) =>
     run(
       'Moving the tab',

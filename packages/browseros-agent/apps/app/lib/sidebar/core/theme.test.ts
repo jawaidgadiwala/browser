@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test'
-import { computeTheme, themeSpecForColor } from './theme'
+import {
+  computeTheme,
+  nearestGroupColor,
+  themeGradient,
+  themeSpecForColor,
+} from './theme'
 import type { ThemeSpec } from './types'
 
 const spec = (
@@ -104,5 +109,54 @@ describe('computeTheme', () => {
         /^#[0-9a-f]{6}$/,
       )
     }
+  })
+})
+
+describe('nearestGroupColor', () => {
+  it('maps a key color onto the closest of the nine group colors', () => {
+    expect(nearestGroupColor([255, 0, 0])).toBe('red')
+    expect(nearestGroupColor([20, 110, 230])).toBe('blue')
+    expect(nearestGroupColor([30, 200, 90])).toBe('green')
+    expect(nearestGroupColor([150, 60, 220])).toBe('purple')
+    expect(nearestGroupColor([120, 120, 120])).toBe('grey')
+  })
+
+  it('returns an exact group color unchanged', () => {
+    expect(nearestGroupColor([249, 171, 0])).toBe('yellow')
+    expect(nearestGroupColor([0, 126, 139])).toBe('cyan')
+  })
+})
+
+describe('themeGradient', () => {
+  it('layers one gradient per key color over the base', () => {
+    const one = themeGradient({
+      keyColors: [{ rgb: [40, 80, 200], primary: true }],
+      wheel: 'analogous',
+      intensity: 0.5,
+      noise: 0,
+    })
+    expect(one.split('linear-gradient').length - 1).toBe(1)
+
+    const three = themeGradient({
+      keyColors: [
+        { rgb: [40, 80, 200], primary: true },
+        { rgb: [200, 40, 80] },
+        { rgb: [80, 200, 40] },
+      ],
+      wheel: 'complementary',
+      intensity: 1,
+      noise: 0,
+    })
+    expect(three.split('radial-gradient').length - 1).toBe(2)
+  })
+
+  it('falls back to the flat background when there is no key color', () => {
+    const spec = {
+      keyColors: [],
+      wheel: 'analogous' as const,
+      intensity: 0.4,
+      noise: 0,
+    }
+    expect(themeGradient(spec)).toBe(computeTheme(spec).bg)
   })
 })

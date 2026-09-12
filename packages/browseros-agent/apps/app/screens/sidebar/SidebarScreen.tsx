@@ -3,42 +3,36 @@ import { useNavigate } from 'react-router'
 import { SidebarDndContext } from '@/components/sidebar/dnd/SidebarDndContext'
 import { EssentialsGrid } from '@/components/sidebar/panel/EssentialsGrid'
 import { FooterBar } from '@/components/sidebar/panel/FooterBar'
-import { PinnedList } from '@/components/sidebar/panel/PinnedList'
 import { SearchBox } from '@/components/sidebar/panel/SearchBox'
-import { Separator } from '@/components/sidebar/panel/Separator'
 import { SidebarRoot } from '@/components/sidebar/panel/SidebarRoot'
-import { SpaceHeader } from '@/components/sidebar/panel/SpaceHeader'
-import { TodayList } from '@/components/sidebar/panel/TodayList'
+import { SpaceCarousel } from '@/components/sidebar/panel/SpaceCarousel'
+import { SpaceStrip } from '@/components/sidebar/panel/SpaceStrip'
+import { ThemePicker } from '@/components/sidebar/panel/ThemePicker'
 import type { SpaceDialogValues } from '@/components/spaces/SpaceDialog'
-import {
-  adjacentSpace,
-  essentialsList,
-  isDrifted,
-  pinnedTree,
-} from '@/lib/sidebar/core/selectors'
-import { computeTheme, themeSpecForColor } from '@/lib/sidebar/core/theme'
+import { adjacentSpace, essentialsList } from '@/lib/sidebar/core/selectors'
+import { themeSpecForColor } from '@/lib/sidebar/core/theme'
 import type {
-  ItemId,
-  ItemsState,
   SidebarState,
+  Space,
   SpaceId,
+  TabGroupColor,
+  ThemeSpec,
 } from '@/lib/sidebar/core/types'
 import { useLiveTabs } from '@/modules/sidebar/live-tabs.hooks'
 import { setPanelMode } from '@/modules/sidebar/panel-mode'
 import { openUrlInTab, sidebarActions } from '@/modules/sidebar/sidebar-actions'
 import { useElementWidth } from '@/modules/sidebar/sidebar-layout.hooks'
-import {
-  groupIdForSpace,
-  isIconOnly,
-  pinnedUrls,
-  searchRows,
-  todayRows,
-} from '@/modules/sidebar/sidebar-rows.helpers'
+import { isIconOnly, searchRows } from '@/modules/sidebar/sidebar-rows.helpers'
 import { useSidebarState } from '@/modules/sidebar/sidebar-state.hooks'
+import { useSwipe } from '@/modules/sidebar/swipe.hooks'
+import { skinOf, useThemeFade } from '@/modules/sidebar/theme.hooks'
 
 const SETTINGS_URL = '/app.html#/settings/spaces'
 const DOWNLOADS_URL = 'chrome://downloads'
-const NEW_FOLDER_TITLE = 'New folder'
+
+function specOf(space: Space | undefined): ThemeSpec {
+  return space?.theme ?? themeSpecForColor(space?.color ?? 'grey')
+}
 
 /**
  * The sidebar surface of the side panel. It only reads state: every mutation
@@ -58,11 +52,40 @@ export const SidebarScreen: FC = () => {
   } = useSidebarState()
   const live = useLiveTabs()
   const [query, setQuery] = useState('')
+  const [themeSpaceId, setThemeSpaceId] = useState<SpaceId | null>(null)
+  const [draftTheme, setDraftTheme] = useState<ThemeSpec | null>(null)
   const { ref, width } = useElementWidth<HTMLDivElement>()
   const iconOnly = isIconOnly(width)
 
-  const theme = computeTheme(
-    activeSpace?.theme ?? themeSpecForColor(activeSpace?.color ?? 'grey'),
+  const swipe = useSwipe(ref, {
+    order: spaces.order,
+    activeSpaceId,
+    width,
+    wrap: settings.wrapAround,
+    naturalScroll: settings.naturalScroll,
+    onSwitch: (spaceId) => sidebarActions.switchSpace(spaceId),
+  })
+  const swipeTargetId = swipe.direction
+    ? adjacentSpace(
+        spaces.order,
+        activeSpaceId,
+        swipe.direction,
+        settings.wrapAround,
+      )
+    : null
+  const swipeTarget =
+    swipeTargetId && swipeTargetId !== activeSpaceId
+      ? spaces.byId[swipeTargetId]
+      : undefined
+
+  const activeSpec =
+    draftTheme && themeSpaceId === activeSpaceId
+      ? draftTheme
+      : specOf(activeSpace)
+  const layers = useThemeFade(
+    ref,
+    skinOf(activeSpec),
+    swipeTarget ? skinOf(specOf(swipeTarget)) : null,
   )
 
   const state: SidebarState = {
@@ -73,13 +96,6 @@ export const SidebarScreen: FC = () => {
     settings,
   }
 
-  const groupId = activeSpace
-    ? groupIdForSpace(live.groups, activeSpace, live.windowId)
-    : null
-  const pinned = activeSpace
-    ? pinnedUrls(items, activeSpace)
-    : new Set<string>()
-  const today = todayRows(live.tabs, groupId, pinned)
   const results = searchRows(
     live.tabs,
     live.groups,
@@ -88,14 +104,6 @@ export const SidebarScreen: FC = () => {
     query,
     live.windowId,
   )
-  const rows = query.trim() ? results : today
-
-  const activeItemId = activeLinkedItemId(tabLinks, live.tabs)
-  const pinnedRows = activeSpace
-    ? pinnedTree(state, activeSpace.id, activeItemId)
-    : []
-  const driftedIds = driftedPinnedIds(state, tabLinks, live.tabs)
-  const essentials = essentialsList(state)
 
   const switchTo = (direction: -1 | 1) => {
     const target = adjacentSpace(
@@ -116,179 +124,121 @@ export const SidebarScreen: FC = () => {
     await sidebarActions.createSpace({ ...values, switchTo: true })
   }
 
-  const closePinned = (itemId: ItemId) => {
-    const entry = Object.entries(tabLinks).find(([, id]) => id === itemId)
-    if (!entry) return
-    sidebarActions.closeTabs([Number(entry[0])], 'sidebar-pinned-close')
+  const reorderSpace = async (spaceId: SpaceId, index: number) => {
+    const from = spaces.order.indexOf(spaceId)
+    if (from === -1 || from === index) return
+    const direction = index > from ? 1 : -1
+    for (let step = 0; step < Math.abs(index - from); step += 1) {
+      await sidebarActions.moveSpace(spaceId, direction)
+    }
   }
 
-  if (!ready) return null
+  const saveTheme = (spaceId: SpaceId) => {
+    return (nextTheme: ThemeSpec, color: TabGroupColor) => {
+      sidebarActions.updateSpace({ spaceId, theme: nextTheme, color })
+      setThemeSpaceId(null)
+    }
+  }
+
+  const themeSpace = themeSpaceId ? spaces.byId[themeSpaceId] : undefined
 
   return (
     <SidebarRoot
       ref={ref}
-      theme={theme}
+      theme={layers.base.theme}
+      overlayTheme={layers.overlay.theme}
+      baseGradient={layers.base.gradient}
+      overlayGradient={layers.overlay.gradient}
+      noise={layers.overlay.noise}
       onNextSpace={() => switchTo(1)}
       onPrevSpace={() => switchTo(-1)}
       onToggleMode={openChat}
     >
-      <SidebarDndContext>
-        <SearchBox
-          value={query}
-          onChange={setQuery}
-          iconOnly={iconOnly}
-          onSubmit={() => {
-            const first = rows[0]
-            if (first) sidebarActions.activateTab(first.tabId)
-          }}
-        />
-        <EssentialsGrid
-          rootId={items.roots.essentials}
-          items={essentials}
-          iconOnly={iconOnly}
-          onOpen={(itemId) => sidebarActions.openItem(itemId)}
-          onRemove={(itemId) => sidebarActions.removeEssential(itemId)}
-        />
-        <div
-          key={activeSpaceId ?? 'none'}
-          className="sb-space-strip flex min-h-0 flex-1 flex-col"
-        >
+      {/* The root stays mounted before the store loads: the swipe and width
+          observers bind to this element once, on mount. */}
+      {ready && (
+        <SidebarDndContext onEdgeHold={switchTo}>
+          <SearchBox
+            value={query}
+            onChange={setQuery}
+            iconOnly={iconOnly}
+            onSubmit={() => {
+              const first = results[0]
+              if (first) sidebarActions.activateTab(first.tabId)
+            }}
+          />
+          <EssentialsGrid
+            rootId={items.roots.essentials}
+            items={essentialsList(state)}
+            iconOnly={iconOnly}
+            onOpen={(itemId) => sidebarActions.openItem(itemId)}
+            onRemove={(itemId) => sidebarActions.removeEssential(itemId)}
+          />
           {activeSpace ? (
-            <>
-              <SpaceHeader
-                space={activeSpace}
-                iconOnly={iconOnly}
-                onToggleCollapsed={() =>
-                  sidebarActions.updateSpace({
-                    spaceId: activeSpace.id,
-                    pinnedCollapsed: !activeSpace.pinnedCollapsed,
-                  })
-                }
-                onRename={(name) =>
-                  sidebarActions.updateSpace({ spaceId: activeSpace.id, name })
-                }
-                onAssignActiveTab={() =>
-                  sidebarActions.assignActiveTab(activeSpace.id)
-                }
-                onAdoptLooseTabs={() =>
-                  sidebarActions.adoptLooseTabs(activeSpace.id)
-                }
-                onNewFolder={() =>
-                  sidebarActions.createFolder(activeSpace.id, NEW_FOLDER_TITLE)
-                }
-              />
-              {!activeSpace.pinnedCollapsed && (
-                <PinnedList
-                  rows={pinnedRows}
-                  items={items}
-                  pinnedRootId={activeSpace.containers.pinned}
-                  driftedIds={driftedIds}
-                  activeFolderIds={folderPath(items, activeItemId)}
-                  activeItemId={activeItemId}
-                  iconOnly={iconOnly}
-                  onOpen={(itemId) => sidebarActions.openItem(itemId)}
-                  onSetExpansion={(itemId, expansion) =>
-                    sidebarActions.setExpansion(itemId, expansion)
-                  }
-                  onReset={(itemId) => sidebarActions.resetPinned(itemId)}
-                  onUnpin={(itemId) => sidebarActions.unpinItem(itemId)}
-                  onRename={(itemId, title) =>
-                    sidebarActions.renameItem(itemId, title)
-                  }
-                  onAddEssential={(url, title) =>
-                    sidebarActions.addEssential({ url, title })
-                  }
-                  onNewFolder={(parentId) =>
-                    sidebarActions.createFolder(
-                      activeSpace.id,
-                      NEW_FOLDER_TITLE,
-                      parentId,
-                    )
-                  }
-                  onClosePinned={closePinned}
-                />
-              )}
-              <Separator
-                iconOnly={iconOnly}
-                onNewTab={() => sidebarActions.newTab(activeSpace.id)}
-                onTidy={() => sidebarActions.tidy(activeSpace.id)}
-                onClear={() => sidebarActions.clear(activeSpace.id)}
-              />
-            </>
+            <SpaceCarousel
+              order={spaces.order}
+              activeSpaceId={activeSpaceId}
+              wrap={settings.wrapAround}
+              renderStrip={(spaceId, active) => {
+                const space = spaces.byId[spaceId]
+                if (!space) return null
+                return (
+                  <SpaceStrip
+                    space={space}
+                    state={state}
+                    live={live}
+                    tabLinks={tabLinks}
+                    iconOnly={iconOnly}
+                    rows={active && query.trim() ? results : undefined}
+                    emptyLabel={
+                      active && query.trim() ? 'No tabs match' : undefined
+                    }
+                    onOpenTheme={() => setThemeSpaceId(spaceId)}
+                  />
+                )
+              }}
+            />
           ) : (
             <p className="px-3 py-4 text-xs opacity-70">
               No space yet. Use + below to create one.
             </p>
           )}
-          <TodayList
-            rows={rows}
-            iconOnly={iconOnly}
-            emptyLabel={
-              query.trim() ? 'No tabs match' : 'No tabs in this space yet'
+        </SidebarDndContext>
+      )}
+      {ready && (
+        <>
+          <FooterBar
+            spaces={spaceList}
+            activeSpaceId={activeSpaceId}
+            swipeTargetId={swipeTargetId}
+            onSwitch={(spaceId: SpaceId) => sidebarActions.switchSpace(spaceId)}
+            onRenameSpace={(spaceId, name) =>
+              sidebarActions.updateSpace({ spaceId, name })
             }
-            onActivate={(tabId) => sidebarActions.activateTab(tabId)}
-            onClose={(tabId) =>
-              sidebarActions.closeTabs([tabId], 'sidebar-row-close')
+            onOpenTheme={setThemeSpaceId}
+            onDeleteSpace={(spaceId) => sidebarActions.deleteSpace(spaceId)}
+            onReorderSpace={reorderSpace}
+            onCreate={createSpace}
+            onOpenSettings={() =>
+              openUrlInTab(chrome.runtime.getURL(SETTINGS_URL))
             }
-            onPin={(tabId) => sidebarActions.pinTab({ tabId })}
-            onAddEssential={(tabId) => sidebarActions.addEssential({ tabId })}
+            onOpenDownloads={() => openUrlInTab(DOWNLOADS_URL)}
+            onOpenChat={openChat}
           />
-        </div>
-      </SidebarDndContext>
-      <FooterBar
-        spaces={spaceList}
-        activeSpaceId={activeSpaceId}
-        onSwitch={(spaceId: SpaceId) => sidebarActions.switchSpace(spaceId)}
-        onCreate={createSpace}
-        onOpenSettings={() => openUrlInTab(chrome.runtime.getURL(SETTINGS_URL))}
-        onOpenDownloads={() => openUrlInTab(DOWNLOADS_URL)}
-        onOpenChat={openChat}
-      />
+          {themeSpace && (
+            <ThemePicker
+              key={themeSpace.id}
+              space={themeSpace}
+              open
+              onOpenChange={(open) => {
+                if (!open) setThemeSpaceId(null)
+              }}
+              onPreview={setDraftTheme}
+              onSave={saveTheme(themeSpace.id)}
+            />
+          )}
+        </>
+      )}
     </SidebarRoot>
   )
-}
-
-/** The pinned or essential node the active tab stands for, when there is one. */
-function activeLinkedItemId(
-  tabLinks: Record<string, string>,
-  tabs: { id?: number; active?: boolean }[],
-): ItemId | undefined {
-  const active = tabs.find((tab) => tab.active && tab.id !== undefined)
-  return active?.id === undefined ? undefined : tabLinks[String(active.id)]
-}
-
-/** Folder ancestors of an item: collapsing one of these peeks instead. */
-function folderPath(items: ItemsState, itemId?: ItemId): Set<ItemId> {
-  const path = new Set<ItemId>()
-  let cursor = itemId ? items.byId[itemId] : undefined
-  const seen = new Set<ItemId>()
-  while (cursor && !seen.has(cursor.id)) {
-    seen.add(cursor.id)
-    if (cursor.data.kind === 'folder') path.add(cursor.id)
-    cursor = cursor.parentId ? items.byId[cursor.parentId] : undefined
-  }
-  return path
-}
-
-/**
- * A pinned tab drifted when the tab linked to it left the canonical URL. The
- * link map is session state written by the background reconciler.
- */
-function driftedPinnedIds(
-  state: SidebarState,
-  tabLinks: Record<string, string>,
-  tabs: { id?: number; url?: string }[],
-): Set<ItemId> {
-  const drifted = new Set<ItemId>()
-  const urlByTabId = new Map<number, string>()
-  for (const tab of tabs) {
-    if (tab.id !== undefined && tab.url) urlByTabId.set(tab.id, tab.url)
-  }
-  for (const [tabId, itemId] of Object.entries(tabLinks)) {
-    const item = state.items.byId[itemId]
-    if (item?.data.kind !== 'tab') continue
-    const liveUrl = urlByTabId.get(Number(tabId))
-    if (liveUrl && isDrifted(item.data.url, liveUrl)) drifted.add(itemId)
-  }
-  return drifted
 }

@@ -13,6 +13,11 @@ import './sidebar-panel.css'
 export interface SidebarRootProps {
   ref?: Ref<HTMLDivElement>
   theme: Theme
+  /** Painted over the base layer at `--sb-fade`: the space being switched to. */
+  overlayTheme?: Theme
+  baseGradient: string
+  overlayGradient: string
+  noise: number
   onNextSpace: () => void
   onPrevSpace: () => void
   onToggleMode: () => void
@@ -28,6 +33,10 @@ export interface SidebarRootProps {
 export const SidebarRoot: FC<SidebarRootProps> = ({
   ref,
   theme,
+  overlayTheme,
+  baseGradient,
+  overlayGradient,
+  noise,
   onNextSpace,
   onPrevSpace,
   onToggleMode,
@@ -55,6 +64,9 @@ export const SidebarRoot: FC<SidebarRootProps> = ({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  // Text and accent belong to whichever theme the fade has mostly reached.
+  const front = overlayTheme ?? theme
+
   return (
     <div
       ref={ref}
@@ -62,19 +74,27 @@ export const SidebarRoot: FC<SidebarRootProps> = ({
       style={
         {
           '--sb-bg': theme.bg,
-          '--sb-bg-toolbar': theme.bgToolbar,
-          '--sb-accent': theme.accent,
-          '--sb-text': theme.text,
+          '--sb-bg-toolbar': `color-mix(in oklab, ${front.bgToolbar} calc(round(var(--sb-fade), 1) * 100%), ${theme.bgToolbar})`,
+          '--sb-accent': `color-mix(in oklab, ${front.accent} calc(round(var(--sb-fade), 1) * 100%), ${theme.accent})`,
+          '--sb-text': `color-mix(in oklab, ${front.text} calc(round(var(--sb-fade), 1) * 100%), ${theme.text})`,
           backgroundColor: 'var(--sb-bg)',
           color: 'var(--sb-text)',
         } as CSSProperties
       }
       className={cn(
-        'flex h-screen w-screen flex-col overflow-hidden text-sm',
+        'relative flex h-screen w-screen flex-col overflow-hidden text-sm',
         className,
       )}
     >
-      {children}
+      <div className="sb-bg-layer" style={{ background: baseGradient }} />
+      <div
+        className="sb-bg-layer sb-bg-overlay"
+        style={{ background: overlayGradient }}
+      />
+      {noise > 0 && (
+        <div className="sb-bg-layer sb-bg-noise" style={{ opacity: noise }} />
+      )}
+      <div className="relative flex min-h-0 flex-1 flex-col">{children}</div>
     </div>
   )
 }

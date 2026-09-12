@@ -166,3 +166,65 @@ export function computeTheme(spec: ThemeSpec): Theme {
     isDark,
   }
 }
+
+/**
+ * The coarse shadow of a theme: Chromium offers exactly 9 group colors, so a
+ * space's group takes whichever sits closest to its primary key color.
+ * Distance is measured in OKLab, where equal steps look equal.
+ */
+export function nearestGroupColor(rgb: Rgb): TabGroupColor {
+  const target = rgbToOklch(rgb)
+  let best: TabGroupColor = 'grey'
+  let bestDistance = Number.POSITIVE_INFINITY
+  for (const [name, candidate] of Object.entries(GROUP_COLOR_RGB)) {
+    const other = rgbToOklch(candidate)
+    // Hue only means something once there is chroma to carry it.
+    const hueGap = Math.abs(((target.h - other.h + 540) % 360) - 180)
+    const chroma = Math.min(target.c, other.c)
+    const distance =
+      (target.l - other.l) ** 2 * 0.5 +
+      (target.c - other.c) ** 2 * 4 +
+      ((hueGap / 180) * chroma * 6) ** 2
+    if (distance < bestDistance) {
+      bestDistance = distance
+      best = name as TabGroupColor
+    }
+  }
+  return best
+}
+
+function rgba(rgb: Rgb, alpha: number): string {
+  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`
+}
+
+/**
+ * Layered gradient for one space. One key color is a soft wash, two stack two
+ * opposed linear layers, three add radial anchors — the same recipe family the
+ * design study describes, expressed as a single CSS `background` value.
+ */
+export function themeGradient(spec: ThemeSpec): string {
+  const theme = computeTheme(spec)
+  const keys = spec.keyColors.length > 0 ? spec.keyColors : []
+  const intensity = clamp(spec.intensity, 0, 1)
+  const alpha = 0.25 + 0.55 * intensity
+  const layers: string[] = []
+
+  if (keys.length >= 3) {
+    layers.push(
+      `radial-gradient(120% 90% at 100% 0%, ${rgba(keys[1].rgb, alpha)}, transparent 70%)`,
+      `radial-gradient(120% 90% at 0% 0%, ${rgba(keys[2].rgb, alpha)}, transparent 70%)`,
+      `linear-gradient(185deg, ${rgba(keys[0].rgb, alpha)}, transparent 75%)`,
+    )
+  } else if (keys.length === 2) {
+    layers.push(
+      `linear-gradient(135deg, ${rgba(keys[0].rgb, alpha)}, transparent 70%)`,
+      `linear-gradient(-45deg, ${rgba(keys[1].rgb, alpha)}, transparent 70%)`,
+    )
+  } else if (keys.length === 1) {
+    layers.push(
+      `linear-gradient(160deg, ${rgba(keys[0].rgb, alpha)}, transparent 80%)`,
+    )
+  }
+  layers.push(theme.bg)
+  return layers.join(', ')
+}

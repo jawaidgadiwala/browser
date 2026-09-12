@@ -12,6 +12,8 @@ import { TabRow } from './TabRow'
 
 export interface TodayListProps {
   rows: TabRowData[]
+  /** Unique per strip: every mounted space registers its own drop zone. */
+  dropId?: string
   iconOnly?: boolean
   emptyLabel?: string
   onActivate: (tabId: number) => void
@@ -23,6 +25,7 @@ export interface TodayListProps {
 /** Rows are fixed height, so anything past the spec's 40-row cap is windowed. */
 export const TodayList: FC<TodayListProps> = ({
   rows,
+  dropId = 'today',
   iconOnly,
   emptyLabel = 'No tabs in this space yet',
   onActivate,
@@ -34,7 +37,7 @@ export const TodayList: FC<TodayListProps> = ({
   const { ref, range, totalHeight, offsetTop } =
     useWindowedRows<HTMLDivElement>(rows.length, rowHeight)
   const { setNodeRef, isOver } = useDroppable({
-    id: 'today',
+    id: dropId,
     data: { target: { zone: 'today' } } satisfies SidebarDndData,
   })
 

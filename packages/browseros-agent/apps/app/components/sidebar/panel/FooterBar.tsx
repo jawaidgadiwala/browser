@@ -17,7 +17,12 @@ import { SpaceDots } from './SpaceDots'
 export interface FooterBarProps {
   spaces: Space[]
   activeSpaceId: SpaceId | null
+  swipeTargetId?: SpaceId | null
   onSwitch: (spaceId: SpaceId) => void
+  onRenameSpace: (spaceId: SpaceId, name: string) => void
+  onOpenTheme: (spaceId: SpaceId) => void
+  onDeleteSpace: (spaceId: SpaceId) => void
+  onReorderSpace: (spaceId: SpaceId, index: number) => void
   onCreate: (values: SpaceDialogValues) => Promise<void>
   onOpenSettings: () => void
   onOpenDownloads: () => void
@@ -27,7 +32,12 @@ export interface FooterBarProps {
 export const FooterBar: FC<FooterBarProps> = ({
   spaces,
   activeSpaceId,
+  swipeTargetId,
   onSwitch,
+  onRenameSpace,
+  onOpenTheme,
+  onDeleteSpace,
+  onReorderSpace,
   onCreate,
   onOpenSettings,
   onOpenDownloads,
@@ -48,7 +58,12 @@ export const FooterBar: FC<FooterBarProps> = ({
       <SpaceDots
         spaces={spaces}
         activeSpaceId={activeSpaceId}
+        swipeTargetId={swipeTargetId}
         onSwitch={onSwitch}
+        onRename={onRenameSpace}
+        onOpenTheme={onOpenTheme}
+        onDelete={onDeleteSpace}
+        onReorder={onReorderSpace}
       />
       <FooterButton label="New space" onClick={() => setCreating(true)}>
         <Plus className="size-4" />

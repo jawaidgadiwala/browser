@@ -17,14 +17,18 @@ function space(id: string, name: string): Space {
   }
 }
 
+const noop = {
+  onSwitch: () => {},
+  onRename: () => {},
+  onOpenTheme: () => {},
+  onDelete: () => {},
+  onReorder: () => {},
+}
+
 describe('SpaceDots', () => {
   it('stays hidden while a single space cannot be switched away from', () => {
     const html = renderToStaticMarkup(
-      <SpaceDots
-        spaces={[space('s1', 'Work')]}
-        activeSpaceId="s1"
-        onSwitch={() => {}}
-      />,
+      <SpaceDots spaces={[space('s1', 'Work')]} activeSpaceId="s1" {...noop} />,
     )
     expect(html).toBe('')
   })
@@ -34,10 +38,17 @@ describe('SpaceDots', () => {
       space(`s${index}`, `Space ${index}`),
     )
     const html = renderToStaticMarkup(
-      <SpaceDots spaces={spaces} activeSpaceId="s2" onSwitch={() => {}} />,
+      <SpaceDots
+        spaces={spaces}
+        activeSpaceId="s2"
+        swipeTargetId="s3"
+        {...noop}
+      />,
     )
     expect(html.match(/role="tab"/g)).toHaveLength(6)
     expect(html).toContain(`width:${DOT_MIN}px`)
     expect(html).toContain('aria-selected="true"')
+    // The swipe target brightens from the same custom property the drag writes.
+    expect(html).toContain('0.55 * var(--sb-progress, 0)')
   })
 })

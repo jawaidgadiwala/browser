@@ -2,10 +2,17 @@ import { describe, expect, it } from 'bun:test'
 import {
   backgroundFade,
   COMMIT_PROGRESS,
+  carouselWindow,
+  classifyWheel,
   createWheelAccumulator,
+  edgeDirection,
+  pageStep,
+  pixelsOf,
   positionFor,
   rubberBand,
   shouldCommit,
+  swipeDelta,
+  velocityOf,
   WHEEL_COOLDOWN_MS,
 } from './paging'
 
@@ -127,5 +134,109 @@ describe('createWheelAccumulator', () => {
     expect(wheel.push(20, 3)).toBe(0)
     wheel.reset()
     expect(wheel.push(20, 4)).toBe(0)
+  })
+})
+
+describe('classifyWheel', () => {
+  it('treats fractional pixel streams as a trackpad', () => {
+    expect(classifyWheel({ deltaX: 4.5, deltaY: 0.25, deltaMode: 0 })).toBe(
+      'trackpad',
+    )
+  })
+
+  it('treats whole steps and line units as a notched wheel', () => {
+    expect(classifyWheel({ deltaX: 40, deltaY: 0, deltaMode: 0 })).toBe('wheel')
+    expect(classifyWheel({ deltaX: 1, deltaY: 0, deltaMode: 1 })).toBe('wheel')
+    expect(classifyWheel({ deltaX: 1.5, deltaY: 0, deltaMode: 1 })).toBe(
+      'wheel',
+    )
+  })
+
+  it('leaves vertical-dominant and flat events to the list below', () => {
+    expect(classifyWheel({ deltaX: 2.5, deltaY: -9.5, deltaMode: 0 })).toBe(
+      'ignore',
+    )
+    expect(classifyWheel({ deltaX: 0, deltaY: 0, deltaMode: 0 })).toBe('ignore')
+  })
+})
+
+describe('pixelsOf', () => {
+  it('converts line and page deltas onto the pixel ladder', () => {
+    expect(pixelsOf(3, 0)).toBe(3)
+    expect(pixelsOf(3, 1)).toBe(120)
+    expect(pixelsOf(0.5, 2)).toBe(200)
+  })
+})
+
+describe('swipeDelta', () => {
+  it('inverts under natural scrolling', () => {
+    expect(swipeDelta(12, false)).toBe(12)
+    expect(swipeDelta(12, true)).toBe(-12)
+  })
+})
+
+describe('velocityOf', () => {
+  it('measures px per ms across the retained samples', () => {
+    expect(
+      velocityOf([
+        { x: 0, t: 100 },
+        { x: -30, t: 130 },
+        { x: -60, t: 160 },
+      ]),
+    ).toBeCloseTo(-1)
+    expect(velocityOf([{ x: 0, t: 0 }])).toBe(0)
+    expect(
+      velocityOf([
+        { x: 0, t: 5 },
+        { x: 10, t: 5 },
+      ]),
+    ).toBe(0)
+  })
+})
+
+describe('carouselWindow', () => {
+  it('mounts the active space and its two neighbours', () => {
+    expect(carouselWindow(order, 'b', 0, false)).toEqual([
+      { spaceId: 'a', slot: -1 },
+      { spaceId: 'b', slot: 0 },
+      { spaceId: 'c', slot: 1 },
+    ])
+  })
+
+  it('wraps the ends only when wrap-around is on', () => {
+    expect(carouselWindow(order, 'a', 2, true)).toEqual([
+      { spaceId: 'c', slot: 1 },
+      { spaceId: 'a', slot: 2 },
+      { spaceId: 'b', slot: 3 },
+    ])
+    expect(carouselWindow(order, 'a', 0, false)).toEqual([
+      { spaceId: 'a', slot: 0 },
+      { spaceId: 'b', slot: 1 },
+    ])
+  })
+
+  it('never mounts the same space twice on a two-space ring', () => {
+    expect(carouselWindow(['a', 'b'], 'a', 0, true)).toEqual([
+      { spaceId: 'a', slot: 0 },
+      { spaceId: 'b', slot: 1 },
+    ])
+    expect(carouselWindow(order, 'missing', 0, true)).toEqual([])
+  })
+})
+
+describe('pageStep', () => {
+  it('takes the short way round when wrapping', () => {
+    expect(pageStep(order, 'a', 'c', true)).toBe(-1)
+    expect(pageStep(order, 'a', 'c', false)).toBe(2)
+    expect(pageStep(order, 'a', 'missing', true)).toBe(0)
+  })
+})
+
+describe('edgeDirection', () => {
+  it('reports the edge a drag is held against', () => {
+    expect(edgeDirection(5, 300)).toBe(-1)
+    expect(edgeDirection(295, 300)).toBe(1)
+    expect(edgeDirection(150, 300)).toBe(0)
+    expect(edgeDirection(5, 0)).toBe(0)
   })
 })
