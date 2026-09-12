@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -78,6 +78,17 @@ if (env.BROWSEROS_EXTENSION_PORT) {
   chromiumArgs.push(
     `--browseros-extension-port=${env.BROWSEROS_EXTENSION_PORT}`,
   )
+}
+
+// Extra unpacked extensions (comma-separated dist dirs), e.g. the neo cockpit
+// from `browseros-dev watch --with-claw`. web-ext installs this app via CDP
+// Extensions.loadUnpacked, so a single --load-extension flag does not collide.
+const extraExtensionDirs = (env.BROWSEROS_EXTRA_EXTENSIONS ?? '')
+  .split(',')
+  .map((dir) => dir.trim())
+  .filter((dir) => dir !== '' && existsSync(join(dir, 'manifest.json')))
+if (extraExtensionDirs.length > 0) {
+  chromiumArgs.push(`--load-extension=${extraExtensionDirs.join(',')}`)
 }
 
 export default defineWebExtConfig({

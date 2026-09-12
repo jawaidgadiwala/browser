@@ -13,6 +13,8 @@
     "postinstall": "lefthook install || true",
     "dev:watch": "./tools/dev/run.sh watch",
     "dev:watch:new": "./tools/dev/run.sh watch --new",
+    "dev:watch:full": "./tools/dev/run.sh watch --with-claw",
+    "dev:watch:full:new": "./tools/dev/run.sh watch --with-claw --new",
     "dev:claw:watch": "./tools/dev/run.sh watch --claw",
     "dev:claw:watch:new": "./tools/dev/run.sh watch --claw --new",
     "dev:manual": "./tools/dev/run.sh watch --manual",

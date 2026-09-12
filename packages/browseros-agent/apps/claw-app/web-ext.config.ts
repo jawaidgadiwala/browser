@@ -80,6 +80,9 @@ if (env.BROWSEROS_SERVER_PORT) {
   chromiumArgs.push(`--browseros-proxy-port=${env.BROWSEROS_SERVER_PORT}`)
 }
 export default defineWebExtConfig({
+  // Embedded mode: the BrowserOS classic WXT runner owns the browser and
+  // loads this extension's dist dir via BROWSEROS_EXTRA_EXTENSIONS.
+  disabled: env.BROWSEROS_CLAW_EMBEDDED === '1',
   binaries: {
     chrome:
       env.BROWSEROS_BINARY ||

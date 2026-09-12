@@ -66,6 +66,11 @@ export async function resolveBrowserOSMcpBaseUrl(
 }
 
 async function readBrowserOSPort(prefName: string): Promise<number | null> {
+  // Embedded next to BrowserOS classic, the browser prefs point at the classic
+  // server; the launcher URL (VITE_BROWSEROS_CLAW_API_URL) is the claw server.
+  if (import.meta.env.VITE_BROWSEROS_CLAW_EMBEDDED) {
+    return null
+  }
   if (
     typeof chrome === 'undefined' ||
     typeof chrome.browserOS?.getPref !== 'function'

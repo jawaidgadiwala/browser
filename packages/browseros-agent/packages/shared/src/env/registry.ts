@@ -87,6 +87,20 @@ export const ENV_REGISTRY: readonly EnvKeySpec[] = [
     modes: { development: { value: '9305' } },
   },
   {
+    key: 'BROWSEROS_EXTRA_EXTENSIONS',
+    section: 'app',
+    description:
+      'Optional comma-separated unpacked extension dirs the app dev browser also loads; tools/dev sets this for watch --with-claw.',
+    secret: false,
+    schema: stringSchema,
+    modes: {
+      development: {
+        value: '/path/to/apps/claw-app/dist/chrome-mv3-dev',
+        commented: true,
+      },
+    },
+  },
+  {
     key: 'VITE_PUBLIC_POSTHOG_KEY',
     section: 'app',
     description: 'Browser bundle PostHog key.',
@@ -192,6 +206,15 @@ export const ENV_REGISTRY: readonly EnvKeySpec[] = [
     secret: false,
     schema: portSchema,
     modes: { development: { value: '49337', commented: true } },
+  },
+  {
+    key: 'BROWSEROS_CLAW_EMBEDDED',
+    section: 'claw',
+    description:
+      'Set to 1 to build the Claw app for loading next to the BrowserOS app (no newtab override, no browser launch); tools/dev sets this for watch --with-claw.',
+    secret: false,
+    schema: stringSchema,
+    modes: { development: { value: '1', commented: true } },
   },
   {
     key: 'BROWSERCLAW_DIR',

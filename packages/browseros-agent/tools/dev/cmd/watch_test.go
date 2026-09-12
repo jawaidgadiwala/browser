@@ -466,3 +466,87 @@ func writeWatchEnvExample(t *testing.T, contents string) string {
 	}
 	return root
 }
+
+func TestWatchModeRejectsWithClawCombinations(t *testing.T) {
+	oldManual, oldClaw, oldWith := watchManual, watchClaw, watchWithClaw
+	t.Cleanup(func() {
+		watchManual, watchClaw, watchWithClaw = oldManual, oldClaw, oldWith
+	})
+
+	watchManual, watchClaw, watchWithClaw = false, true, true
+	if _, err := watchMode(); err == nil || !strings.Contains(err.Error(), "--with-claw cannot be combined with --claw") {
+		t.Fatalf("expected --with-claw/--claw conflict, got %v", err)
+	}
+	watchManual, watchClaw, watchWithClaw = true, false, true
+	if _, err := watchMode(); err == nil || !strings.Contains(err.Error(), "--with-claw cannot be combined with --manual") {
+		t.Fatalf("expected --with-claw/--manual conflict, got %v", err)
+	}
+	watchManual, watchClaw, watchWithClaw = false, false, true
+	mode, err := watchMode()
+	if err != nil {
+		t.Fatalf("watchMode returned error: %v", err)
+	}
+	if mode != "BrowserOS + neo" {
+		t.Fatalf("expected BrowserOS + neo mode, got %q", mode)
+	}
+}
+
+func TestResolveEmbeddedClawPortsSkipsBusyAndClassicPorts(t *testing.T) {
+	classic := proc.Ports{CDP: 9005, Server: 9105, Extension: 9305}
+	busy := map[int]bool{9205: true, 9206: true}
+	ports, err := resolveEmbeddedClawPorts(classic, func(port int) bool { return !busy[port] })
+	if err != nil {
+		t.Fatalf("resolveEmbeddedClawPorts returned error: %v", err)
+	}
+	if ports.Server != 9207 || ports.CDP != classic.CDP || ports.Extension != classic.Extension {
+		t.Fatalf("expected claw ports on 9207 sharing CDP/extension, got %+v", ports)
+	}
+
+	collides := proc.Ports{CDP: 9300, Server: 9200, Extension: 9400}
+	ports, err = resolveEmbeddedClawPorts(collides, func(int) bool { return true })
+	if err != nil {
+		t.Fatalf("resolveEmbeddedClawPorts returned error: %v", err)
+	}
+	if ports.Server != 9301 {
+		t.Fatalf("expected claw port to skip the classic CDP port, got %+v", ports)
+	}
+
+	if _, err := resolveEmbeddedClawPorts(classic, func(int) bool { return false }); err == nil {
+		t.Fatal("expected error when no port is free")
+	}
+}
+
+func TestBuildEmbeddedClawWatchEnvLayersOnClassicEnv(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("BROWSEROS_DIR", "")
+	t.Setenv("BROWSERCLAW_DIR", "")
+	root := t.TempDir()
+	classic := proc.Ports{CDP: 9012, Server: 9123, Extension: 9321}
+	env, err := buildWatchEnv(classic, "/tmp/browseros-dev", false)
+	if err != nil {
+		t.Fatalf("buildWatchEnv returned error: %v", err)
+	}
+	env, err = buildEmbeddedClawWatchEnv(env, root, proc.Ports{CDP: 9012, Server: 9223, Extension: 9321})
+	if err != nil {
+		t.Fatalf("buildEmbeddedClawWatchEnv returned error: %v", err)
+	}
+
+	for _, want := range []string{
+		"BROWSEROS_PRODUCT=browseros",
+		"BROWSEROS_CDP_PORT=9012",
+		"BROWSEROS_SERVER_PORT=9123",
+		"BROWSEROS_DIR=" + filepath.Join(home, ".browseros-dev"),
+		"BROWSERCLAW_DIR=" + filepath.Join(home, ".browserclaw-dev"),
+		"BROWSEROS_CLAW_EMBEDDED=1",
+		"BROWSEROS_EXTRA_EXTENSIONS=" + filepath.Join(root, "apps/claw-app/dist/chrome-mv3-dev"),
+		"VITE_BROWSEROS_CLAW_API_URL=http://127.0.0.1:9223",
+	} {
+		if !hasEnvEntry(env, want) {
+			t.Fatalf("expected env to contain %q, got %#v", want, env)
+		}
+	}
+	if hasEnvEntry(env, "BROWSEROS_PRODUCT=browserclaw") {
+		t.Fatalf("embedded mode must keep the classic product, got %#v", env)
+	}
+}

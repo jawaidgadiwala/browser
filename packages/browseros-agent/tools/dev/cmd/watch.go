@@ -28,9 +28,10 @@ var watchCmd = &cobra.Command{
 }
 
 var (
-	watchNew    bool
-	watchManual bool
-	watchClaw   bool
+	watchNew      bool
+	watchManual   bool
+	watchClaw     bool
+	watchWithClaw bool
 )
 
 const (
@@ -38,12 +39,22 @@ const (
 	defaultClawWatchServerPort = 9200
 	defaultClawWatchStateDir   = ".browserclaw-dev"
 	rustClawWatchPollInterval  = time.Second
+	// Embedded claw server prefers the classic server port + this offset.
+	embeddedClawServerPortOffset = 100
+	embeddedClawServerPortScan   = 50
+	embeddedClawDistWaitTimeout  = 3 * time.Minute
 )
+
+// embeddedClawDistDir is the WXT dev output dir Chromium loads via --load-extension.
+func embeddedClawDistDir(root string) string {
+	return filepath.Join(root, "apps/claw-app/dist/chrome-mv3-dev")
+}
 
 func init() {
 	watchCmd.Flags().BoolVar(&watchNew, "new", false, "Use random available ports in 9000-9999 and create a fresh user-data directory")
 	watchCmd.Flags().BoolVar(&watchManual, "manual", false, "Build agent statically instead of WXT HMR mode")
 	watchCmd.Flags().BoolVar(&watchClaw, "claw", false, "Run the BrowserOS neo UI and standalone server")
+	watchCmd.Flags().BoolVar(&watchWithClaw, "with-claw", false, "Run BrowserOS plus the neo cockpit extension and claw-server in the same browser")
 	rootCmd.AddCommand(watchCmd)
 }
 
@@ -57,7 +68,7 @@ func runWatch(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if watchClaw {
+	if watchClaw || watchWithClaw {
 		if err := ensureCargoPresent(); err != nil {
 			return err
 		}
@@ -151,9 +162,20 @@ func runWatch(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	clawPorts := proc.Ports{}
+	if watchWithClaw {
+		clawPorts, err = resolveEmbeddedClawPorts(p, proc.IsPortAvailable)
+		if err != nil {
+			return err
+		}
+	}
+
 	fmt.Println()
 	proc.LogMsgf(proc.TagInfo, "Mode: %s", proc.BoldColor.Sprint(mode))
 	proc.LogMsgf(proc.TagInfo, "Ports: CDP=%d Server=%d Extension=%d", p.CDP, p.Server, p.Extension)
+	if watchWithClaw {
+		proc.LogMsgf(proc.TagInfo, "Claw server port: %d", clawPorts.Server)
+	}
 	proc.LogMsgf(proc.TagInfo, "Profile: %s", userDataDir)
 	proc.LogMsg(proc.TagInfo, proc.DimColor.Sprint("Press Ctrl+C to stop, double Ctrl+C to force kill"))
 	fmt.Println()
@@ -166,6 +188,12 @@ func runWatch(cmd *cobra.Command, args []string) error {
 	env, err := buildWatchEnvWithBinaryResolution(p, userDataDir, watchClaw, clawBinary)
 	if err != nil {
 		return err
+	}
+	if watchWithClaw {
+		env, err = buildEmbeddedClawWatchEnv(env, root, clawPorts)
+		if err != nil {
+			return err
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -180,9 +208,18 @@ func runWatch(cmd *cobra.Command, args []string) error {
 	if watchClaw {
 		procs = startClawWatch(ctx, &wg, root, env, p, reservations, userDataDir)
 	} else {
-		procs, err = startBrowserOSWatch(ctx, &wg, root, env, p, reservations, userDataDir, watchManual)
+		if watchWithClaw {
+			// The cockpit dist must exist before WXT launches Chromium with --load-extension.
+			procs = append(procs, startEmbeddedClawApp(ctx, &wg, root, env)...)
+			waitForEmbeddedClawDist(ctx, embeddedClawDistDir(root))
+		}
+		browserProcs, err := startBrowserOSWatch(ctx, &wg, root, env, p, reservations, userDataDir, watchManual)
 		if err != nil {
 			return err
+		}
+		procs = append(procs, browserProcs...)
+		if watchWithClaw {
+			procs = append(procs, startEmbeddedClawServer(ctx, &wg, root, env, clawPorts, userDataDir))
 		}
 	}
 
@@ -213,6 +250,15 @@ func runWatch(cmd *cobra.Command, args []string) error {
 func watchMode() (string, error) {
 	if watchManual && watchClaw {
 		return "", fmt.Errorf("--manual cannot be combined with --claw")
+	}
+	if watchWithClaw && watchClaw {
+		return "", fmt.Errorf("--with-claw cannot be combined with --claw")
+	}
+	if watchWithClaw && watchManual {
+		return "", fmt.Errorf("--with-claw cannot be combined with --manual")
+	}
+	if watchWithClaw {
+		return "BrowserOS + neo", nil
 	}
 	if watchClaw {
 		return "BrowserOS neo", nil
@@ -318,6 +364,84 @@ func logClawBrowserBinary(resolution browser.BinaryResolution) {
 		return
 	}
 	proc.LogMsgf(proc.TagInfo, "Browser app: %s", resolution.Path)
+}
+
+// resolveEmbeddedClawPorts picks a free claw-server port next to the classic
+// ports so both servers share CDP without colliding. 9200 is skipped on
+// purpose: an installed BrowserOS may already own it.
+func resolveEmbeddedClawPorts(p proc.Ports, available func(int) bool) (proc.Ports, error) {
+	taken := map[int]struct{}{p.CDP: {}, p.Server: {}, p.Extension: {}}
+	base := p.Server + embeddedClawServerPortOffset
+	for port := base; port < base+embeddedClawServerPortScan && port <= 65535; port++ {
+		if _, ok := taken[port]; ok {
+			continue
+		}
+		if available(port) {
+			return proc.Ports{CDP: p.CDP, Server: port, Extension: p.Extension}, nil
+		}
+	}
+	return proc.Ports{}, fmt.Errorf("no free claw-server port in %d-%d", base, base+embeddedClawServerPortScan-1)
+}
+
+// buildEmbeddedClawWatchEnv layers the neo cockpit + claw-server settings on
+// top of the classic env: the claw app builds in embedded mode, the classic
+// WXT runner loads its dist dir, and the cockpit talks to claw-server.
+func buildEmbeddedClawWatchEnv(env []string, root string, clawPorts proc.Ports) ([]string, error) {
+	stateKey, stateDir, err := resolveWatchProductStateDir(true)
+	if err != nil {
+		return nil, err
+	}
+	env = replaceEnvValue(env, stateKey, stateDir)
+	env = replaceEnvValue(env, "BROWSEROS_CLAW_EMBEDDED", "1")
+	env = replaceEnvValue(env, "BROWSEROS_EXTRA_EXTENSIONS", embeddedClawDistDir(root))
+	env = replaceEnvValue(env, "VITE_BROWSEROS_CLAW_API_URL", fmt.Sprintf("http://127.0.0.1:%d", clawPorts.Server))
+	return env, nil
+}
+
+// startEmbeddedClawApp builds/watches the neo cockpit extension without a browser runner.
+func startEmbeddedClawApp(ctx context.Context, wg *sync.WaitGroup, root string, env []string) []*proc.ManagedProc {
+	clawDir := filepath.Join(root, "apps/claw-app")
+	return []*proc.ManagedProc{
+		proc.StartManaged(ctx, wg, proc.ProcConfig{
+			Tag:     proc.TagAgent,
+			Dir:     clawDir,
+			Env:     env,
+			Restart: true,
+			Cmd:     []string{"bun", "--env-file=../../.env.development", "wxt"},
+		}),
+		proc.StartManaged(ctx, wg, proc.ProcConfig{
+			Tag:     proc.TagWeb,
+			Dir:     clawDir,
+			Env:     env,
+			Restart: true,
+			Cmd:     []string{"bun", "run", "dev:web"},
+		}),
+	}
+}
+
+// waitForEmbeddedClawDist blocks until WXT wrote a loadable manifest for the cockpit.
+func waitForEmbeddedClawDist(ctx context.Context, distDir string) {
+	proc.LogMsg(proc.TagAgent, "Waiting for neo cockpit build...")
+	manifest := filepath.Join(distDir, "manifest.json")
+	deadline := time.Now().Add(embeddedClawDistWaitTimeout)
+	for time.Now().Before(deadline) && ctx.Err() == nil {
+		if info, err := os.Stat(manifest); err == nil && info.Size() > 0 {
+			// WXT writes the manifest last; give the bundle a moment to settle.
+			time.Sleep(time.Second)
+			proc.LogMsgf(proc.TagAgent, "neo cockpit ready: %s", distDir)
+			return
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	proc.LogMsg(proc.TagAgent, proc.WarnColor.Sprint("neo cockpit build not ready; launching browser without it"))
+}
+
+// startEmbeddedClawServer runs claw-server-rust against the shared CDP port on its own server port.
+func startEmbeddedClawServer(ctx context.Context, wg *sync.WaitGroup, root string, env []string, clawPorts proc.Ports, userDataDir string) *proc.ManagedProc {
+	sidecarPath := watchSidecarConfigPath(userDataDir, "claw-server")
+	serverProc := proc.StartManaged(ctx, wg, clawServerProcConfig(root, env, clawPorts, userDataDir, sidecarPath, proc.KillPortAndWait))
+	startRustClawSourceWatcher(ctx, wg, root, serverProc)
+	return serverProc
 }
 
 // startBrowserOSWatch supervises the BrowserOS agent extension plus server dev pair.
