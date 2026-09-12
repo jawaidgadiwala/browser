@@ -105,3 +105,16 @@ Note: MV3 service workers idle out, so `curl http://127.0.0.1:9005/json` may
 list only the classic worker. The neo extension is confirmed loaded by its
 cockpit page answering with `chrome.runtime.id ===
 "pjimfkbpehlcllblajnpfamdfjhhlgkc"`.
+
+## App icon and name in the Dock
+
+The extension layer cannot change the app bundle's icon or name. Until the
+native build ships, `tools/personal/make-branded-app.sh` creates
+`/Applications/Browser.app`: a copy of the stock bundle with `branding/Browser.icns`,
+`CFBundleName`/`CFBundleDisplayName` set to "Browser", and an ad-hoc signature
+(hardened runtime dropped so the nested frameworks load). `personal:start`
+prefers that bundle when present. Re-run the script after every BrowserOS update.
+
+Caveats: ad-hoc signing means macOS may ask once to allow keychain access for
+"BrowserOS Safe Storage"; click Always Allow. Sparkle auto-update inside the
+copy is meaningless; update the stock bundle and re-run the script.

@@ -14,9 +14,13 @@ import { dirname, join, resolve } from 'node:path'
 
 export const AGENT_ROOT = resolve(import.meta.dir, '..', '..')
 
+// Prefer the rebranded, ad-hoc re-signed copy when it exists (see
+// docs/personal/daily-driver.md, "App icon"); fall back to the stock bundle.
+const BRANDED_BINARY = '/Applications/Browser.app/Contents/MacOS/BrowserOS'
+const STOCK_BINARY = '/Applications/BrowserOS.app/Contents/MacOS/BrowserOS'
 export const BROWSEROS_BINARY =
   process.env.BROWSEROS_PERSONAL_BINARY ||
-  '/Applications/BrowserOS.app/Contents/MacOS/BrowserOS'
+  (existsSync(BRANDED_BINARY) ? BRANDED_BINARY : STOCK_BINARY)
 
 // Product name of the personal build; mirrors apps/app/lib/personal/product.ts.
 const PRODUCT_NAME = 'Browser'
