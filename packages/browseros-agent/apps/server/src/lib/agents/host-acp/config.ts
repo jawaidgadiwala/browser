@@ -19,9 +19,11 @@ interface HostAcpAdapterConfig {
  * These adapters carry their own agent runtimes; updating a host CLI is insufficient.
  */
 export const HOST_ACP_ADAPTER_CONFIG = {
+  // Exact pin: npx re-resolves a range against the registry on every launch
+  // and reinstalls, which took minutes here and blew the 120s probe budget.
   claude: {
-    acpArgv: ['npx', '-y', '@agentclientprotocol/claude-agent-acp@^0.75.1'],
-    acpPackageSpec: '@agentclientprotocol/claude-agent-acp@^0.75.1',
+    acpArgv: ['npx', '-y', '@agentclientprotocol/claude-agent-acp@0.76.0'],
+    acpPackageSpec: '@agentclientprotocol/claude-agent-acp@0.76.0',
     acpBin: 'claude-agent-acp',
   },
   codex: {
