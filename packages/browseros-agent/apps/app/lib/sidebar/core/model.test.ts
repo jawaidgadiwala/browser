@@ -328,3 +328,134 @@ describe('archive', () => {
     expect(tidy(state, spaceIds[0], [], 'manual', opts())).toBe(state)
   })
 })
+
+describe('move rules across zones', () => {
+  it('refuses to store anything in a today container', () => {
+    const { state: base, ids: spaceIds } = withSpaces(['Work'])
+    const space = base.spaces.byId[spaceIds[0]]
+    const pinned = pin(
+      base,
+      space.id,
+      { url: 'https://a.test/', savedTitle: 'A' },
+      opts(),
+    )
+    const moved = moveItem(
+      pinned.state,
+      pinned.item.id,
+      space.containers.today,
+      0,
+    )
+    expect(moved).toBe(pinned.state)
+  })
+
+  it('moves a pinned tab into the essentials container', () => {
+    const { state: base, ids: spaceIds } = withSpaces(['Work'])
+    const pinned = pin(
+      base,
+      spaceIds[0],
+      { url: 'https://a.test/', savedTitle: 'A' },
+      opts(),
+    )
+    const root = base.items.roots.essentials
+    const moved = moveItem(pinned.state, pinned.item.id, root, 0)
+    expect(moved.items.byId[root].children).toEqual([pinned.item.id])
+  })
+
+  it('never puts a folder in essentials', () => {
+    const { state: base, ids: spaceIds } = withSpaces(['Work'])
+    const space = base.spaces.byId[spaceIds[0]]
+    const folder = createFolder(base, space.containers.pinned, 'Docs', opts())
+    const root = base.items.roots.essentials
+    expect(moveItem(folder.state, folder.item.id, root, 0)).toBe(folder.state)
+  })
+
+  it('refuses a new essential once the grid is full', () => {
+    let state = createInitialState(opts())
+    state = { ...state, settings: { ...state.settings, essentialsMax: 2 } }
+    for (const host of ['a', 'b']) {
+      const added = addEssential(
+        state,
+        { url: `https://${host}.test/`, savedTitle: host },
+        opts(),
+      )
+      state = added.state
+    }
+    const overflow = addEssential(
+      state,
+      { url: 'https://c.test/', savedTitle: 'c' },
+      opts(),
+    )
+    expect(overflow.item).toBeNull()
+    expect(overflow.state).toBe(state)
+  })
+
+  it('blocks a move into a full essentials grid but still reorders it', () => {
+    let state = createInitialState(opts())
+    state = { ...state, settings: { ...state.settings, essentialsMax: 2 } }
+    const root = state.items.roots.essentials
+    for (const host of ['a', 'b']) {
+      state = addEssential(
+        state,
+        { url: `https://${host}.test/`, savedTitle: host },
+        opts(),
+      ).state
+    }
+    const spaced = createSpace(state, { name: 'Work', color: 'blue' }, opts())
+    state = { ...spaced.state, activeSpaceId: spaced.space.id }
+    const pinned = pin(
+      state,
+      spaced.space.id,
+      { url: 'https://c.test/', savedTitle: 'c' },
+      opts(),
+    )
+    expect(moveItem(pinned.state, pinned.item.id, root, 0)).toBe(pinned.state)
+
+    const [first, second] = state.items.byId[root].children
+    const reordered = moveItem(state, second, root, 0)
+    expect(reordered.items.byId[root].children).toEqual([second, first])
+  })
+
+  it('nests folders two deep and no further', () => {
+    const { state: base, ids: spaceIds } = withSpaces(['Work'])
+    const space = base.spaces.byId[spaceIds[0]]
+    const top = createFolder(base, space.containers.pinned, 'Top', opts())
+    const inner = createFolder(top.state, top.item.id, 'Inner', opts())
+    expect(inner.item.parentId).toBe(top.item.id)
+    expect(() =>
+      createFolder(inner.state, inner.item.id, 'Deep', opts()),
+    ).toThrow()
+  })
+
+  it('refuses to move a folder below the nesting cap', () => {
+    const { state: base, ids: spaceIds } = withSpaces(['Work'])
+    const space = base.spaces.byId[spaceIds[0]]
+    const top = createFolder(base, space.containers.pinned, 'Top', opts())
+    const inner = createFolder(top.state, top.item.id, 'Inner', opts())
+    const other = createFolder(
+      inner.state,
+      space.containers.pinned,
+      'Other',
+      opts(),
+    )
+    expect(moveItem(other.state, other.item.id, inner.item.id, 0)).toBe(
+      other.state,
+    )
+    const ok = moveItem(other.state, other.item.id, top.item.id, 0)
+    expect(ok.items.byId[top.item.id].children).toContain(other.item.id)
+  })
+
+  it('lets a pinned tab live in a folder at the nesting cap', () => {
+    const { state: base, ids: spaceIds } = withSpaces(['Work'])
+    const space = base.spaces.byId[spaceIds[0]]
+    const top = createFolder(base, space.containers.pinned, 'Top', opts())
+    const inner = createFolder(top.state, top.item.id, 'Inner', opts())
+    const pinned = pin(
+      inner.state,
+      space.id,
+      { url: 'https://a.test/', savedTitle: 'A' },
+      opts(),
+    )
+    const moved = moveItem(pinned.state, pinned.item.id, inner.item.id, 0)
+    expect(moved.items.byId[inner.item.id].children).toEqual([pinned.item.id])
+  })
+})

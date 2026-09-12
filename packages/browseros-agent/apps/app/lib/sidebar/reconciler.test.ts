@@ -478,3 +478,97 @@ describe('space lifecycle', () => {
     expect(state.activeSpaceId).toBe(fixture.life.id)
   })
 })
+
+describe('pinned close behavior', () => {
+  it('resets, switches away and discards instead of closing', async () => {
+    const base = baseState()
+    const pinned = pin(
+      base.state,
+      base.work.id,
+      { url: 'https://mail.example/', savedTitle: 'Mail' },
+      { now: START, newId },
+    )
+    const fixture = setup(pinned.state, { work: base.work, life: base.life })
+    const mail = fixture.host.addTab({
+      url: 'https://mail.example/inbox/42',
+      active: true,
+    })
+    const docs = fixture.host.addTab({ url: 'https://docs.example/' })
+    fixture.host.addGroup({
+      title: 'Work',
+      color: 'blue',
+      tabIds: [mail.id, docs.id],
+    })
+    await fixture.session.write({
+      tabLinks: { [String(mail.id)]: pinned.item.id },
+    })
+
+    await fixture.reconciler.closeTabs([mail.id])
+
+    const live = fixture.host.tabs.find((tab) => tab.id === mail.id)
+    expect(live?.url).toBe('https://mail.example/')
+    expect(live?.discarded).toBe(true)
+    expect(fixture.host.tabs.find((tab) => tab.id === docs.id)?.active).toBe(
+      true,
+    )
+    const state = await fixture.store.read()
+    expect(state.items.byId[pinned.item.id]).toBeDefined()
+  })
+
+  it('closes a plain today tab', async () => {
+    const fixture = setup()
+    const tab = fixture.host.addTab({ url: 'https://docs.example/' })
+    await fixture.reconciler.closeTabs([tab.id])
+    expect(fixture.host.tabs.find((candidate) => candidate.id === tab.id)).toBe(
+      undefined,
+    )
+  })
+})
+
+describe('opening an essential', () => {
+  it('focuses any window already showing the url', async () => {
+    const base = baseState()
+    const stateWithEssential = {
+      ...base.state,
+      items: {
+        ...base.state.items,
+        byId: {
+          ...base.state.items.byId,
+          essential: {
+            id: 'essential',
+            parentId: base.state.items.roots.essentials,
+            children: [],
+            title: null,
+            createdAt: START,
+            data: {
+              kind: 'tab' as const,
+              url: 'https://mail.example/',
+              savedTitle: 'Mail',
+              lastActiveAt: START,
+            },
+          },
+          [base.state.items.roots.essentials]: {
+            ...base.state.items.byId[base.state.items.roots.essentials],
+            children: ['essential'],
+          },
+        },
+      },
+    }
+    const fixture = setup(stateWithEssential, {
+      work: base.work,
+      life: base.life,
+    })
+    const other = fixture.host.addWindow()
+    const mail = fixture.host.addTab({
+      url: 'https://mail.example/',
+      windowId: other.id,
+    })
+
+    await fixture.reconciler.openItem('essential')
+
+    expect(fixture.host.tabs.find((tab) => tab.id === mail.id)?.active).toBe(
+      true,
+    )
+    expect(fixture.host.tabs).toHaveLength(1)
+  })
+})

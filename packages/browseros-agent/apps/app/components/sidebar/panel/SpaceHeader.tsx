@@ -16,6 +16,7 @@ export interface SpaceHeaderProps {
   onRename: (name: string) => void
   onAssignActiveTab: () => void
   onAdoptLooseTabs: () => void
+  onNewFolder: () => void
 }
 
 export const SpaceHeader: FC<SpaceHeaderProps> = ({
@@ -25,6 +26,7 @@ export const SpaceHeader: FC<SpaceHeaderProps> = ({
   onRename,
   onAssignActiveTab,
   onAdoptLooseTabs,
+  onNewFolder,
 }) => {
   const [draft, setDraft] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -101,6 +103,7 @@ export const SpaceHeader: FC<SpaceHeaderProps> = ({
           <DropdownMenuItem onSelect={onAdoptLooseTabs}>
             Adopt ungrouped tabs
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onNewFolder}>New folder</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setDraft(space.name)}>
             Rename
           </DropdownMenuItem>

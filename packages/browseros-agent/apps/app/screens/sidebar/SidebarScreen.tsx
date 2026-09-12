@@ -1,5 +1,7 @@
 import { type FC, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { SidebarDndContext } from '@/components/sidebar/dnd/SidebarDndContext'
+import { EssentialsGrid } from '@/components/sidebar/panel/EssentialsGrid'
 import { FooterBar } from '@/components/sidebar/panel/FooterBar'
 import { PinnedList } from '@/components/sidebar/panel/PinnedList'
 import { SearchBox } from '@/components/sidebar/panel/SearchBox'
@@ -10,11 +12,17 @@ import { TodayList } from '@/components/sidebar/panel/TodayList'
 import type { SpaceDialogValues } from '@/components/spaces/SpaceDialog'
 import {
   adjacentSpace,
+  essentialsList,
   isDrifted,
   pinnedTree,
 } from '@/lib/sidebar/core/selectors'
 import { computeTheme, themeSpecForColor } from '@/lib/sidebar/core/theme'
-import type { ItemId, SidebarState, SpaceId } from '@/lib/sidebar/core/types'
+import type {
+  ItemId,
+  ItemsState,
+  SidebarState,
+  SpaceId,
+} from '@/lib/sidebar/core/types'
 import { useLiveTabs } from '@/modules/sidebar/live-tabs.hooks'
 import { setPanelMode } from '@/modules/sidebar/panel-mode'
 import { openUrlInTab, sidebarActions } from '@/modules/sidebar/sidebar-actions'
@@ -30,6 +38,7 @@ import { useSidebarState } from '@/modules/sidebar/sidebar-state.hooks'
 
 const SETTINGS_URL = '/app.html#/settings/spaces'
 const DOWNLOADS_URL = 'chrome://downloads'
+const NEW_FOLDER_TITLE = 'New folder'
 
 /**
  * The sidebar surface of the side panel. It only reads state: every mutation
@@ -81,8 +90,12 @@ export const SidebarScreen: FC = () => {
   )
   const rows = query.trim() ? results : today
 
-  const pinnedRows = activeSpace ? pinnedTree(state, activeSpace.id) : []
+  const activeItemId = activeLinkedItemId(tabLinks, live.tabs)
+  const pinnedRows = activeSpace
+    ? pinnedTree(state, activeSpace.id, activeItemId)
+    : []
   const driftedIds = driftedPinnedIds(state, tabLinks, live.tabs)
+  const essentials = essentialsList(state)
 
   const switchTo = (direction: -1 | 1) => {
     const target = adjacentSpace(
@@ -103,6 +116,12 @@ export const SidebarScreen: FC = () => {
     await sidebarActions.createSpace({ ...values, switchTo: true })
   }
 
+  const closePinned = (itemId: ItemId) => {
+    const entry = Object.entries(tabLinks).find(([, id]) => id === itemId)
+    if (!entry) return
+    sidebarActions.closeTabs([Number(entry[0])], 'sidebar-pinned-close')
+  }
+
   if (!ready) return null
 
   return (
@@ -113,77 +132,109 @@ export const SidebarScreen: FC = () => {
       onPrevSpace={() => switchTo(-1)}
       onToggleMode={openChat}
     >
-      <SearchBox
-        value={query}
-        onChange={setQuery}
-        iconOnly={iconOnly}
-        onSubmit={() => {
-          const first = rows[0]
-          if (first) sidebarActions.activateTab(first.tabId)
-        }}
-      />
-      <div
-        key={activeSpaceId ?? 'none'}
-        className="sb-space-strip flex min-h-0 flex-1 flex-col"
-      >
-        {activeSpace ? (
-          <>
-            <SpaceHeader
-              space={activeSpace}
-              iconOnly={iconOnly}
-              onToggleCollapsed={() =>
-                sidebarActions.updateSpace({
-                  spaceId: activeSpace.id,
-                  pinnedCollapsed: !activeSpace.pinnedCollapsed,
-                })
-              }
-              onRename={(name) =>
-                sidebarActions.updateSpace({ spaceId: activeSpace.id, name })
-              }
-              onAssignActiveTab={() =>
-                sidebarActions.assignActiveTab(activeSpace.id)
-              }
-              onAdoptLooseTabs={() =>
-                sidebarActions.adoptLooseTabs(activeSpace.id)
-              }
-            />
-            {!activeSpace.pinnedCollapsed && (
-              <PinnedList
-                rows={pinnedRows}
-                driftedIds={driftedIds}
-                iconOnly={iconOnly}
-                onOpen={(itemId) => sidebarActions.openItem(itemId)}
-                onSetExpansion={(itemId, expansion) =>
-                  sidebarActions.setExpansion(itemId, expansion)
-                }
-                onReset={(itemId) => sidebarActions.resetPinned(itemId)}
-                onUnpin={(itemId) => sidebarActions.unpinItem(itemId)}
-              />
-            )}
-            <Separator
-              iconOnly={iconOnly}
-              onNewTab={() => sidebarActions.newTab(activeSpace.id)}
-              onTidy={() => sidebarActions.tidy(activeSpace.id)}
-              onClear={() => sidebarActions.clear(activeSpace.id)}
-            />
-          </>
-        ) : (
-          <p className="px-3 py-4 text-xs opacity-70">
-            No space yet. Use + below to create one.
-          </p>
-        )}
-        <TodayList
-          rows={rows}
+      <SidebarDndContext>
+        <SearchBox
+          value={query}
+          onChange={setQuery}
           iconOnly={iconOnly}
-          emptyLabel={
-            query.trim() ? 'No tabs match' : 'No tabs in this space yet'
-          }
-          onActivate={(tabId) => sidebarActions.activateTab(tabId)}
-          onClose={(tabId) =>
-            sidebarActions.closeTabs([tabId], 'sidebar-row-close')
-          }
+          onSubmit={() => {
+            const first = rows[0]
+            if (first) sidebarActions.activateTab(first.tabId)
+          }}
         />
-      </div>
+        <EssentialsGrid
+          rootId={items.roots.essentials}
+          items={essentials}
+          iconOnly={iconOnly}
+          onOpen={(itemId) => sidebarActions.openItem(itemId)}
+          onRemove={(itemId) => sidebarActions.removeEssential(itemId)}
+        />
+        <div
+          key={activeSpaceId ?? 'none'}
+          className="sb-space-strip flex min-h-0 flex-1 flex-col"
+        >
+          {activeSpace ? (
+            <>
+              <SpaceHeader
+                space={activeSpace}
+                iconOnly={iconOnly}
+                onToggleCollapsed={() =>
+                  sidebarActions.updateSpace({
+                    spaceId: activeSpace.id,
+                    pinnedCollapsed: !activeSpace.pinnedCollapsed,
+                  })
+                }
+                onRename={(name) =>
+                  sidebarActions.updateSpace({ spaceId: activeSpace.id, name })
+                }
+                onAssignActiveTab={() =>
+                  sidebarActions.assignActiveTab(activeSpace.id)
+                }
+                onAdoptLooseTabs={() =>
+                  sidebarActions.adoptLooseTabs(activeSpace.id)
+                }
+                onNewFolder={() =>
+                  sidebarActions.createFolder(activeSpace.id, NEW_FOLDER_TITLE)
+                }
+              />
+              {!activeSpace.pinnedCollapsed && (
+                <PinnedList
+                  rows={pinnedRows}
+                  items={items}
+                  pinnedRootId={activeSpace.containers.pinned}
+                  driftedIds={driftedIds}
+                  activeFolderIds={folderPath(items, activeItemId)}
+                  activeItemId={activeItemId}
+                  iconOnly={iconOnly}
+                  onOpen={(itemId) => sidebarActions.openItem(itemId)}
+                  onSetExpansion={(itemId, expansion) =>
+                    sidebarActions.setExpansion(itemId, expansion)
+                  }
+                  onReset={(itemId) => sidebarActions.resetPinned(itemId)}
+                  onUnpin={(itemId) => sidebarActions.unpinItem(itemId)}
+                  onRename={(itemId, title) =>
+                    sidebarActions.renameItem(itemId, title)
+                  }
+                  onAddEssential={(url, title) =>
+                    sidebarActions.addEssential({ url, title })
+                  }
+                  onNewFolder={(parentId) =>
+                    sidebarActions.createFolder(
+                      activeSpace.id,
+                      NEW_FOLDER_TITLE,
+                      parentId,
+                    )
+                  }
+                  onClosePinned={closePinned}
+                />
+              )}
+              <Separator
+                iconOnly={iconOnly}
+                onNewTab={() => sidebarActions.newTab(activeSpace.id)}
+                onTidy={() => sidebarActions.tidy(activeSpace.id)}
+                onClear={() => sidebarActions.clear(activeSpace.id)}
+              />
+            </>
+          ) : (
+            <p className="px-3 py-4 text-xs opacity-70">
+              No space yet. Use + below to create one.
+            </p>
+          )}
+          <TodayList
+            rows={rows}
+            iconOnly={iconOnly}
+            emptyLabel={
+              query.trim() ? 'No tabs match' : 'No tabs in this space yet'
+            }
+            onActivate={(tabId) => sidebarActions.activateTab(tabId)}
+            onClose={(tabId) =>
+              sidebarActions.closeTabs([tabId], 'sidebar-row-close')
+            }
+            onPin={(tabId) => sidebarActions.pinTab({ tabId })}
+            onAddEssential={(tabId) => sidebarActions.addEssential({ tabId })}
+          />
+        </div>
+      </SidebarDndContext>
       <FooterBar
         spaces={spaceList}
         activeSpaceId={activeSpaceId}
@@ -195,6 +246,28 @@ export const SidebarScreen: FC = () => {
       />
     </SidebarRoot>
   )
+}
+
+/** The pinned or essential node the active tab stands for, when there is one. */
+function activeLinkedItemId(
+  tabLinks: Record<string, string>,
+  tabs: { id?: number; active?: boolean }[],
+): ItemId | undefined {
+  const active = tabs.find((tab) => tab.active && tab.id !== undefined)
+  return active?.id === undefined ? undefined : tabLinks[String(active.id)]
+}
+
+/** Folder ancestors of an item: collapsing one of these peeks instead. */
+function folderPath(items: ItemsState, itemId?: ItemId): Set<ItemId> {
+  const path = new Set<ItemId>()
+  let cursor = itemId ? items.byId[itemId] : undefined
+  const seen = new Set<ItemId>()
+  while (cursor && !seen.has(cursor.id)) {
+    seen.add(cursor.id)
+    if (cursor.data.kind === 'folder') path.add(cursor.id)
+    cursor = cursor.parentId ? items.byId[cursor.parentId] : undefined
+  }
+  return path
 }
 
 /**

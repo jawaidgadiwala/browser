@@ -17,6 +17,10 @@ export const ICON_ONLY_ROW_HEIGHT = 48
 export const ICON_ONLY_WIDTH = 120
 /** Longer lists are windowed instead of fully rendered. */
 const VIRTUALISE_ABOVE = 40
+/** Essentials tiles: fixed 3 columns, one when only favicons fit. */
+export const ESSENTIAL_TILE = 46
+export const ESSENTIAL_GAP = 4
+const ESSENTIALS_COLUMNS = 3
 export const DOT_MAX = 32
 export const DOT_MIN = 16
 export const DOT_GAP = 3
@@ -63,6 +67,11 @@ export interface TabRowData {
 
 export function isIconOnly(width: number): boolean {
   return width > 0 && width < ICON_ONLY_WIDTH
+}
+
+/** The grid never reflows by count; only icon-only mode narrows it. */
+export function essentialsColumns(iconOnly: boolean): number {
+  return iconOnly ? 1 : ESSENTIALS_COLUMNS
 }
 
 /** Dots keep their 32 px size until the strip overflows, then shrink to 16 px. */

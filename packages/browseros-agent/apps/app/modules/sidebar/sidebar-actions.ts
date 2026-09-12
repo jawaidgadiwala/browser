@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import type { DropIntent } from '@/components/sidebar/dnd/drop-plan'
 import {
   type CreateSpaceData,
   SidebarMessageType,
@@ -89,6 +90,65 @@ export const sidebarActions = {
     run('Tidy', sendSidebarMessage(SidebarMessageType.tidy, { spaceId })),
   clear: (spaceId: SpaceId) =>
     run('Clear', sendSidebarMessage(SidebarMessageType.clear, { spaceId })),
+  pinTab: (data: {
+    tabId?: number
+    url?: string
+    title?: string
+    parentId?: ItemId
+    index?: number
+  }) => run('Pinning', sendSidebarMessage(SidebarMessageType.pinTab, data)),
+  addEssential: (data: { tabId?: number; url?: string; title?: string }) =>
+    run(
+      'Adding to essentials',
+      sendSidebarMessage(SidebarMessageType.addEssential, data),
+    ),
+  removeEssential: (itemId: ItemId) =>
+    run(
+      'Removing the essential',
+      sendSidebarMessage(SidebarMessageType.removeEssential, { itemId }),
+    ),
+  moveItem: (itemId: ItemId, parentId: ItemId, index: number) =>
+    run(
+      'Moving',
+      sendSidebarMessage(SidebarMessageType.moveItem, {
+        itemId,
+        parentId,
+        index,
+      }),
+    ),
+  createFolder: (spaceId: SpaceId, title: string, parentId?: ItemId) =>
+    run(
+      'Creating a folder',
+      sendSidebarMessage(SidebarMessageType.createFolder, {
+        spaceId,
+        title,
+        parentId,
+      }),
+    ),
+  renameItem: (itemId: ItemId, title: string | null) =>
+    run(
+      'Renaming',
+      sendSidebarMessage(SidebarMessageType.renameItem, { itemId, title }),
+    ),
+}
+
+/** Drop intents are applied in order so a multi-step plan stays atomic-ish. */
+export async function applyDropIntents(intents: DropIntent[]): Promise<void> {
+  for (const intent of intents) {
+    if (intent.type === 'moveItem') {
+      await sidebarActions.moveItem(
+        intent.itemId,
+        intent.parentId,
+        intent.index,
+      )
+    } else if (intent.type === 'pinTab') {
+      await sidebarActions.pinTab(intent)
+    } else if (intent.type === 'unpinItem') {
+      await sidebarActions.unpinItem(intent.itemId)
+    } else {
+      await sidebarActions.addEssential(intent)
+    }
+  }
 }
 
 /**

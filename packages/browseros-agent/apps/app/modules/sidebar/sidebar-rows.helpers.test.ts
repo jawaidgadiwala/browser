@@ -4,6 +4,7 @@ import {
   DOT_MAX,
   DOT_MIN,
   dotSize,
+  essentialsColumns,
   groupIdForSpace,
   ICON_ONLY_WIDTH,
   isIconOnly,
@@ -177,6 +178,13 @@ describe('searchRows', () => {
 
   it('is empty for a blank query', () => {
     expect(searchRows(tabs, groups, spaces, 's1', '  ', WINDOW)).toEqual([])
+  })
+})
+
+describe('essentials grid', () => {
+  it('keeps three columns and drops to one when only icons fit', () => {
+    expect(essentialsColumns(false)).toBe(3)
+    expect(essentialsColumns(true)).toBe(1)
   })
 })
 

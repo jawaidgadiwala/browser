@@ -210,7 +210,7 @@ export function registerSidebar(host: HostAdapter) {
     guard(() => reconciler.moveItemTo(data.itemId, data.parentId, data.index)),
   )
   onSidebarMessage(SidebarMessageType.pinTab, ({ data }) =>
-    guard(() => reconciler.pinTab(data.tabId, data.parentId)),
+    guard(() => reconciler.pinTab(data)),
   )
   onSidebarMessage(SidebarMessageType.unpinItem, ({ data }) =>
     guard(() => reconciler.unpinItem(data.itemId)),

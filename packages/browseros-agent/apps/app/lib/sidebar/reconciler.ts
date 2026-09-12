@@ -734,8 +734,67 @@ export class SidebarReconciler {
     return this.run(() => this.deps.host.activate(tabId))
   }
 
+  /**
+   * Closing a tab that stands for a pinned node follows
+   * `settings.pinnedCloseBehavior` instead: the node itself never goes away.
+   */
   closeTabs(tabIds: number[]): Promise<void> {
-    return this.run(() => this.deps.host.close(tabIds))
+    return this.run(async () => {
+      const state = await this.deps.store.read()
+      const session = await this.deps.session.read()
+      const plain: number[] = []
+      for (const tabId of tabIds) {
+        const itemId = session.tabLinks[String(tabId)]
+        const isPinned =
+          itemId !== undefined && zoneOf(state, itemId) === 'pinned'
+        if (isPinned) {
+          await this.closePinnedTab(state, tabId, itemId)
+        } else {
+          plain.push(tabId)
+        }
+      }
+      if (plain.length > 0) await this.deps.host.close(plain)
+    })
+  }
+
+  private async closePinnedTab(
+    state: SidebarState,
+    tabId: number,
+    itemId: ItemId,
+  ): Promise<void> {
+    const { host } = this.deps
+    const behavior = state.settings.pinnedCloseBehavior
+    if (behavior === 'close') {
+      await host.close([tabId])
+      return
+    }
+    const item = state.items.byId[itemId]
+    const tab = (await host.listTabs()).find(
+      (candidate) => candidate.id === tabId,
+    )
+    if (!tab) return
+    if (behavior !== 'unload-switch' && item?.data.kind === 'tab') {
+      if (isDrifted(item.data.url, tab.url)) {
+        await host.navigate(tabId, item.data.url)
+      }
+    }
+    if (behavior === 'reset') return
+
+    if (tab.active) {
+      const siblings = (await host.listTabs(tab.windowId)).filter(
+        (candidate) =>
+          candidate.id !== tabId && candidate.groupId === tab.groupId,
+      )
+      const next = selectionFor(
+        siblings.map((candidate) => ({
+          tabId: candidate.id,
+          index: candidate.index,
+          pinned: false,
+        })),
+      )
+      if (next !== null) await host.activate(next)
+    }
+    await host.discard([tabId])
   }
 
   newTab(input: { spaceId?: SpaceId; url?: string }): Promise<void> {
@@ -762,13 +821,21 @@ export class SidebarReconciler {
       const linked = Object.entries(session.tabLinks).find(
         ([, id]) => id === itemId,
       )
-      const live = linked
-        ? (await this.deps.host.listTabs()).find(
-            (tab) => tab.id === Number(linked[0]),
-          )
-        : undefined
+      const tabs = await this.deps.host.listTabs()
+      // Essentials are sites, not tabs: any window already showing the URL wins.
+      const live =
+        (linked
+          ? tabs.find((tab) => tab.id === Number(linked[0]))
+          : undefined) ??
+        tabs.find(
+          (tab) =>
+            item.data.kind === 'tab' && !isDrifted(item.data.url, tab.url),
+        )
       if (live) {
         await this.deps.host.activate(live.id)
+        await this.deps.session.write({
+          tabLinks: { ...session.tabLinks, [String(live.id)]: itemId },
+        })
         return
       }
       const spaceId = this.spaceIdOfItem(state, itemId)
@@ -800,41 +867,68 @@ export class SidebarReconciler {
     })
   }
 
-  pinTab(tabId: number, parentId?: ItemId): Promise<void> {
+  /**
+   * Pin a live tab, or a bare URL when the source is an essential that has no
+   * tab open. A URL pin lands in the active space.
+   */
+  pinTab(input: {
+    tabId?: number
+    url?: string
+    title?: string
+    parentId?: ItemId
+    index?: number
+  }): Promise<void> {
     return this.run(async () => {
       const { host, store, session: sessionStore } = this.deps
       const state = await store.read()
-      const tab = (await host.listTabs()).find(
-        (candidate) => candidate.id === tabId,
-      )
-      if (!tab) return
-      const groups = await host.listGroups(tab.windowId)
-      const space =
-        spaceForGroup(
+      const now = this.now()
+
+      const tab =
+        input.tabId === undefined
+          ? undefined
+          : (await host.listTabs()).find(
+              (candidate) => candidate.id === input.tabId,
+            )
+      let space: Space | undefined
+      let snapshot: TabSnapshot | undefined
+      if (tab) {
+        const groups = await host.listGroups(tab.windowId)
+        space = spaceForGroup(
           state,
           groups.find((group) => group.id === tab.groupId),
-        ) ??
-        (state.activeSpaceId
-          ? state.spaces.byId[state.activeSpaceId]
-          : undefined)
-      if (!space) return
+        )
+        snapshot = snapshotOf(host, tab, now)
+      } else if (input.url) {
+        snapshot = {
+          url: input.url,
+          savedTitle: input.title ?? input.url,
+          favicon: host.faviconUrl(input.url),
+          lastActiveAt: now,
+        }
+      }
+      space ??= state.activeSpaceId
+        ? state.spaces.byId[state.activeSpaceId]
+        : undefined
+      if (!space || !snapshot) return
 
-      const now = this.now()
-      const pinned = pin(state, space.id, snapshotOf(host, tab, now), { now })
-      const next =
-        parentId && pinned.state.items.byId[parentId]
-          ? moveItem(
-              pinned.state,
-              pinned.item.id,
-              parentId,
-              Number.MAX_SAFE_INTEGER,
-            )
-          : pinned.state
+      const pinned = pin(state, space.id, snapshot, { now })
+      const parentId =
+        input.parentId && pinned.state.items.byId[input.parentId]
+          ? input.parentId
+          : space.containers.pinned
+      const next = moveItem(
+        pinned.state,
+        pinned.item.id,
+        parentId,
+        input.index ?? Number.MAX_SAFE_INTEGER,
+      )
       await store.write(next)
-      const session = await sessionStore.read()
-      await sessionStore.write({
-        tabLinks: { ...session.tabLinks, [String(tabId)]: pinned.item.id },
-      })
+      if (tab) {
+        const session = await sessionStore.read()
+        await sessionStore.write({
+          tabLinks: { ...session.tabLinks, [String(tab.id)]: pinned.item.id },
+        })
+      }
     })
   }
 
@@ -861,7 +955,11 @@ export class SidebarReconciler {
     })
   }
 
-  addEssentialFrom(input: { tabId?: number; url?: string }): Promise<void> {
+  addEssentialFrom(input: {
+    tabId?: number
+    url?: string
+    title?: string
+  }): Promise<void> {
     return this.run(async () => {
       const { host, store } = this.deps
       const state = await store.read()
@@ -875,7 +973,7 @@ export class SidebarReconciler {
       } else if (input.url) {
         snapshot = {
           url: input.url,
-          savedTitle: input.url,
+          savedTitle: input.title ?? input.url,
           favicon: host.faviconUrl(input.url),
           lastActiveAt: now,
         }

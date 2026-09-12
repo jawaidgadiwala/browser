@@ -10,6 +10,7 @@ import {
   type ItemId,
   type ItemsState,
   MAX_ARCHIVE,
+  MAX_FOLDER_DEPTH,
   type ModelOptions,
   type SidebarState,
   type Space,
@@ -288,16 +289,85 @@ export function createItem(
   return { state: { ...state, items: { ...state.items, byId } }, item }
 }
 
+/** Folder levels below the nearest container; a container itself is 0. */
+function folderLevel(items: ItemsState, itemId: ItemId): number {
+  let level = 0
+  let cursor: Item | undefined = items.byId[itemId]
+  const seen = new Set<ItemId>()
+  while (cursor && !seen.has(cursor.id)) {
+    if (cursor.data.kind === 'container') return level
+    if (cursor.data.kind === 'folder') level += 1
+    seen.add(cursor.id)
+    cursor = cursor.parentId ? items.byId[cursor.parentId] : undefined
+  }
+  return level
+}
+
+/** Deepest folder nesting inside a subtree, counting the root as one level. */
+function subtreeFolderDepth(items: ItemsState, itemId: ItemId): number {
+  const item = items.byId[itemId]
+  if (!item) return 0
+  const own = item.data.kind === 'folder' ? 1 : 0
+  let deepest = 0
+  for (const childId of item.children) {
+    deepest = Math.max(deepest, subtreeFolderDepth(items, childId))
+  }
+  return own + deepest
+}
+
+function containerRoleOf(items: ItemsState, itemId: ItemId) {
+  let cursor: Item | undefined = items.byId[itemId]
+  const seen = new Set<ItemId>()
+  while (cursor && !seen.has(cursor.id)) {
+    if (cursor.data.kind === 'container') return cursor.data.role
+    seen.add(cursor.id)
+    cursor = cursor.parentId ? items.byId[cursor.parentId] : undefined
+  }
+  return null
+}
+
+/**
+ * Structural rules for a move. Kept separate from `moveItem` so the panel can
+ * grey out an illegal drop instead of firing a message the background drops.
+ */
+function canMoveItem(
+  state: SidebarState,
+  itemId: ItemId,
+  parentId: ItemId,
+): boolean {
+  const item = state.items.byId[itemId]
+  const parent = state.items.byId[parentId]
+  if (!item || !parent) return false
+  // Moving a node into its own subtree would orphan the tree.
+  if (subtreeIds(state.items, itemId).includes(parentId)) return false
+  if (parent.data.kind !== 'container' && parent.data.kind !== 'folder') {
+    return false
+  }
+  const targetRole = containerRoleOf(state.items, parentId)
+  // Today rows are derived from live tabs, so nothing is ever stored there.
+  if (targetRole === 'today') return false
+  if (targetRole === 'essentials') {
+    if (item.data.kind !== 'tab') return false
+    const staying = containerRoleOf(state.items, itemId) === 'essentials'
+    const root = state.items.byId[state.items.roots.essentials]
+    if (
+      !staying &&
+      (root?.children.length ?? 0) >= state.settings.essentialsMax
+    )
+      return false
+  }
+  const depth =
+    folderLevel(state.items, parentId) + subtreeFolderDepth(state.items, itemId)
+  return depth <= MAX_FOLDER_DEPTH
+}
+
 export function moveItem(
   state: SidebarState,
   itemId: ItemId,
   parentId: ItemId,
   index: number,
 ): SidebarState {
-  const item = state.items.byId[itemId]
-  if (!item || !state.items.byId[parentId]) return state
-  // Moving a node into its own subtree would orphan the tree.
-  if (subtreeIds(state.items, itemId).includes(parentId)) return state
+  if (!canMoveItem(state, itemId, parentId)) return state
   const byId = { ...state.items.byId }
   detach(byId, itemId)
   attach(byId, itemId, parentId, index)
@@ -393,12 +463,26 @@ export function removeEssential(
 
 // --- folders ----------------------------------------------------------------
 
+/** A folder fits when its parent is still above the nesting cap. */
+function canCreateFolder(state: SidebarState, parentId: ItemId): boolean {
+  const parent = state.items.byId[parentId]
+  if (!parent) return false
+  if (parent.data.kind !== 'container' && parent.data.kind !== 'folder') {
+    return false
+  }
+  if (containerRoleOf(state.items, parentId) !== 'pinned') return false
+  return folderLevel(state.items, parentId) + 1 <= MAX_FOLDER_DEPTH
+}
+
 export function createFolder(
   state: SidebarState,
   parentId: ItemId,
   title: string,
   opts: ModelOptions = {},
 ): { state: SidebarState; item: Item } {
+  if (!canCreateFolder(state, parentId)) {
+    throw new Error(`Cannot create a folder under ${parentId}`)
+  }
   return createItem(
     state,
     { parentId, title, data: { kind: 'folder', expansion: 'expanded' } },

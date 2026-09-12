@@ -151,6 +151,9 @@ export const DEFAULTS: SidebarSettings = {
   pinnedCloseBehavior: 'reset-unload-switch',
 }
 
+/** Folders nest at most two levels below a container. */
+export const MAX_FOLDER_DEPTH = 2
+
 /** Item tree cap; the panel warns above 80 % of it. */
 export const MAX_ITEMS = 5000
 
