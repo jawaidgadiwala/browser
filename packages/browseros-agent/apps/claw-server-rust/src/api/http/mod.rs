@@ -219,8 +219,12 @@ pub async fn request_context(mut req: Request, next: Next) -> Response {
     .await
 }
 
-/// Stable origin derived from claw-app's manifest signing key.
-const BROWSERCLAW_EXTENSION_ORIGIN: &str = "chrome-extension://pjimfkbpehlcllblajnpfamdfjhhlgkc";
+/// Stable origins derived from the cockpit extension's manifest signing keys:
+/// the Browser product key first, the upstream key kept for legacy builds.
+const BROWSERCLAW_EXTENSION_ORIGINS: [&str; 2] = [
+    "chrome-extension://jllpmhghjcbaccmpindcmpkddjekbnmm",
+    "chrome-extension://pjimfkbpehlcllblajnpfamdfjhhlgkc",
+];
 
 fn trusted_recording_origin(headers: &axum::http::HeaderMap) -> bool {
     match headers
@@ -228,7 +232,7 @@ fn trusted_recording_origin(headers: &axum::http::HeaderMap) -> bool {
         .and_then(|value| value.to_str().ok())
     {
         None => true,
-        Some(BROWSERCLAW_EXTENSION_ORIGIN) => true,
+        Some(origin) if BROWSERCLAW_EXTENSION_ORIGINS.contains(&origin) => true,
         Some("null") => {
             // The native opaque recorder may send `Origin: null`; accept it only with
             // `Sec-Fetch-Site: none`, not as general trust of null origins.
