@@ -205,8 +205,10 @@ class Context:
 
     def get_extensions_manifest_url(self) -> str:
         """Get CDN URL for bundled extensions manifest"""
+        # Sentinel host by default: no upstream feed is ever contacted
+        # implicitly. Set BROWSEROS_BUNDLED_EXTENSIONS_MANIFEST_URL to opt in.
         return self.env.bundled_extensions_manifest_url or (
-            "https://cdn.browseros.com/extensions/bundled-manifest.xml"
+            "https://updates.browser.invalid/extensions/bundled-manifest.xml"
         )
 
     def get_entitlements_dir(self) -> Path:

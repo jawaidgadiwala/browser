@@ -602,7 +602,7 @@ def main() -> None:
     parser.add_argument("--bundled-manifest", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--github-output", type=Path)
-    parser.add_argument("--cdn-base-url", default="https://cdn.browseros.com")
+    parser.add_argument("--cdn-base-url", default="https://updates.browser.invalid")
     args = parser.parse_args()
 
     env = EnvConfig()

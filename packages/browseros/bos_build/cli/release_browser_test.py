@@ -39,7 +39,7 @@ def _lane(
             filename,
             10,
             "9" * 64,
-            f"https://cdn.browseros.com/{filename}",
+            f"https://updates.browser.invalid/{filename}",
             "signature" if signed else "",
         )
         for _, filenames, signed in outcomes

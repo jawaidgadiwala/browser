@@ -171,7 +171,7 @@ class ExtensionRegistryTest(unittest.TestCase):
         agent = extension_by_name("agent")
         self.assertEqual(
             agent.crx_url("0.0.118.0"),
-            "https://cdn.browseros.com/extensions/agent-0.0.118.0.crx",
+            "https://updates.browser.invalid/extensions/agent-0.0.118.0.crx",
         )
         self.assertEqual(agent.crx_key("0.0.118.0"), "extensions/agent-0.0.118.0.crx")
 

@@ -19,7 +19,7 @@ from .common import (
 )
 
 ARTIFACT = {
-    "url": "https://cdn.browseros.com/releases/0.31.0/win/BrowserOS_v0.31.0_x64_installer.exe",
+    "url": "https://updates.browser.invalid/releases/0.31.0/win/BrowserOS_v0.31.0_x64_installer.exe",
     "sparkle_signature": "c2lnbmF0dXJl",
     "sparkle_length": 12345,
 }
@@ -71,7 +71,7 @@ def _release_metadata(
         "artifacts": {
             key: {
                 "filename": f"{prefix}_{key}",
-                "url": f"https://cdn.browseros.com/{prefix}_{key}",
+                "url": f"https://updates.browser.invalid/{prefix}_{key}",
             }
             for key in artifact_keys
         },
@@ -146,7 +146,7 @@ class ReleaseContractTest(unittest.TestCase):
         del self.metadata["win"]["artifacts"]["x64_zip"]
         self.metadata["win"]["artifacts"]["arm64_zip"] = {
             "filename": "stale.zip",
-            "url": "https://cdn.browseros.com/stale.zip",
+            "url": "https://updates.browser.invalid/stale.zip",
         }
 
         with self.assertRaisesRegex(RuntimeError, "artifact keys"):

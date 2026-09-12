@@ -35,7 +35,7 @@ class BundledExtensionsTest(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(
                 self._ctx("browserclaw").get_extensions_manifest_url(),
-                "https://cdn.browseros.com/extensions/bundled-manifest.xml",
+                "https://updates.browser.invalid/extensions/bundled-manifest.xml",
             )
 
     def test_bundled_manifest_staging_file_is_coherent(self) -> None:
@@ -82,13 +82,13 @@ class BundledExtensionsTest(unittest.TestCase):
                 "browseros",
                 BROWSEROS_AGENT_EXTENSION_ID,
                 "0.0.125.0",
-                "https://cdn.browseros.com/extensions/agent-0.0.125.0.crx",
+                "https://updates.browser.invalid/extensions/agent-0.0.125.0.crx",
             ),
             (
                 "browserclaw",
                 BROWSERCLAW_EXTENSION_ID,
                 "0.2.2.0",
-                "https://cdn.browseros.com/extensions/browserclaw-0.2.2.0.crx",
+                "https://updates.browser.invalid/extensions/browserclaw-0.2.2.0.crx",
             ),
         )
         for product, product_id, version, url in cases:
@@ -123,7 +123,7 @@ class BundledExtensionsTest(unittest.TestCase):
                 """<?xml version="1.0"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="lmihdclmhdopaeappmadgmglglcabodf">
-    <updatecheck codebase="https://cdn.browseros.com/extensions/agent-0.0.125.0.crx" version="0.0.125.0" />
+    <updatecheck codebase="https://updates.browser.invalid/extensions/agent-0.0.125.0.crx" version="0.0.125.0" />
   </app>
 </gupdate>
 """,
@@ -138,7 +138,7 @@ class BundledExtensionsTest(unittest.TestCase):
                 ExtensionInfo(
                     BROWSEROS_AGENT_EXTENSION_ID,
                     "0.0.125.0",
-                    "https://cdn.browseros.com/extensions/agent-0.0.125.0.crx",
+                    "https://updates.browser.invalid/extensions/agent-0.0.125.0.crx",
                 )
             ],
         )
@@ -358,17 +358,17 @@ class BundledExtensionsTest(unittest.TestCase):
             ExtensionInfo(
                 BROWSEROS_AGENT_EXTENSION_ID,
                 "0.0.115.0",
-                "https://cdn.browseros.com/extensions/agent.crx",
+                "https://updates.browser.invalid/extensions/agent.crx",
             ),
             ExtensionInfo(
                 BROWSEROS_BUG_REPORTER_EXTENSION_ID,
                 "52.0.0.0",
-                "https://cdn.browseros.com/extensions/bugreporter.crx",
+                "https://updates.browser.invalid/extensions/bugreporter.crx",
             ),
             ExtensionInfo(
                 BROWSERCLAW_EXTENSION_ID,
                 "0.0.1.0",
-                "https://cdn.browseros.com/extensions/browserclaw.crx",
+                "https://updates.browser.invalid/extensions/browserclaw.crx",
             ),
         ]
 

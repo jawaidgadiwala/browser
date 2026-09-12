@@ -347,11 +347,11 @@ def _github_metadata(product: str = "browserclaw"):
             "artifacts": {
                 "x64_installer": {
                     "filename": filename,
-                    "url": f"https://cdn.browseros.com/{filename}",
+                    "url": f"https://updates.browser.invalid/{filename}",
                 },
                 "x64_zip": {
                     "filename": zip_filename,
-                    "url": f"https://cdn.browseros.com/{zip_filename}",
+                    "url": f"https://updates.browser.invalid/{zip_filename}",
                 },
             },
         }
@@ -862,7 +862,7 @@ class PublishCliIntegrityTest(unittest.TestCase):
                     "universal": {
                         "filename": "BrowserOS_neo_v0.49.0_universal.dmg",
                         "url": (
-                            "https://cdn.browseros.com/releases/browserclaw/"
+                            "https://updates.browser.invalid/releases/browserclaw/"
                             "0.49.0/macos/BrowserOS_neo_v0.49.0_universal.dmg"
                         ),
                     }
@@ -872,7 +872,7 @@ class PublishCliIntegrityTest(unittest.TestCase):
                 "artifacts": {
                     "unknown": {
                         "filename": "unknown.bin",
-                        "url": "https://cdn.browseros.com/unknown.bin",
+                        "url": "https://updates.browser.invalid/unknown.bin",
                     }
                 }
             },

@@ -34,7 +34,7 @@ def _upload_ctx(
             browseros_server_resource_version=None,
             bundled_product_extension_version=None,
             r2_bucket="browseros",
-            r2_cdn_base_url="https://cdn.browseros.com",
+            r2_cdn_base_url="https://updates.browser.invalid",
             has_r2_config=lambda: True,
         ),
         artifact_registry=ArtifactRegistry(),

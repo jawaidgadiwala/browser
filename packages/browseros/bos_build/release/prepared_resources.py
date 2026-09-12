@@ -26,8 +26,10 @@ from .extensions.specs import spec_by_name
 
 PREPARED_RESOURCES_NAME = "prepared-resources.json"
 PREPARED_RESOURCES_SCHEMA = "browseros-prepared-resources-v1"
+# Sentinel host: Browser publishes no extension CDN yet, so the default must
+# never resolve. Set BROWSEROS_BUNDLED_EXTENSIONS_MANIFEST_URL to a real feed.
 DEFAULT_BUNDLED_MANIFEST_URL = (
-    "https://cdn.browseros.com/extensions/bundled-manifest.xml"
+    "https://updates.browser.invalid/extensions/bundled-manifest.xml"
 )
 
 

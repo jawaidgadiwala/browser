@@ -139,7 +139,7 @@ class ReleasePlanTest(unittest.TestCase):
         source_sha: str = SOURCE_SHA,
         run_id: str = "30418029456",
         run_attempt: str = "2",
-        cdn_base_url: str = "https://cdn.browseros.com",
+        cdn_base_url: str = "https://updates.browser.invalid",
         include_manifest: bool = True,
     ):
         selected_components = components or []
@@ -194,7 +194,7 @@ class ReleasePlanTest(unittest.TestCase):
             )
             urls = extract_enclosure_urls(manifest_bytes.decode())
             self.assertIn(
-                "https://cdn.browseros.com/extensions/agent-0.0.124.0.crx",
+                "https://updates.browser.invalid/extensions/agent-0.0.124.0.crx",
                 urls,
             )
             self.assertNotIn("latest", result.manifest_url)
@@ -422,7 +422,7 @@ class ReleasePlanTest(unittest.TestCase):
             ),
             "versioned": bundled_manifest().replace(
                 app.crx_url("0.0.123.0"),
-                "https://cdn.browseros.com/extensions/agent-latest.crx",
+                "https://updates.browser.invalid/extensions/agent-latest.crx",
             ),
         }
         component = Component(
@@ -564,16 +564,16 @@ class ReleasePlanTest(unittest.TestCase):
 
     def test_cdn_base_url_must_be_a_safe_https_origin(self) -> None:
         invalid = (
-            "http://cdn.browseros.com",
-            "https://user:secret@cdn.browseros.com",
-            "https://cdn.browseros.com/release-plans",
-            "https://cdn.browseros.com?token=secret",
-            "https://cdn.browseros.com#fragment",
+            "http://updates.browser.invalid",
+            "https://user:secret@updates.browser.invalid",
+            "https://updates.browser.invalid/release-plans",
+            "https://updates.browser.invalid?token=secret",
+            "https://updates.browser.invalid#fragment",
             "https:///missing-host",
-            "https://cdn.browseros.com\rINJECTED=1",
-            "https://cdn.browseros.com\nINJECTED=1",
-            "https://cdn.browseros.com\tpath",
-            "https://cdn.browseros.com\\evil",
+            "https://updates.browser.invalid\rINJECTED=1",
+            "https://updates.browser.invalid\nINJECTED=1",
+            "https://updates.browser.invalid\tpath",
+            "https://updates.browser.invalid\\evil",
         )
         for url in invalid:
             with self.subTest(url=url), tempfile.TemporaryDirectory() as temp_dir:
@@ -618,7 +618,7 @@ class ReleasePlanTest(unittest.TestCase):
             result = PlanResult(
                 plan_path=root / "release-plan.json",
                 plan_key="release-plans/plan.json",
-                plan_url="https://cdn.browseros.com\rINJECTED=1",
+                plan_url="https://updates.browser.invalid\rINJECTED=1",
                 manifest_path=None,
                 manifest_key="",
                 manifest_url="",

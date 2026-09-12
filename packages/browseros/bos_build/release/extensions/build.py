@@ -18,7 +18,7 @@ from .workspace import (
 )
 
 
-_UPDATE_MANIFEST_URL = "https://cdn.browseros.com/extensions/update-manifest.xml"
+_UPDATE_MANIFEST_URL = "https://updates.browser.invalid/extensions/update-manifest.xml"
 _UPDATE_FEED_NAMES = frozenset({"agent", "browserclaw", "bugreporter"})
 
 

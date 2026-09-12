@@ -29,7 +29,7 @@ def _artifact(name: str, signed: bool = True) -> ArtifactAttestation:
         filename=name,
         size=10,
         sha256="4" * 64,
-        url=f"https://cdn.browseros.com/{name}",
+        url=f"https://updates.browser.invalid/{name}",
         sparkle_signature="signature" if signed else "",
     )
 

@@ -132,7 +132,7 @@ class ComponentReleaseCliTest(unittest.TestCase):
             "bos_build.cli.release_component._read_manifest", return_value=content
         ):
             allocations = _manifest_allocations(
-                "browserclaw", ["https://cdn.browseros.com/extensions/update.xml"]
+                "browserclaw", ["https://updates.browser.invalid/extensions/update.xml"]
             )
 
         self.assertEqual(len(allocations), 1)

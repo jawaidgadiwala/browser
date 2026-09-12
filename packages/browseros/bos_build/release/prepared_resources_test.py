@@ -84,7 +84,7 @@ class FakeOperations:
         return (
             '<gupdate xmlns="http://www.google.com/update2/response">'
             f'<app appid="{BROWSEROS_BUG_REPORTER_EXTENSION_ID}">'
-            '<updatecheck codebase="https://cdn.browseros.com/bug.crx" '
+            '<updatecheck codebase="https://updates.browser.invalid/bug.crx" '
             'version="54.0.0.0"/></app></gupdate>'
         )
 
@@ -114,7 +114,7 @@ class PreparedResourcesTest(unittest.TestCase):
                 "app-onboard": "0.0.12",
             },
             output_dir=self.output,
-            manifest_url="https://cdn.browseros.com/extensions/bundled-manifest.xml",
+            manifest_url="https://updates.browser.invalid/extensions/bundled-manifest.xml",
         )
 
     def test_prepares_each_common_resource_once_and_binds_identity(self) -> None:

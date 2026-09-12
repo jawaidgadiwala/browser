@@ -195,8 +195,8 @@ class EnvConfig:
 
     @property
     def r2_cdn_base_url(self) -> str:
-        """CDN base URL for R2 artifacts (default: http://cdn.browseros.com)"""
-        return os.environ.get("R2_CDN_BASE_URL", "http://cdn.browseros.com")
+        """CDN base URL for R2 artifacts (default: an unresolvable sentinel)"""
+        return os.environ.get("R2_CDN_BASE_URL", "https://updates.browser.invalid")
 
     @property
     def r2_endpoint_url(self) -> Optional[str]:

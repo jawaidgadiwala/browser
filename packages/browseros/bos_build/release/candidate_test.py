@@ -610,7 +610,7 @@ class CandidateMergeTest(unittest.TestCase):
                     "filename": "BrowserOS.dmg",
                     "size": 1,
                     "sha256": "9" * 64,
-                    "url": "https://cdn.browseros.com/BrowserOS.dmg",
+                    "url": "https://updates.browser.invalid/BrowserOS.dmg",
                     "sparkle_signature": "signature",
                 }
             },

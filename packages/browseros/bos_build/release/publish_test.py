@@ -21,7 +21,7 @@ class ReleaseSourceKeyTest(unittest.TestCase):
             "0.31.0",
             {
                 "filename": "BrowserOS_v0.31.0_x64_installer.exe",
-                "url": "https://cdn.browseros.com/releases/0.31.0/win/BrowserOS_v0.31.0_x64_installer.exe",
+                "url": "https://updates.browser.invalid/releases/0.31.0/win/BrowserOS_v0.31.0_x64_installer.exe",
             },
         )
 
@@ -49,7 +49,7 @@ class ReleaseSourceKeyTest(unittest.TestCase):
         return cast(
             Context,
             SimpleNamespace(
-                env=SimpleNamespace(r2_cdn_base_url="https://cdn.browseros.com"),
+                env=SimpleNamespace(r2_cdn_base_url="https://updates.browser.invalid"),
                 product=get_product_descriptor(product),
             ),
         )
@@ -61,7 +61,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
         ctx = SimpleNamespace(
             release_version="0.49.0",
             env=SimpleNamespace(
-                r2_cdn_base_url="https://cdn.browseros.com",
+                r2_cdn_base_url="https://updates.browser.invalid",
                 r2_bucket="bucket",
             ),
             product=get_product_descriptor("browserclaw"),
@@ -75,7 +75,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
                         "artifacts": {
                             "x64_installer": {
                                 "filename": "BrowserOS_neo_installer.exe",
-                                "url": "https://cdn.browseros.com/installer.exe",
+                                "url": "https://updates.browser.invalid/installer.exe",
                             }
                         }
                     }
@@ -112,7 +112,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
         ctx = SimpleNamespace(
             release_version="0.49.0",
             env=SimpleNamespace(
-                r2_cdn_base_url="https://cdn.browseros.com",
+                r2_cdn_base_url="https://updates.browser.invalid",
                 r2_bucket="bucket",
             ),
             product=get_product_descriptor("browserclaw"),
@@ -128,11 +128,11 @@ class PublishModuleIntegrityTest(unittest.TestCase):
                 "artifacts": {
                     "x64_installer": {
                         "filename": "BrowserOS_neo_installer.exe",
-                        "url": "https://cdn.browseros.com/installer.exe",
+                        "url": "https://updates.browser.invalid/installer.exe",
                     },
                     "x64_zip": {
                         "filename": "BrowserOS_neo_installer.zip",
-                        "url": "https://cdn.browseros.com/installer.zip",
+                        "url": "https://updates.browser.invalid/installer.zip",
                     },
                 },
             }
@@ -162,7 +162,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
         ctx = SimpleNamespace(
             release_version="0.49.0",
             env=SimpleNamespace(
-                r2_cdn_base_url="https://cdn.browseros.com",
+                r2_cdn_base_url="https://updates.browser.invalid",
                 r2_bucket="bucket",
             ),
             product=get_product_descriptor("browserclaw"),
@@ -188,7 +188,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
         ctx = SimpleNamespace(
             release_version="0.49.0",
             env=SimpleNamespace(
-                r2_cdn_base_url="https://cdn.browseros.com",
+                r2_cdn_base_url="https://updates.browser.invalid",
                 r2_bucket="bucket",
             ),
             product=get_product_descriptor("browserclaw"),
@@ -202,7 +202,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
                         "artifacts": {
                             "x64_installer": {
                                 "filename": "BrowserOS_neo_installer.exe",
-                                "url": "https://cdn.browseros.com/installer.exe",
+                                "url": "https://updates.browser.invalid/installer.exe",
                             }
                         }
                     }
@@ -222,7 +222,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
             release_version="0.49.0",
             env=SimpleNamespace(
                 r2_bucket="bucket",
-                r2_cdn_base_url="https://cdn.browseros.com",
+                r2_cdn_base_url="https://updates.browser.invalid",
             ),
             product=get_product_descriptor("browserclaw"),
         )
@@ -231,7 +231,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
                 "artifacts": {
                     "unknown": {
                         "filename": "unknown.bin",
-                        "url": "https://cdn.browseros.com/unknown.bin",
+                        "url": "https://updates.browser.invalid/unknown.bin",
                     }
                 }
             }
@@ -256,7 +256,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
             release_version="0.49.0",
             env=SimpleNamespace(
                 r2_bucket="bucket",
-                r2_cdn_base_url="https://cdn.browseros.com",
+                r2_cdn_base_url="https://updates.browser.invalid",
             ),
             product=get_product_descriptor("browserclaw"),
         )
@@ -266,7 +266,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
                     "universal": {
                         "filename": "BrowserOS_neo_v0.49.0_universal.dmg",
                         "url": (
-                            "https://cdn.browseros.com/releases/browserclaw/"
+                            "https://updates.browser.invalid/releases/browserclaw/"
                             "0.49.0/macos/BrowserOS_neo_v0.49.0_universal.dmg"
                         ),
                     }
@@ -276,7 +276,7 @@ class PublishModuleIntegrityTest(unittest.TestCase):
                 "artifacts": {
                     "unknown": {
                         "filename": "unknown.bin",
-                        "url": "https://cdn.browseros.com/unknown.bin",
+                        "url": "https://updates.browser.invalid/unknown.bin",
                     }
                 }
             },

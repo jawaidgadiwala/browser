@@ -26,14 +26,14 @@ from .spec import feed_by_key, server_feed
 
 MAC_ARTIFACT = {
     "filename": "BrowserOS_v0.47.0.2_arm64.dmg",
-    "url": "https://cdn.browseros.com/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg",
+    "url": "https://updates.browser.invalid/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg",
     "sparkle_signature": "MACSIG==",
     "sparkle_length": 265462841,
 }
 
 WIN_ARTIFACT = {
     "filename": "BrowserOS_v0.47.0.2_x64_installer.exe",
-    "url": "https://cdn.browseros.com/releases/browseros/0.47.0.2/win/BrowserOS_v0.47.0.2_x64_installer.exe",
+    "url": "https://updates.browser.invalid/releases/browseros/0.47.0.2/win/BrowserOS_v0.47.0.2_x64_installer.exe",
     "sparkle_signature": "WINSIG==",
     "sparkle_length": 190943800,
 }
@@ -43,7 +43,7 @@ GOLDEN_MAC_APPCAST = """\
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
     <title>BrowserOS</title>
-    <link>https://cdn.browseros.com/appcast.xml</link>
+    <link>https://updates.browser.invalid/appcast.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
 
@@ -54,9 +54,9 @@ GOLDEN_MAC_APPCAST = """\
       <sparkle:version>10000.0.47.0.2</sparkle:version>
       <sparkle:shortVersionString>0.47.0.2</sparkle:shortVersionString>
       <pubDate>Fri, 19 Jun 2026 06:41:33 +0000</pubDate>
-      <link>https://www.browseros.com/</link>
+      <link>https://github.com/jawaidgadiwala/browser</link>
       <enclosure
-        url="https://cdn.browseros.com/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg"
+        url="https://updates.browser.invalid/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg"
         sparkle:edSignature="MACSIG=="
         length="265462841"
         type="application/octet-stream" />
@@ -72,7 +72,7 @@ GOLDEN_WIN_APPCAST = """\
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
     <title>BrowserOS Windows Updates</title>
-    <link>https://cdn.browseros.com/appcast-win.xml</link>
+    <link>https://updates.browser.invalid/appcast-win.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
 
@@ -83,9 +83,9 @@ GOLDEN_WIN_APPCAST = """\
       <sparkle:version>10000.0.47.0.2</sparkle:version>
       <sparkle:shortVersionString>0.47.0.2</sparkle:shortVersionString>
       <pubDate>Fri, 19 Jun 2026 06:41:33 +0000</pubDate>
-      <link>https://www.browseros.com/</link>
+      <link>https://github.com/jawaidgadiwala/browser</link>
       <enclosure
-        url="https://cdn.browseros.com/releases/browseros/0.47.0.2/win/BrowserOS_v0.47.0.2_x64_installer.exe"
+        url="https://updates.browser.invalid/releases/browseros/0.47.0.2/win/BrowserOS_v0.47.0.2_x64_installer.exe"
         sparkle:os="windows"
         sparkle:edSignature="WINSIG=="
         length="190943800"
@@ -101,7 +101,7 @@ GOLDEN_CLAW_SERVER_APPCAST = """\
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
   <channel>
     <title>BrowserOS Claw Server</title>
-    <link>https://cdn.browseros.com/appcast-claw-server.xml</link>
+    <link>https://updates.browser.invalid/appcast-claw-server.xml</link>
     <description>BrowserOS Claw Server binary updates</description>
     <language>en</language>
 
@@ -111,7 +111,7 @@ GOLDEN_CLAW_SERVER_APPCAST = """\
 
       <!-- macOS arm64 -->
       <enclosure
-        url="https://cdn.browseros.com/server/browserclaw_server_0.0.5_darwin_arm64.zip"
+        url="https://updates.browser.invalid/server/browserclaw_server_0.0.5_darwin_arm64.zip"
         sparkle:os="macos"
         sparkle:arch="arm64"
         sparkle:edSignature="CLAWSIG=="
@@ -127,10 +127,10 @@ GOLDEN_UPDATE_MANIFEST = """\
 <?xml version='1.0' encoding='UTF-8'?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="adlpneommgkgeanpaekgoaolcpncohkf">
-    <updatecheck codebase="https://cdn.browseros.com/extensions/bugreporter-54.0.0.0.crx" version="54.0.0.0" />
+    <updatecheck codebase="https://updates.browser.invalid/extensions/bugreporter-54.0.0.0.crx" version="54.0.0.0" />
   </app>
   <app appid="lmihdclmhdopaeappmadgmglglcabodf">
-    <updatecheck codebase="https://cdn.browseros.com/extensions/agent-0.0.118.0.crx" version="0.0.118.0" />
+    <updatecheck codebase="https://updates.browser.invalid/extensions/agent-0.0.118.0.crx" version="0.0.118.0" />
   </app>
 </gupdate>
 """
@@ -139,13 +139,13 @@ GOLDEN_EXTENSIONS_JSON = """\
 {
   "extensions": {
     "adlpneommgkgeanpaekgoaolcpncohkf": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
+      "external_update_url": "https://updates.browser.invalid/extensions/update-manifest.alpha.xml"
     },
     "jllpmhghjcbaccmpindcmpkddjekbnmm": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
+      "external_update_url": "https://updates.browser.invalid/extensions/update-manifest.alpha.xml"
     },
     "lmihdclmhdopaeappmadgmglglcabodf": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
+      "external_update_url": "https://updates.browser.invalid/extensions/update-manifest.alpha.xml"
     }
   }
 }
@@ -295,7 +295,7 @@ class ExtensionsRenderTest(unittest.TestCase):
         content = render_extensions_json("prod")
         self.assertIn("jllpmhghjcbaccmpindcmpkddjekbnmm", content)
         self.assertIn(
-            "https://cdn.browseros.com/extensions/update-manifest.xml", content
+            "https://updates.browser.invalid/extensions/update-manifest.xml", content
         )
         self.assertNotIn("alpha", content)
 
@@ -320,12 +320,12 @@ class ExtensionsRenderTest(unittest.TestCase):
         invalid.append(missing)
         extra = json.loads(render_extensions_json("alpha"))
         extra["extensions"]["a" * 32] = {
-            "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.alpha.xml"
+            "external_update_url": "https://updates.browser.invalid/extensions/update-manifest.alpha.xml"
         }
         invalid.append(extra)
         alternate_install = json.loads(render_extensions_json("alpha"))
         next(iter(alternate_install["extensions"].values()))["external_crx"] = (
-            "https://cdn.browseros.com/extensions/agent-0.0.118.0.crx"
+            "https://updates.browser.invalid/extensions/agent-0.0.118.0.crx"
         )
         invalid.append(alternate_install)
 
@@ -440,21 +440,21 @@ class VersionHelpersTest(unittest.TestCase):
         self.assertEqual(
             extract_enclosure_urls(GOLDEN_MAC_APPCAST),
             [
-                "https://cdn.browseros.com/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg"
+                "https://updates.browser.invalid/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg"
             ],
         )
         self.assertEqual(
             extract_enclosure_urls(GOLDEN_UPDATE_MANIFEST),
             [
-                "https://cdn.browseros.com/extensions/bugreporter-54.0.0.0.crx",
-                "https://cdn.browseros.com/extensions/agent-0.0.118.0.crx",
+                "https://updates.browser.invalid/extensions/bugreporter-54.0.0.0.crx",
+                "https://updates.browser.invalid/extensions/agent-0.0.118.0.crx",
             ],
         )
 
     def test_extract_channel_metadata(self):
         self.assertEqual(
             extract_channel_metadata(GOLDEN_WIN_APPCAST),
-            ("BrowserOS Windows Updates", "https://cdn.browseros.com/appcast-win.xml"),
+            ("BrowserOS Windows Updates", "https://updates.browser.invalid/appcast-win.xml"),
         )
 
 

@@ -39,7 +39,7 @@ def _appcast(bundle_id: str, channel: str, version: str | None = None) -> str:
         item = f"""
     <item>
       <sparkle:version>{version}</sparkle:version>
-      <enclosure url="https://cdn.browseros.com/server/test.zip" />
+      <enclosure url="https://updates.browser.invalid/server/test.zip" />
     </item>
 """
     return f"""\

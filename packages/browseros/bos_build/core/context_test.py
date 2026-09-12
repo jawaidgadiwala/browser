@@ -28,7 +28,7 @@ class GetAppPathTest(unittest.TestCase):
 
         self.assertEqual(
             ctx.get_extensions_manifest_url(),
-            "https://cdn.browseros.com/extensions/bundled-manifest.xml",
+            "https://updates.browser.invalid/extensions/bundled-manifest.xml",
         )
 
     def test_resource_mode_defaults_to_published(self):

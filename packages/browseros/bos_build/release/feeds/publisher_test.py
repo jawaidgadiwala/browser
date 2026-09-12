@@ -75,7 +75,7 @@ class FakeR2Client:
 
 
 def _artifact(
-    url="https://cdn.browseros.com/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg",
+    url="https://updates.browser.invalid/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg",
 ):
     return {
         "filename": url.rsplit("/", 1)[-1],
@@ -99,7 +99,7 @@ def _browserclaw_appcast(sparkle_version="10000.0.47.0.2"):
     return render_browser_appcast(
         feed_by_key("appcast-claw.xml"),
         _artifact(
-            "https://cdn.browseros.com/releases/browserclaw/0.47.0.2/"
+            "https://updates.browser.invalid/releases/browserclaw/0.47.0.2/"
             "macos/BrowserOS_neo_v0.47.0.2_universal.dmg"
         ),
         "0.47.0.2",
@@ -327,8 +327,8 @@ class PublisherTestCase(unittest.TestCase):
 
     def test_wrong_channel_empty_live_shell_fails_closed(self):
         live = _empty_item_mac_appcast().replace(
-            "https://cdn.browseros.com/appcast.xml",
-            "https://cdn.browseros.com/appcast-claw.xml",
+            "https://updates.browser.invalid/appcast.xml",
+            "https://updates.browser.invalid/appcast-claw.xml",
         )
         publisher = self._publisher({"appcast.xml": live.encode()})
 
@@ -518,7 +518,7 @@ class PublisherTestCase(unittest.TestCase):
             "channel release children": legacy.replace(
                 "    <item>\n    </item>",
                 "    <sparkle:version>10000.0.99.0</sparkle:version>\n"
-                '    <enclosure url="https://cdn.browseros.com/release.dmg"/>',
+                '    <enclosure url="https://updates.browser.invalid/release.dmg"/>',
             ),
             "root release child": legacy.replace(
                 "</rss>",
@@ -563,7 +563,7 @@ class PublisherTestCase(unittest.TestCase):
     def test_browserclaw_legacy_title_requires_canonical_link(self):
         spec = feed_by_key("appcast-claw.xml")
         live = _legacy_browserclaw_appcast().replace(
-            spec.link, "https://cdn.browseros.com/appcast.xml"
+            spec.link, "https://updates.browser.invalid/appcast.xml"
         )
         publisher = self._publisher({spec.key: live.encode()})
 
@@ -1232,7 +1232,7 @@ class PublisherTestCase(unittest.TestCase):
 
         alternate_install = json.loads(render_extensions_json("alpha"))
         next(iter(alternate_install["extensions"].values()))["external_crx"] = (
-            "https://cdn.browseros.com/extensions/agent-0.0.118.0.crx"
+            "https://updates.browser.invalid/extensions/agent-0.0.118.0.crx"
         )
         invalid.append(alternate_install)
 

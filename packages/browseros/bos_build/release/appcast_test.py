@@ -16,7 +16,7 @@ from .feeds.spec import browser_feeds_for_product
 def _artifact(filename: str) -> dict:
     return {
         "filename": filename,
-        "url": f"https://cdn.browseros.com/releases/browseros/0.47.0.2/{filename}",
+        "url": f"https://updates.browser.invalid/releases/browseros/0.47.0.2/{filename}",
         "sparkle_signature": "SIG==",
         "sparkle_length": 100,
     }

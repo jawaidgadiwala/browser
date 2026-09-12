@@ -89,7 +89,7 @@ def _gate() -> LaneGate:
                 filename=filename,
                 size=len(filename),
                 sha256=_checksum(filename),
-                url=f"https://cdn.browseros.com/{filename}",
+                url=f"https://updates.browser.invalid/{filename}",
                 sparkle_signature="signature" if platform in {"macos", "win"} else "",
             )
             for platform, platform_artifacts in ARTIFACTS.items()
@@ -115,7 +115,7 @@ def _metadata() -> dict[str, dict]:
             "artifacts": {
                 key: {
                     "filename": filename,
-                    "url": f"https://cdn.browseros.com/{filename}",
+                    "url": f"https://updates.browser.invalid/{filename}",
                     "size": len(filename),
                     "sha256": _checksum(filename),
                     "sparkle_signature": (

@@ -19,7 +19,9 @@ from ...core.products import (
 from ...products import SERVER_BUNDLES
 from ...products.server_binaries import ServerBundle
 
-CDN_BASE_URL = "https://cdn.browseros.com"
+# Sentinel host: nothing is published here. Override with R2_CDN_BASE_URL /
+# --cdn-base-url once Browser has its own feed host.
+CDN_BASE_URL = "https://updates.browser.invalid"
 
 
 @dataclass(frozen=True)
