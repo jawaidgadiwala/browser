@@ -24,7 +24,10 @@ import { join, resolve } from 'node:path'
 
 export const BUN_DIR = 'third_party/bun'
 
-interface BunPlatform {
+/**
+ * @public
+ */
+export interface BunPlatform {
   /** Build target id (packages/build-server-tools targets.ts). */
   id: string
   /** Asset base name in the GitHub release, without .zip. */
@@ -138,15 +141,90 @@ function sha256(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
 
-function stampPath(binaryPath: string): string {
-  return `${binaryPath}.sha256`
+export function stampPath(binaryPath: string): string {
+  return `${binaryPath}.json`
 }
 
-/** A binary is up to date when its stamp matches the expected zip checksum. */
+/**
+ * What a cached binary is, written next to it. The executable digest is what
+ * makes offline reuse safe; version and platform are what make it *this*
+ * runtime rather than whatever a previous pin downloaded.
+ *
+ * @public
+ */
+export interface BunStamp {
+  version: string
+  platform: string
+  asset: string
+  /** sha256 of the extracted executable. */
+  binarySha: string
+  /** sha256 of the release zip, absent when the release shipped no checksums. */
+  zipSha?: string
+}
+
+/** @public */
+export function isStampCurrent(
+  stamp: BunStamp | null,
+  platform: BunPlatform,
+  version: string,
+  expectedZipSha?: string,
+): boolean {
+  if (!stamp) {
+    return false
+  }
+  if (
+    stamp.version !== version ||
+    stamp.platform !== platform.id ||
+    stamp.asset !== platform.asset
+  ) {
+    return false
+  }
+  return expectedZipSha === undefined || stamp.zipSha === expectedZipSha
+}
+
+function parseStamp(raw: string): BunStamp | null {
+  try {
+    const value = JSON.parse(raw) as Partial<BunStamp>
+    if (
+      typeof value.version !== 'string' ||
+      typeof value.platform !== 'string' ||
+      typeof value.asset !== 'string' ||
+      typeof value.binarySha !== 'string'
+    ) {
+      return null
+    }
+    return {
+      version: value.version,
+      platform: value.platform,
+      asset: value.asset,
+      binarySha: value.binarySha,
+      zipSha: typeof value.zipSha === 'string' ? value.zipSha : undefined,
+    }
+  } catch {
+    return null
+  }
+}
+
+async function readStamp(binaryPath: string): Promise<BunStamp | null> {
+  try {
+    return parseStamp(await readFile(stampPath(binaryPath), 'utf-8'))
+  } catch {
+    return null
+  }
+}
+
+/**
+ * A cached binary is reusable only when its metadata names the pinned version
+ * and platform and its bytes still hash to what was extracted. Pre-metadata
+ * `.sha256` stamps read as missing, so a changed pin always re-fetches.
+ */
 async function isUpToDate(
-  binaryPath: string,
-  expectedZipSha: string | undefined,
+  platform: BunPlatform,
+  root: string,
+  version: string,
+  expectedZipSha?: string,
 ): Promise<boolean> {
+  const binaryPath = bunBinaryPath(platform, root)
   if (!existsSync(binaryPath)) {
     return false
   }
@@ -154,16 +232,27 @@ async function isUpToDate(
   if (info.size === 0) {
     return false
   }
-  if (!expectedZipSha) {
-    return true
-  }
-  try {
-    return (
-      (await readFile(stampPath(binaryPath), 'utf-8')).trim() === expectedZipSha
-    )
-  } catch {
+  const stamp = await readStamp(binaryPath)
+  if (!isStampCurrent(stamp, platform, version, expectedZipSha)) {
     return false
   }
+  return sha256(await readFile(binaryPath)) === stamp?.binarySha
+}
+
+async function writeStamp(
+  platform: BunPlatform,
+  binaryPath: string,
+  version: string,
+  zipSha: string,
+): Promise<void> {
+  const stamp: BunStamp = {
+    version,
+    platform: platform.id,
+    asset: platform.asset,
+    binarySha: sha256(await readFile(binaryPath)),
+    zipSha,
+  }
+  await writeFile(stampPath(binaryPath), `${JSON.stringify(stamp, null, 2)}\n`)
 }
 
 async function extractBunExecutable(
@@ -218,15 +307,10 @@ export async function ensureBunBinaries(
   const targetDir = join(root, BUN_DIR)
   await mkdir(targetDir, { recursive: true })
 
-  // A stamped, non-empty binary is trusted as-is so repeat builds stay offline.
+  // A cache stamped with this version and matching digests is trusted as-is,
+  // so repeat builds of an unchanged pin stay offline.
   const stamped = await Promise.all(
-    platforms.map(async (platform) => {
-      const binaryPath = bunBinaryPath(platform, root)
-      return (
-        (await isUpToDate(binaryPath, undefined)) &&
-        existsSync(stampPath(binaryPath))
-      )
-    }),
+    platforms.map((platform) => isUpToDate(platform, root, version)),
   )
   if (stamped.every(Boolean)) {
     for (const platform of platforms) {
@@ -246,7 +330,7 @@ export async function ensureBunBinaries(
   for (const platform of platforms) {
     const binaryPath = bunBinaryPath(platform, root)
     const expected = checksums?.get(`${platform.asset}.zip`)
-    if (await isUpToDate(binaryPath, expected)) {
+    if (await isUpToDate(platform, root, version, expected)) {
       log(`· ${platform.file} already present`)
       results.push(binaryPath)
       continue
@@ -269,7 +353,7 @@ export async function ensureBunBinaries(
     } finally {
       await rm(zipPath, { force: true })
     }
-    await writeFile(stampPath(binaryPath), `${actual}\n`)
+    await writeStamp(platform, binaryPath, version, actual)
     log(`✓ ${platform.file}`)
     results.push(binaryPath)
   }

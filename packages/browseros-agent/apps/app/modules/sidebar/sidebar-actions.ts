@@ -104,6 +104,7 @@ export const sidebarActions = {
     tabId?: number
     url?: string
     title?: string
+    spaceId?: SpaceId
     parentId?: ItemId
     index?: number
   }) => run('Pinning', sendSidebarMessage(SidebarMessageType.pinTab, data)),

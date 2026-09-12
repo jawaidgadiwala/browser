@@ -1,4 +1,5 @@
 import { storage } from '@wxt-dev/storage'
+import { sentry } from '@/lib/sentry/sentry'
 import {
   type LegacySnapshot,
   type LegacySpace,
@@ -147,8 +148,28 @@ let pending: Promise<void> | null = null
 /**
  * Every reader goes through this, so background listeners can stay
  * synchronous (MV3 wake-up) while still never seeing a pre-migration store.
+ *
+ * Concurrent callers share one attempt, but a failed attempt is never cached:
+ * it is reported to every caller (so nothing writes against a half-migrated
+ * document) and the next call retries.
  */
 export function ensureMigrated(): Promise<void> {
-  pending ??= runMigrations().catch(() => undefined)
+  pending ??= runMigrations().catch((error: unknown) => {
+    pending = null
+    sentry.captureException(error, {
+      extra: { message: 'Sidebar storage migration failed' },
+    })
+    throw error
+  })
   return pending
+}
+
+/**
+ * Test seam: drops the memoized attempt. Production code never needs it,
+ * because a failed attempt already clears itself.
+ *
+ * @public
+ */
+export function resetMigrationForTests(): void {
+  pending = null
 }

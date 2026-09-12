@@ -55,6 +55,14 @@ import { NO_GROUP } from './host/host-adapter'
 const AGENT_GROUP_TITLE = /^[a-z0-9-]+\//
 
 /**
+ * Surfaced to the panel when a restore has nowhere to put the tab, so the
+ * archive entry stays put instead of vanishing.
+ *
+ * @public
+ */
+export const NO_WINDOW_ERROR = 'Open a browser window first'
+
+/**
  * @public
  */
 export function isAgentGroupTitle(title: string | undefined): boolean {
@@ -167,30 +175,66 @@ function tabItems(state: SidebarState, rootId: ItemId) {
 }
 
 /**
- * Rebuild the tabId -> itemId map from live tabs by URL. Pinned nodes win
- * over essentials, and each tab is claimed at most once, so two windows
- * showing the same site do not both claim the pinned row.
+ * Whether an item owned by `spaceId` may claim `tab`. A pinned row belongs to
+ * one space, so it only ever links a tab living in that space's group;
+ * essentials are sites and may reuse any tab. Agent-owned tabs belong to
+ * nobody: linking one would let pinned close/reset act on an agent session.
  */
-export function linkTabsToItems(
+function canOwnTab(
   state: SidebarState,
-  tabs: TabInfo[],
-): Record<string, ItemId> {
-  const targets: Array<{ id: ItemId; url: string }> = []
+  spaceId: SpaceId | undefined,
+  tab: TabInfo,
+  groups: GroupInfo[],
+): boolean {
+  const group = groups.find((candidate) => candidate.id === tab.groupId)
+  if (isAgentGroupTitle(group?.title)) return false
+  if (spaceId === undefined) return true
+  return spaceForGroup(state, group)?.id === spaceId
+}
+
+interface LinkTarget {
+  id: ItemId
+  url: string
+  /** Owning space, or undefined for an essential. */
+  spaceId?: SpaceId
+}
+
+function linkTargets(state: SidebarState): LinkTarget[] {
+  const targets: LinkTarget[] = []
   for (const spaceId of state.spaces.order) {
     const space = state.spaces.byId[spaceId]
-    if (space) targets.push(...tabItems(state, space.containers.pinned))
+    if (!space) continue
+    for (const target of tabItems(state, space.containers.pinned)) {
+      targets.push({ ...target, spaceId })
+    }
   }
   for (const item of essentialsList(state)) {
     if (item.data.kind === 'tab')
       targets.push({ id: item.id, url: item.data.url })
   }
+  return targets
+}
 
+/**
+ * Rebuild the tabId -> itemId map from live tabs by URL. Pinned nodes win
+ * over essentials, and each tab is claimed at most once, so two windows
+ * showing the same site do not both claim the pinned row. A pinned row only
+ * claims a tab inside its own space, so the same URL open in two spaces does
+ * not cross-link.
+ */
+export function linkTabsToItems(
+  state: SidebarState,
+  tabs: TabInfo[],
+  groups: GroupInfo[] = [],
+): Record<string, ItemId> {
   const links: Record<string, ItemId> = {}
   const claimed = new Set<number>()
-  for (const target of targets) {
+  for (const target of linkTargets(state)) {
     const tab = tabs.find(
       (candidate) =>
-        !claimed.has(candidate.id) && !isDrifted(target.url, candidate.url),
+        !claimed.has(candidate.id) &&
+        !isDrifted(target.url, candidate.url) &&
+        canOwnTab(state, target.spaceId, candidate, groups),
     )
     if (!tab) continue
     claimed.add(tab.id)
@@ -306,9 +350,10 @@ export class SidebarReconciler {
       const session = await sessionStore.read()
       const windowIds = await this.normalWindowIds()
 
+      const allGroups = await host.listGroups()
       const groupLinks: Record<string, number> = {}
       for (const windowId of windowIds) {
-        const groups = await host.listGroups(windowId)
+        const groups = allGroups.filter((group) => group.windowId === windowId)
         for (const spaceId of state.spaces.order) {
           const space = state.spaces.byId[spaceId]
           if (!space) continue
@@ -321,7 +366,7 @@ export class SidebarReconciler {
 
       const tabs = await host.listTabs()
       const liveTabIds = new Set(tabs.map((tab) => tab.id))
-      const tabLinks = linkTabsToItems(state, tabs)
+      const tabLinks = linkTabsToItems(state, tabs, allGroups)
 
       const lastSelected: Record<SpaceId, number> = {}
       for (const [spaceId, tabId] of Object.entries(session.lastSelected)) {
@@ -428,7 +473,8 @@ export class SidebarReconciler {
             id === key ? [] : [itemId],
           ),
         )
-        const match = this.matchItemByUrl(state, tab.url, claimed)
+        const groups = await this.deps.host.listGroups(tab.windowId)
+        const match = this.matchItemByUrl(state, tab, groups, claimed)
         if (match) patch.tabLinks = { ...session.tabLinks, [key]: match }
       }
     }
@@ -446,21 +492,15 @@ export class SidebarReconciler {
 
   private matchItemByUrl(
     state: SidebarState,
-    url: string,
+    tab: TabInfo,
+    groups: GroupInfo[],
     claimed: Set<ItemId>,
   ): ItemId | undefined {
-    const targets: Array<{ id: ItemId; url: string }> = []
-    for (const spaceId of state.spaces.order) {
-      const space = state.spaces.byId[spaceId]
-      if (space) targets.push(...tabItems(state, space.containers.pinned))
-    }
-    for (const item of essentialsList(state)) {
-      if (item.data.kind === 'tab') {
-        targets.push({ id: item.id, url: item.data.url })
-      }
-    }
-    return targets.find(
-      (target) => !claimed.has(target.id) && !isDrifted(target.url, url),
+    return linkTargets(state).find(
+      (target) =>
+        !claimed.has(target.id) &&
+        !isDrifted(target.url, tab.url) &&
+        canOwnTab(state, target.spaceId, tab, groups),
     )?.id
   }
 
@@ -823,14 +863,19 @@ export class SidebarReconciler {
         ([, id]) => id === itemId,
       )
       const tabs = await this.deps.host.listTabs()
-      // Essentials are sites, not tabs: any window already showing the URL wins.
+      const groups = await this.deps.host.listGroups()
+      const spaceId = this.spaceIdOfItem(state, itemId)
+      // Essentials are sites, not tabs: any window already showing the URL
+      // wins. A pin belongs to one space, so it only reuses a tab of its own.
       const live =
         (linked
           ? tabs.find((tab) => tab.id === Number(linked[0]))
           : undefined) ??
         tabs.find(
           (tab) =>
-            item.data.kind === 'tab' && !isDrifted(item.data.url, tab.url),
+            item.data.kind === 'tab' &&
+            !isDrifted(item.data.url, tab.url) &&
+            canOwnTab(state, spaceId, tab, groups),
         )
       if (live) {
         await this.deps.host.activate(live.id)
@@ -839,7 +884,6 @@ export class SidebarReconciler {
         })
         return
       }
-      const spaceId = this.spaceIdOfItem(state, itemId)
       const windowId = await this.targetWindowId()
       if (windowId === undefined) return
       const space = spaceId
@@ -870,12 +914,15 @@ export class SidebarReconciler {
 
   /**
    * Pin a live tab, or a bare URL when the source is an essential that has no
-   * tab open. A URL pin lands in the active space.
+   * tab open. A tab is pinned into the space it is already in, never the
+   * globally active one; a URL pin lands in the space of its drop target,
+   * the explicit `spaceId`, or the active space.
    */
   pinTab(input: {
     tabId?: number
     url?: string
     title?: string
+    spaceId?: SpaceId
     parentId?: ItemId
     index?: number
   }): Promise<void> {
@@ -894,10 +941,11 @@ export class SidebarReconciler {
       let snapshot: TabSnapshot | undefined
       if (tab) {
         const groups = await host.listGroups(tab.windowId)
-        space = spaceForGroup(
-          state,
-          groups.find((group) => group.id === tab.groupId),
-        )
+        const group = groups.find((candidate) => candidate.id === tab.groupId)
+        // An agent session owns its tabs; pinning one would hand pinned
+        // close/reset a tab our code must never touch.
+        if (isAgentGroupTitle(group?.title)) return
+        space = spaceForGroup(state, group)
         snapshot = snapshotOf(host, tab, now)
       } else if (input.url) {
         snapshot = {
@@ -907,6 +955,8 @@ export class SidebarReconciler {
           lastActiveAt: now,
         }
       }
+      space ??= input.spaceId ? state.spaces.byId[input.spaceId] : undefined
+      space ??= this.spaceOfParent(state, input.parentId)
       space ??= state.activeSpaceId
         ? state.spaces.byId[state.activeSpaceId]
         : undefined
@@ -1045,6 +1095,16 @@ export class SidebarReconciler {
     })
   }
 
+  /** The space owning a drop target, so a pin lands where it was dropped. */
+  private spaceOfParent(
+    state: SidebarState,
+    parentId: ItemId | undefined,
+  ): Space | undefined {
+    if (!parentId || !state.items.byId[parentId]) return undefined
+    const spaceId = this.spaceIdOfItem(state, parentId)
+    return spaceId ? state.spaces.byId[spaceId] : undefined
+  }
+
   private spaceIdOfItem(
     state: SidebarState,
     itemId: ItemId,
@@ -1166,15 +1226,19 @@ export class SidebarReconciler {
     })
   }
 
-  private async newTabIn(spaceId: SpaceId, url: string): Promise<void> {
+  /**
+   * Throws when there is no window to open the tab in. Callers that delete
+   * state once the tab exists depend on that failure being loud.
+   */
+  private async newTabIn(spaceId: SpaceId, url: string): Promise<TabInfo> {
     const state = await this.deps.store.read()
     const space = state.spaces.byId[spaceId]
     const windowId = await this.targetWindowId()
-    if (windowId === undefined) return
+    if (windowId === undefined) throw new Error(NO_WINDOW_ERROR)
     const groupId = space
       ? await this.ensureSpaceGroup(space, windowId)
       : undefined
-    await this.deps.host.create({ windowId, url, groupId, active: false })
+    return this.deps.host.create({ windowId, url, groupId, active: false })
   }
 
   /** Today tabs of a space: everything in its groups that is not pinned. */

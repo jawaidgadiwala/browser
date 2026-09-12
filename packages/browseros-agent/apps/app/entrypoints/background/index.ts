@@ -77,9 +77,10 @@ export default defineBackground(() => {
   startLocalFirstMigration()
 
   scheduledJobRuns()
-  // Listeners register synchronously for MV3 wake-ups; the store adapters
-  // await the same promise, so nothing reads a pre-migration document.
-  void ensureMigrated()
+  // Listeners register synchronously for MV3 wake-ups; every handler awaits
+  // migration itself, so nothing reads a pre-migration document. A failure
+  // here is already reported; each handler retries it.
+  void ensureMigrated().catch(() => undefined)
   registerSidebar(new ChromeHostAdapter())
   registerSidebarArchive()
   registerCapture()

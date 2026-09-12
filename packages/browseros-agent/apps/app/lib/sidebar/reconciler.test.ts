@@ -5,6 +5,7 @@ import { FakeHost } from './host/fake-host'
 import { NO_GROUP, type TabEvent, type TabInfo } from './host/host-adapter'
 import {
   createMemoryStores,
+  NO_WINDOW_ERROR,
   SidebarReconciler,
   type SidebarStore,
 } from './reconciler'
@@ -667,5 +668,314 @@ describe('archive writes', () => {
     const settings = (await stores.store.read()).settings
     expect(settings.autoArchiveAfter).toBe('never')
     expect(settings.essentialsMax).toBe(DEFAULTS.essentialsMax)
+  })
+})
+
+describe('restoring an archived today tab', () => {
+  interface Archived {
+    host: FakeHost
+    reconciler: SidebarReconciler
+    store: ReturnType<typeof createMemoryStores>['store']
+    itemId: string
+  }
+
+  async function withArchivedEntry(host: FakeHost): Promise<Archived> {
+    const stores = createMemoryStores(baseState().state)
+    const reconciler = new SidebarReconciler({
+      host,
+      store: stores.store,
+      session: stores.session,
+      now: () => START,
+      adoptDelayMs: 0,
+    })
+    const tab = host.addTab({ url: 'https://stale.example/' })
+    host.addGroup({ title: 'Work', color: 'blue', tabIds: [tab.id] })
+    await reconciler.reconcile()
+    await reconciler.archiveTabs([tab.id], 'manual', 'test')
+    const [entry] = (await stores.store.read()).archive
+    expect(entry).toBeDefined()
+    return { host, reconciler, store: stores.store, itemId: entry.item.id }
+  }
+
+  it('reopens the tab in the space group and drops the entry', async () => {
+    const fixture = await withArchivedEntry(new FakeHost())
+
+    await fixture.reconciler.restoreArchived(fixture.itemId)
+
+    const [group] = fixture.host.groups
+    expect(group.title).toBe('Work')
+    expect(fixture.host.tabsInGroup(group.id).map((tab) => tab.url)).toContain(
+      'https://stale.example/',
+    )
+    expect((await fixture.store.read()).archive).toHaveLength(0)
+  })
+
+  it('keeps the entry and reports why when no window is open', async () => {
+    const fixture = await withArchivedEntry(new FakeHost())
+    fixture.host.windows = []
+
+    await expect(
+      fixture.reconciler.restoreArchived(fixture.itemId),
+    ).rejects.toThrow(NO_WINDOW_ERROR)
+
+    expect((await fixture.store.read()).archive).toHaveLength(1)
+    expect(fixture.host.tabs).toHaveLength(0)
+  })
+
+  it('keeps the entry when only a popup window is left', async () => {
+    const fixture = await withArchivedEntry(new FakeHost())
+    const popup = fixture.host.addWindow('popup')
+    fixture.host.windows = fixture.host.windows.filter(
+      (window) => window.id === popup.id,
+    )
+
+    await expect(
+      fixture.reconciler.restoreArchived(fixture.itemId),
+    ).rejects.toThrow(NO_WINDOW_ERROR)
+
+    expect((await fixture.store.read()).archive).toHaveLength(1)
+    expect(fixture.host.tabs).toHaveLength(0)
+  })
+
+  it('keeps the entry when the destination disappears mid-restore', async () => {
+    class VanishingHost extends FakeHost {
+      override create(): Promise<TabInfo> {
+        this.windows = []
+        return Promise.reject(new Error('No current window'))
+      }
+    }
+    const fixture = await withArchivedEntry(new VanishingHost())
+
+    await expect(
+      fixture.reconciler.restoreArchived(fixture.itemId),
+    ).rejects.toThrow('No current window')
+
+    expect((await fixture.store.read()).archive).toHaveLength(1)
+  })
+})
+
+describe('pinned items stay inside their own space', () => {
+  /** A fixture whose given spaces each pin the same shared URL. */
+  function withPinIn(which: Array<'work' | 'life'>) {
+    const base = baseState()
+    let state = base.state
+    const pins: Record<string, string> = {}
+    for (const key of which) {
+      const pinned = pin(
+        state,
+        base[key].id,
+        { url: 'https://mail.example/', savedTitle: 'Mail' },
+        { now: START, newId },
+      )
+      state = pinned.state
+      pins[key] = pinned.item.id
+    }
+    return {
+      fixture: setup(state, { work: base.work, life: base.life }),
+      pins,
+    }
+  }
+
+  it('links a shared url to the pin of the space the tab lives in', async () => {
+    const { fixture, pins } = withPinIn(['work', 'life'])
+    const mail = fixture.host.addTab({ url: 'https://mail.example/' })
+    fixture.host.addGroup({ title: 'Life', color: 'green', tabIds: [mail.id] })
+    fixture.host.addGroup({ title: 'Work', color: 'blue' })
+
+    await fixture.reconciler.reconcile()
+
+    const session = await fixture.session.read()
+    expect(session.tabLinks[String(mail.id)]).toBe(pins.life)
+  })
+
+  it('opens a work pin in work even when life already shows the url', async () => {
+    const { fixture, pins } = withPinIn(['work'])
+    const other = fixture.host.addTab({ url: 'https://mail.example/' })
+    fixture.host.addGroup({ title: 'Life', color: 'green', tabIds: [other.id] })
+    await fixture.reconciler.reconcile()
+
+    await fixture.reconciler.openItem(pins.work)
+
+    const work = fixture.host.groups.find((group) => group.title === 'Work')
+    expect(work).toBeDefined()
+    expect(
+      fixture.host.tabsInGroup(work?.id ?? -1).map((tab) => tab.url),
+    ).toContain('https://mail.example/')
+    // The other space's tab was neither reused nor linked.
+    expect(fixture.host.tab(other.id)?.groupId).not.toBe(work?.id)
+    expect(
+      (await fixture.session.read()).tabLinks[String(other.id)],
+    ).toBeUndefined()
+  })
+
+  it('opens a pin in its space before the first reconcile', async () => {
+    const { fixture, pins } = withPinIn(['work'])
+    const other = fixture.host.addTab({ url: 'https://mail.example/' })
+    fixture.host.addGroup({ title: 'Life', color: 'green', tabIds: [other.id] })
+
+    await fixture.reconciler.openItem(pins.work)
+
+    const work = fixture.host.groups.find((group) => group.title === 'Work')
+    expect(
+      fixture.host.tabsInGroup(work?.id ?? -1).map((tab) => tab.url),
+    ).toContain('https://mail.example/')
+  })
+
+  it('never links or reuses a tab inside an agent group', async () => {
+    const { fixture, pins } = withPinIn(['work'])
+    const agentTab = fixture.host.addTab({ url: 'https://mail.example/' })
+    const agentGroup = fixture.host.addGroup({
+      title: 'claude-code/mail',
+      color: 'grey',
+      tabIds: [agentTab.id],
+    })
+
+    await fixture.reconciler.reconcile()
+    expect((await fixture.session.read()).tabLinks).toEqual({})
+
+    await fixture.reconciler.openItem(pins.work)
+
+    expect(fixture.host.tab(agentTab.id)?.groupId).toBe(agentGroup.id)
+    const work = fixture.host.groups.find((group) => group.title === 'Work')
+    expect(
+      fixture.host.tabsInGroup(work?.id ?? -1).map((tab) => tab.url),
+    ).toContain('https://mail.example/')
+  })
+
+  it('claims one tab only when the url is open in two windows', async () => {
+    const { fixture, pins } = withPinIn(['work'])
+    const first = fixture.host.addTab({ url: 'https://mail.example/' })
+    fixture.host.addGroup({ title: 'Work', color: 'blue', tabIds: [first.id] })
+    const other = fixture.host.addWindow()
+    const second = fixture.host.addTab({
+      url: 'https://mail.example/',
+      windowId: other.id,
+    })
+    fixture.host.addGroup({
+      windowId: other.id,
+      title: 'Work',
+      color: 'blue',
+      tabIds: [second.id],
+    })
+
+    await fixture.reconciler.reconcile()
+
+    const links = (await fixture.session.read()).tabLinks
+    expect(Object.values(links)).toEqual([pins.work])
+  })
+
+  it('closes another space tab with the pinned url outright', async () => {
+    const { fixture } = withPinIn(['work'])
+    const other = fixture.host.addTab({
+      url: 'https://mail.example/inbox/42',
+      active: true,
+    })
+    const sibling = fixture.host.addTab({ url: 'https://news.example/' })
+    fixture.host.addGroup({
+      title: 'Life',
+      color: 'green',
+      tabIds: [other.id, sibling.id],
+    })
+    await fixture.reconciler.reconcile()
+
+    await fixture.reconciler.closeTabs([other.id])
+
+    // Linked to the Work pin it would have been reset and discarded instead.
+    expect(fixture.host.tab(other.id)).toBeUndefined()
+  })
+
+  it('keeps global url reuse for an essential', async () => {
+    const base = baseState()
+    const essentials = base.state.items.roots.essentials
+    const state: SidebarState = {
+      ...base.state,
+      items: {
+        ...base.state.items,
+        byId: {
+          ...base.state.items.byId,
+          essential: {
+            id: 'essential',
+            parentId: essentials,
+            children: [],
+            title: null,
+            createdAt: START,
+            data: {
+              kind: 'tab' as const,
+              url: 'https://mail.example/',
+              savedTitle: 'Mail',
+              lastActiveAt: START,
+            },
+          },
+          [essentials]: {
+            ...base.state.items.byId[essentials],
+            children: ['essential'],
+          },
+        },
+      },
+    }
+    const fixture = setup(state, { work: base.work, life: base.life })
+    const mail = fixture.host.addTab({ url: 'https://mail.example/' })
+    fixture.host.addGroup({ title: 'Life', color: 'green', tabIds: [mail.id] })
+
+    await fixture.reconciler.reconcile()
+
+    expect((await fixture.session.read()).tabLinks[String(mail.id)]).toBe(
+      'essential',
+    )
+  })
+})
+
+describe('pinning a tab', () => {
+  it('pins into the space the tab lives in, not the active one', async () => {
+    const fixture = setup()
+    const tab = fixture.host.addTab({ url: 'https://life.example/' })
+    fixture.host.addGroup({ title: 'Life', color: 'green', tabIds: [tab.id] })
+    await fixture.reconciler.reconcile()
+    expect((await fixture.store.read()).activeSpaceId).toBe(fixture.work.id)
+
+    await fixture.reconciler.pinTab({ tabId: tab.id })
+
+    const state = await fixture.store.read()
+    expect(
+      state.items.byId[fixture.life.containers.pinned].children,
+    ).toHaveLength(1)
+    expect(
+      state.items.byId[fixture.work.containers.pinned].children,
+    ).toHaveLength(0)
+  })
+
+  it('pins a bare url into the space of its drop target', async () => {
+    const fixture = setup()
+
+    await fixture.reconciler.pinTab({
+      url: 'https://mail.example/',
+      parentId: fixture.life.containers.pinned,
+    })
+
+    const state = await fixture.store.read()
+    expect(
+      state.items.byId[fixture.life.containers.pinned].children,
+    ).toHaveLength(1)
+    expect(
+      state.items.byId[fixture.work.containers.pinned].children,
+    ).toHaveLength(0)
+  })
+
+  it('refuses to pin a tab an agent session owns', async () => {
+    const fixture = setup()
+    const tab = fixture.host.addTab({ url: 'https://agent.example/' })
+    fixture.host.addGroup({
+      title: 'claude-code/run',
+      color: 'grey',
+      tabIds: [tab.id],
+    })
+
+    await fixture.reconciler.pinTab({ tabId: tab.id })
+
+    const state = await fixture.store.read()
+    expect(
+      state.items.byId[fixture.work.containers.pinned].children,
+    ).toHaveLength(0)
+    expect((await fixture.session.read()).tabLinks).toEqual({})
   })
 })

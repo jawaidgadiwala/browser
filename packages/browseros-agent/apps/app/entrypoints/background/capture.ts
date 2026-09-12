@@ -1,7 +1,9 @@
 import {
+  CAPTURE_BUSY_ERROR,
   CAPTURE_INTERVAL_MS,
   CAPTURE_TAB_CHANGED_ERROR,
   captureDownloadPath,
+  invalidatesCapture,
   isCapturableUrl,
   isCaptureTargetActive,
   MAX_CAPTURE_CSS_PX,
@@ -101,33 +103,75 @@ async function resolveTab(tabId?: number): Promise<chrome.tabs.Tab | null> {
   return active ?? null
 }
 
+/**
+ * A capture only belongs to the tab it was scrolled in while that tab is still
+ * active in its window; otherwise we would silently shoot a stranger.
+ * `captureVisibleTab` takes a window, not a tab, so every attempt has to be
+ * fenced by `assertValid` on both sides.
+ */
+interface CaptureGuard {
+  assertValid(): Promise<void>
+  dispose(): void
+}
+
+function watchCaptureTarget(target: {
+  tabId: number
+  windowId: number
+}): CaptureGuard {
+  let interrupted = false
+  const latch = (event: Parameters<typeof invalidatesCapture>[1]) => {
+    if (invalidatesCapture(target, event)) interrupted = true
+  }
+  const onActivated = (info: chrome.tabs.OnActivatedInfo) =>
+    latch({ kind: 'activated', tabId: info.tabId, windowId: info.windowId })
+  const onRemoved = (tabId: number) => latch({ kind: 'removed', tabId })
+  const onUpdated = (tabId: number, changes: chrome.tabs.OnUpdatedInfo) =>
+    latch({ kind: 'navigated', tabId, url: changes.url })
+
+  chrome.tabs.onActivated.addListener(onActivated)
+  chrome.tabs.onRemoved.addListener(onRemoved)
+  chrome.tabs.onUpdated.addListener(onUpdated)
+
+  return {
+    async assertValid() {
+      if (interrupted) throw new Error(CAPTURE_TAB_CHANGED_ERROR)
+      const live = await chrome.tabs.get(target.tabId).catch(() => null)
+      if (!isCaptureTargetActive(target, live)) {
+        throw new Error(CAPTURE_TAB_CHANGED_ERROR)
+      }
+      if (interrupted) throw new Error(CAPTURE_TAB_CHANGED_ERROR)
+    },
+    dispose() {
+      chrome.tabs.onActivated.removeListener(onActivated)
+      chrome.tabs.onRemoved.removeListener(onRemoved)
+      chrome.tabs.onUpdated.removeListener(onUpdated)
+    },
+  }
+}
+
 /** Chrome throttles captureVisibleTab to two calls per second. */
-async function captureVisible(windowId: number): Promise<string> {
+async function captureVisible(tab: Tab, guard: CaptureGuard): Promise<string> {
+  await guard.assertValid()
+  let dataUrl: string | undefined
   try {
-    const dataUrl = await chrome.tabs.captureVisibleTab(windowId, {
+    dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
       format: 'png',
     })
-    if (dataUrl) return dataUrl
   } catch {
     // Retried once below.
   }
-  await sleep(CAPTURE_INTERVAL_MS)
-  const dataUrl = await chrome.tabs.captureVisibleTab(windowId, {
-    format: 'png',
-  })
-  if (!dataUrl) throw new Error('Chrome returned an empty capture')
-  return dataUrl
-}
-
-/**
- * A capture only belongs to the tab it was scrolled in while that tab is
- * still active in its window; otherwise we would silently shoot a stranger.
- */
-async function assertTargetActive(tab: Tab): Promise<void> {
-  const live = await chrome.tabs.get(tab.id).catch(() => null)
-  if (!isCaptureTargetActive({ tabId: tab.id, windowId: tab.windowId }, live)) {
-    throw new Error(CAPTURE_TAB_CHANGED_ERROR)
+  if (!dataUrl) {
+    await sleep(CAPTURE_INTERVAL_MS)
+    await guard.assertValid()
+    dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
+      format: 'png',
+    })
   }
+  if (!dataUrl) throw new Error('Chrome returned an empty capture')
+  // The switch can land while the capture is in flight, so the bitmap is only
+  // ours if the target is still active now.
+  await guard.assertValid()
+  return dataUrl
 }
 
 interface LayoutMetrics {
@@ -135,7 +179,10 @@ interface LayoutMetrics {
   contentSize?: { width: number; height: number }
 }
 
-async function captureWithDebugger(tab: Tab): Promise<CaptureOutcome> {
+async function captureWithDebugger(
+  tab: Tab,
+  guard: CaptureGuard,
+): Promise<CaptureOutcome> {
   const target = { tabId: tab.id }
   await chrome.debugger.attach(target, DEBUGGER_PROTOCOL)
   try {
@@ -145,7 +192,7 @@ async function captureWithDebugger(tab: Tab): Promise<CaptureOutcome> {
     )) as LayoutMetrics
     const size = metrics.cssContentSize ?? metrics.contentSize
     if (!size) throw new Error('Page.getLayoutMetrics returned no size')
-    await assertTargetActive(tab)
+    await guard.assertValid()
     const height = Math.min(Math.ceil(size.height), MAX_CAPTURE_CSS_PX)
     const shot = (await chrome.debugger.sendCommand(
       target,
@@ -158,6 +205,7 @@ async function captureWithDebugger(tab: Tab): Promise<CaptureOutcome> {
       },
     )) as { data?: string }
     if (!shot.data) throw new Error('Page.captureScreenshot returned no data')
+    await guard.assertValid()
     return {
       dataUrl: `data:image/png;base64,${shot.data}`,
       copied: false,
@@ -169,7 +217,10 @@ async function captureWithDebugger(tab: Tab): Promise<CaptureOutcome> {
   }
 }
 
-async function captureByStitching(tab: Tab): Promise<CaptureOutcome> {
+async function captureByStitching(
+  tab: Tab,
+  guard: CaptureGuard,
+): Promise<CaptureOutcome> {
   const metrics = await runInTab(tab.id, preparePage)
   try {
     const plan = planSlices(
@@ -195,8 +246,7 @@ async function captureByStitching(tab: Tab): Promise<CaptureOutcome> {
       previousY = y
       const wait = lastCapture + CAPTURE_INTERVAL_MS - Date.now()
       if (wait > 0) await sleep(wait)
-      await assertTargetActive(tab)
-      const dataUrl = await captureVisible(tab.windowId)
+      const dataUrl = await captureVisible(tab, guard)
       lastCapture = Date.now()
       await sendCaptureMessage(CaptureMessageType.addSlice, { dataUrl, y })
     }
@@ -207,16 +257,23 @@ async function captureByStitching(tab: Tab): Promise<CaptureOutcome> {
   }
 }
 
-async function captureViewport(tab: Tab): Promise<CaptureOutcome> {
-  const dataUrl = await captureVisible(tab.windowId)
+async function captureViewport(
+  tab: Tab,
+  guard: CaptureGuard,
+): Promise<CaptureOutcome> {
+  const dataUrl = await captureVisible(tab, guard)
   return { dataUrl, copied: false, truncated: false, method: 'viewport' }
 }
 
-async function capture(tab: Tab, mode: CaptureMode): Promise<CaptureOutcome> {
-  if (mode === 'viewport') return captureViewport(tab)
-  if (mode === 'stitch') return captureByStitching(tab)
+async function capture(
+  tab: Tab,
+  mode: CaptureMode,
+  guard: CaptureGuard,
+): Promise<CaptureOutcome> {
+  if (mode === 'viewport') return captureViewport(tab, guard)
+  if (mode === 'stitch') return captureByStitching(tab, guard)
   try {
-    return await captureWithDebugger(tab)
+    return await captureWithDebugger(tab, guard)
   } catch (error) {
     if (error instanceof Error && error.message === CAPTURE_TAB_CHANGED_ERROR) {
       throw error
@@ -224,15 +281,33 @@ async function capture(tab: Tab, mode: CaptureMode): Promise<CaptureOutcome> {
     sentry.captureException(error, {
       extra: { message: 'Debugger capture failed, falling back to stitching' },
     })
-    return captureByStitching(tab)
+    return captureByStitching(tab, guard)
   }
 }
 
+/**
+ * The busy flag is taken synchronously: two commands arriving in one turn would
+ * otherwise both pass the check while resolving their tab, and then share the
+ * one offscreen stitching canvas. It is held until the download and the
+ * clipboard copy are done, because those read the same outcome.
+ */
 export async function capturePage(
   tabId?: number,
   mode: CaptureMode = 'full',
 ): Promise<CaptureReport> {
-  if (running) return { ok: false, error: 'A capture is already running' }
+  if (running) return { ok: false, error: CAPTURE_BUSY_ERROR }
+  running = true
+  try {
+    return await runCapture(tabId, mode)
+  } finally {
+    running = false
+  }
+}
+
+async function runCapture(
+  tabId: number | undefined,
+  mode: CaptureMode,
+): Promise<CaptureReport> {
   const tab = await resolveTab(tabId)
   if (!tab || tab.id === undefined || tab.windowId === undefined) {
     return { ok: false, error: 'No tab to capture' }
@@ -243,17 +318,20 @@ export async function capturePage(
   }
   const target = tab as Tab
 
-  running = true
+  const guard = watchCaptureTarget({
+    tabId: target.id,
+    windowId: target.windowId,
+  })
   let outcome: CaptureOutcome
   try {
-    outcome = await capture(target, mode)
+    outcome = await capture(target, mode, guard)
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'This page cannot be captured.'
     notify('Capture failed', message)
     return { ok: false, error: message }
   } finally {
-    running = false
+    guard.dispose()
   }
 
   const download = chrome.downloads

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import {
   captureDownloadPath,
   captureFilename,
+  invalidatesCapture,
   isCapturableUrl,
   isCaptureTargetActive,
   maxCaptureHeight,
@@ -102,5 +103,60 @@ describe('isCaptureTargetActive', () => {
     expect(isCaptureTargetActive(target, null)).toBe(false)
     expect(isCaptureTargetActive(target, undefined)).toBe(false)
     expect(isCaptureTargetActive(target, {})).toBe(false)
+  })
+})
+
+describe('invalidatesCapture', () => {
+  const target = { tabId: 7, windowId: 3 }
+
+  it('latches a switch to another tab of the same window', () => {
+    expect(
+      invalidatesCapture(target, {
+        kind: 'activated',
+        tabId: 8,
+        windowId: 3,
+      }),
+    ).toBe(true)
+  })
+
+  it('ignores activity in another window or the target itself', () => {
+    expect(
+      invalidatesCapture(target, {
+        kind: 'activated',
+        tabId: 8,
+        windowId: 4,
+      }),
+    ).toBe(false)
+    expect(
+      invalidatesCapture(target, {
+        kind: 'activated',
+        tabId: 7,
+        windowId: 3,
+      }),
+    ).toBe(false)
+  })
+
+  it('latches the target closing or navigating, not another tab', () => {
+    expect(invalidatesCapture(target, { kind: 'removed', tabId: 7 })).toBe(true)
+    expect(invalidatesCapture(target, { kind: 'removed', tabId: 8 })).toBe(
+      false,
+    )
+    expect(
+      invalidatesCapture(target, {
+        kind: 'navigated',
+        tabId: 7,
+        url: 'https://example.com/next',
+      }),
+    ).toBe(true)
+    expect(invalidatesCapture(target, { kind: 'navigated', tabId: 7 })).toBe(
+      false,
+    )
+    expect(
+      invalidatesCapture(target, {
+        kind: 'navigated',
+        tabId: 8,
+        url: 'https://other.example/',
+      }),
+    ).toBe(false)
   })
 })

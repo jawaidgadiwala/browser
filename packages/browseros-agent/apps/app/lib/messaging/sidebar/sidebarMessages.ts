@@ -91,12 +91,15 @@ type SidebarMessagesProtocol = {
   [SidebarMessageType.moveItem](data: MoveItemData): void
   /**
    * Pin a live tab into its space's pinned root (or a folder). `url` pins a
-   * site that has no tab open, which is how an essential becomes a pin.
+   * site that has no tab open, which is how an essential becomes a pin. A tab
+   * is pinned into the space it already lives in; `spaceId`/`parentId` decide
+   * where a bare URL lands, never the globally active space.
    */
   [SidebarMessageType.pinTab](data: {
     tabId?: number
     url?: string
     title?: string
+    spaceId?: SpaceId
     parentId?: ItemId
     index?: number
   }): void

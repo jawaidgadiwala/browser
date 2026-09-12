@@ -155,9 +155,12 @@ export function sidebarReconciler(host?: HostAdapter): SidebarReconciler {
 export function registerSidebar(host: HostAdapter) {
   const reconciler = sidebarReconciler(host)
 
-  const ready = ensureMigrated()
+  // Each call re-awaits migration rather than a single promise captured here:
+  // a failed migration must not wedge every later event for the worker's life.
   const guard = <T>(task: () => Promise<T>) =>
-    ready.then(task).catch(() => undefined)
+    ensureMigrated()
+      .then(task)
+      .catch(() => undefined)
 
   void guard(() => reconciler.reconcile())
   chrome.runtime.onStartup.addListener(() => {
@@ -193,7 +196,7 @@ export function registerSidebar(host: HostAdapter) {
     guard(() => reconciler.switchSpace(data.spaceId)),
   )
   onSidebarMessage(SidebarMessageType.createSpace, async ({ data }) => {
-    await ready
+    await ensureMigrated()
     return reconciler.createSpaceFromPanel(data)
   })
   onSidebarMessage(SidebarMessageType.updateSpace, ({ data }) =>
@@ -239,7 +242,7 @@ export function registerSidebar(host: HostAdapter) {
     guard(() => reconciler.removeEssentialItem(data.itemId)),
   )
   onSidebarMessage(SidebarMessageType.createFolder, async ({ data }) => {
-    await ready
+    await ensureMigrated()
     return reconciler.createFolderIn(data.spaceId, data.title, data.parentId)
   })
   onSidebarMessage(SidebarMessageType.setExpansion, ({ data }) =>
@@ -251,9 +254,12 @@ export function registerSidebar(host: HostAdapter) {
   onSidebarMessage(SidebarMessageType.archiveTabs, ({ data }) =>
     guard(() => reconciler.archiveTabs(data.tabIds, data.reason, data.source)),
   )
-  onSidebarMessage(SidebarMessageType.restoreArchived, ({ data }) =>
-    guard(() => reconciler.restoreArchived(data.itemId)),
-  )
+  // Restore failures must reach the panel: the archive entry survives them and
+  // the user has to be told why nothing reopened.
+  onSidebarMessage(SidebarMessageType.restoreArchived, async ({ data }) => {
+    await ensureMigrated()
+    await reconciler.restoreArchived(data.itemId)
+  })
   onSidebarMessage(SidebarMessageType.tidy, ({ data }) =>
     guard(() => reconciler.tidySpace(data.spaceId, 'manual')),
   )

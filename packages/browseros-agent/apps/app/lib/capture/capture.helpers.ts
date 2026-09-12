@@ -60,6 +60,9 @@ export function planSlices(
 /** @public */
 export const CAPTURE_TAB_CHANGED_ERROR = 'Capture cancelled: tab changed'
 
+/** @public */
+export const CAPTURE_BUSY_ERROR = 'A capture is already running'
+
 /**
  * @public
  */
@@ -84,4 +87,34 @@ export function isCaptureTargetActive(
     live.windowId === target.windowId &&
     live.active === true
   )
+}
+
+/**
+ * Events that void a capture in progress.
+ *
+ * @public
+ */
+export type CaptureInterruption =
+  | { kind: 'activated'; tabId: number; windowId: number }
+  | { kind: 'removed'; tabId: number }
+  /** `url` is set only when the tab actually navigated. */
+  | { kind: 'navigated'; tabId: number; url?: string }
+
+/**
+ * Polling the tab cannot see a switch away and back, or a navigation that
+ * finished before the next check: both leave the target active again while the
+ * bitmap in flight shows something else. Latching these events does.
+ */
+export function invalidatesCapture(
+  target: { tabId: number; windowId: number },
+  event: CaptureInterruption,
+): boolean {
+  switch (event.kind) {
+    case 'activated':
+      return event.windowId === target.windowId && event.tabId !== target.tabId
+    case 'removed':
+      return event.tabId === target.tabId
+    case 'navigated':
+      return event.tabId === target.tabId && event.url !== undefined
+  }
 }
