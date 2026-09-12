@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { PRODUCT_NAME } from '@/lib/product'
 import { SetupStep } from './SetupStep'
 
 describe('SetupStep', () => {
@@ -9,7 +10,7 @@ describe('SetupStep', () => {
     )
     expect(html).toContain('Finishing setup')
     expect(html).toContain(
-      'Preparing BrowserOS neo. This should only take a moment.',
+      `Preparing ${PRODUCT_NAME}. This should only take a moment.`,
     )
     expect(html).toContain('role="status"')
     expect(html).toContain('motion-safe:animate-spin')

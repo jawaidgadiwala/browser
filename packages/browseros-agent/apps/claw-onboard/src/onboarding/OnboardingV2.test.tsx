@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
+import { PRODUCT_NAME } from '@/lib/product'
 import { importPhaseFor, OnboardingV2 } from './OnboardingV2'
 
 function renderApp(): string {
@@ -19,8 +20,8 @@ describe('OnboardingV2 shell', () => {
     expect(html).toContain('Set it up')
   })
 
-  // The screen must not read as a Chrome replacement: BrowserOS neo is a
-  // secondary browser whose user is an agent, not the person installing it.
+  // The screen must not read as a Chrome replacement: this is a secondary
+  // browser whose user is an agent, not the person installing it.
   it('states the secondary-browser position rather than reselling the product', () => {
     const html = renderApp()
     expect(html).toContain('Not a Chrome replacement.')
@@ -30,7 +31,7 @@ describe('OnboardingV2 shell', () => {
 
   it('renders the visual rail with the v2 quote and three feature blocks', () => {
     const html = renderApp()
-    expect(html).toContain('BrowserOS neo')
+    expect(html).toContain(PRODUCT_NAME)
     expect(html).toContain('Not yours.')
     expect(html).toContain('Signed in as you.')
     expect(html).toContain('Watch every step.')
@@ -41,7 +42,7 @@ describe('OnboardingV2 shell', () => {
     const html = renderApp()
     expect(html).toContain('<main')
     expect(html).not.toContain('role="dialog"')
-    expect(html).not.toContain('Welcome to BrowserOS neo')
+    expect(html).not.toContain(`Welcome to ${PRODUCT_NAME}`)
     expect(html).not.toContain('#FF5F57')
   })
 

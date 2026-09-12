@@ -1,5 +1,6 @@
 import { CircleAlert, LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PRODUCT_NAME } from '@/lib/product'
 import { DisplayHeading, StepCopy } from '../components/DisplayHeading'
 
 interface SetupStepProps {
@@ -31,7 +32,7 @@ export function SetupStep({ failed, onRetry }: SetupStepProps) {
           <StepCopy>
             {failed
               ? 'Please try again.'
-              : 'Preparing BrowserOS. This should only take a moment.'}
+              : `Preparing ${PRODUCT_NAME}. This should only take a moment.`}
           </StepCopy>
         </div>
         {failed && (

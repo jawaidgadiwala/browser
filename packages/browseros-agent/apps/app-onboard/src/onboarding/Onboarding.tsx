@@ -47,7 +47,7 @@ export function importPhaseFor(status: BrowserOSImportStatus): ImportPhase {
   return 'picker'
 }
 
-/** Runs the standalone three-step BrowserOS onboarding flow. */
+/** Runs the standalone three-step first-run onboarding flow. */
 export function Onboarding() {
   const reduce = useReducedMotion()
   const form = useForm<OnboardingFormValues>({

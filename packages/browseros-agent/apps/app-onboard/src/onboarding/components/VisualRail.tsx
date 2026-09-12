@@ -1,4 +1,5 @@
 import { ArrowDownToLine, Cpu, ShieldCheck } from 'lucide-react'
+import { PRODUCT_NAME } from '@/lib/product'
 
 /** Persistent value rail beside the onboarding steps, in the app theme. */
 export function VisualRail() {
@@ -28,7 +29,7 @@ export function VisualRail() {
           src="/icon/128.png"
         />
         <div className="font-extrabold text-[17px] tracking-tight">
-          BrowserOS
+          {PRODUCT_NAME}
         </div>
       </div>
       <div className="relative">

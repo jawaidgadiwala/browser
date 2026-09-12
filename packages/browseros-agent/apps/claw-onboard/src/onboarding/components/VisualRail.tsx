@@ -1,6 +1,7 @@
 import { Lock, ShieldCheck, Zap } from 'lucide-react'
+import { PRODUCT_NAME } from '@/lib/product'
 
-/** Renders the persistent BrowserOS neo visual rail beside the onboarding steps. */
+/** Renders the persistent product visual rail beside the onboarding steps. */
 export function VisualRail() {
   return (
     <div
@@ -28,7 +29,7 @@ export function VisualRail() {
           src="/icon/128.png"
         />
         <div className="font-extrabold text-[17px] tracking-tight">
-          BrowserOS neo
+          {PRODUCT_NAME}
         </div>
       </div>
       <div className="relative">

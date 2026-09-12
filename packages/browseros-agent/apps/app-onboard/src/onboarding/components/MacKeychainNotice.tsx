@@ -1,4 +1,5 @@
 import { Info, Lock } from 'lucide-react'
+import { HELPER_PROCESS_NAME } from '@/lib/product'
 
 /** An inert illustration of the OS-owned prompt; credentials only go to macOS. */
 export function MacKeychainPreview() {
@@ -14,8 +15,8 @@ export function MacKeychainPreview() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="m-0 font-bold text-[13px] leading-[17px]">
-              BrowserOS Helper wants to use your confidential information stored
-              in &ldquo;Chrome Safe Storage&rdquo; in your keychain.
+              {HELPER_PROCESS_NAME} wants to use your confidential information
+              stored in &ldquo;Chrome Safe Storage&rdquo; in your keychain.
             </p>
             <p className="my-3 text-xs leading-[17px]">
               To allow this, enter the &ldquo;login&rdquo; keychain password.

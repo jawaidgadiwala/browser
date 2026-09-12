@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { PRODUCT_NAME } from '@/lib/product'
 import { Hermes, OpenClaw } from '../components/AgentBrandMarks'
 import { DisplayHeading, Em, StepCopy } from '../components/DisplayHeading'
 import { StepWrap } from '../components/StepWrap'
@@ -85,7 +86,7 @@ function IconChip({ label, Icon }: IconEntry) {
 }
 
 /**
- * Final step. The actual provider / agent setup lives in the full BrowserOS app
+ * Final step. The actual provider / agent setup lives in the full app
  * at #/settings/ai; this screen shows the breadth of what is supported and hands
  * off. `bridge.complete()` lets the native first-run finish and open the app on
  * that screen. The two exits differ only in intent today; the landing route is
@@ -100,7 +101,7 @@ export function SetupAgentStep({ onSetup, onLater }: SetupAgentStepProps) {
         </DisplayHeading>
         <StepCopy>
           Connect an LLM provider or a coding agent harness you already use. We
-          will open BrowserOS so you can finish.
+          will open {PRODUCT_NAME} so you can finish.
         </StepCopy>
         <div className="mb-6 flex max-w-[480px] flex-col gap-[18px]">
           <div>

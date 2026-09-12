@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { PRODUCT_NAME } from '@/lib/product'
 import { WelcomeStep } from './WelcomeStep'
 
 type ClickableElement = ReactElement<{
@@ -53,7 +54,8 @@ describe('WelcomeStep', () => {
     )
 
     expect(html).toContain('Welcome to')
-    expect(html).toContain('BrowserOS')
+    expect(html).toContain(PRODUCT_NAME)
+    expect(html).not.toContain('BrowserOS')
     expect(html).toContain('bring your browser over')
     expect(html).toContain('Get started')
   })
