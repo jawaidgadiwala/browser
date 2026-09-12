@@ -5,6 +5,7 @@ export type EnvSection =
   | 'dev-tools'
   | 'app'
   | 'claw'
+  | 'personal'
   | 'server'
   | 'build'
   | 'upload'
@@ -277,6 +278,101 @@ export const ENV_REGISTRY: readonly EnvKeySpec[] = [
         commented: true,
       },
     },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_PROFILE',
+    section: 'personal',
+    description:
+      'Optional persistent Chromium profile override for the personal daily-driver launcher (tools/personal).',
+    secret: false,
+    schema: stringSchema,
+    modes: {
+      development: {
+        value: '~/Library/Application Support/BrowserOS Personal',
+        commented: true,
+      },
+    },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_LOG_DIR',
+    section: 'personal',
+    description:
+      'Optional log directory override for the personal daily-driver launcher.',
+    secret: false,
+    schema: stringSchema,
+    modes: {
+      development: {
+        value: '~/Library/Logs/BrowserOS Personal',
+        commented: true,
+      },
+    },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_BINARY',
+    section: 'personal',
+    description:
+      'Optional BrowserOS app binary override for the personal daily-driver launcher.',
+    secret: false,
+    schema: stringSchema,
+    modes: {
+      development: {
+        value: '/Applications/BrowserOS.app/Contents/MacOS/BrowserOS',
+        commented: true,
+      },
+    },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_STATE_DIR',
+    section: 'personal',
+    description:
+      'Optional BrowserOS server state root for the personal launcher; keeps daily-driver data out of the dev loop state.',
+    secret: false,
+    schema: stringSchema,
+    modes: {
+      development: { value: '~/.browseros-personal', commented: true },
+    },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_CLAW_STATE_DIR',
+    section: 'personal',
+    description: 'Optional BrowserClaw state root for the personal launcher.',
+    secret: false,
+    schema: stringSchema,
+    modes: {
+      development: { value: '~/.browserclaw-personal', commented: true },
+    },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_CDP_PORT',
+    section: 'personal',
+    description: 'Chromium remote debugging port for the personal launcher.',
+    secret: false,
+    schema: portSchema,
+    modes: { development: { value: '9005', commented: true } },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_SERVER_PORT',
+    section: 'personal',
+    description: 'Bun server port for the personal launcher.',
+    secret: false,
+    schema: portSchema,
+    modes: { development: { value: '9105', commented: true } },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_EXTENSION_PORT',
+    section: 'personal',
+    description: 'Extension port for the personal launcher.',
+    secret: false,
+    schema: portSchema,
+    modes: { development: { value: '9305', commented: true } },
+  },
+  {
+    key: 'BROWSEROS_PERSONAL_CLAW_PORT',
+    section: 'personal',
+    description: 'Rust claw-server port for the personal launcher.',
+    secret: false,
+    schema: portSchema,
+    modes: { development: { value: '9205', commented: true } },
   },
   {
     key: 'BROWSEROS_CONFIG_URL',

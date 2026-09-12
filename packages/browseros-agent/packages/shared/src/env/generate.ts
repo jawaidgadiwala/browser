@@ -4,6 +4,7 @@ const SECTION_ORDER: readonly EnvSection[] = [
   'dev-tools',
   'app',
   'claw',
+  'personal',
   'server',
   'build',
   'upload',
