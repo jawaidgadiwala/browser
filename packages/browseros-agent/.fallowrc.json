@@ -8,6 +8,7 @@
     "apps/app/entrypoints/app/main.tsx",
     "apps/app/entrypoints/sidepanel/main.tsx",
     "apps/app/entrypoints/background/index.ts",
+    "apps/app/entrypoints/offscreen/main.ts",
     "apps/app/entrypoints/content.ts",
     "apps/app/entrypoints/auth.content/index.ts",
     "apps/app/entrypoints/glow.content/index.ts",

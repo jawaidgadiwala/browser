@@ -63,6 +63,10 @@ export default defineConfig({
     // Spaces. Chrome allows default keys on at most four commands; the
     // numbered jumps are assignable at chrome://extensions/shortcuts.
     commands: {
+      'capture-page': {
+        suggested_key: { default: 'Ctrl+Shift+F', mac: 'Command+Shift+2' },
+        description: 'Capture the visible page',
+      },
       'space-next': {
         suggested_key: { default: 'Alt+Shift+Right' },
         description: 'Switch to the next space',
@@ -98,6 +102,11 @@ export default defineConfig({
       'alarms',
       'webNavigation',
       'downloads',
+      'activeTab',
+      'offscreen',
+      'clipboardWrite',
+      'notifications',
+      'debugger',
     ],
     host_permissions: ['http://127.0.0.1/*'],
   },

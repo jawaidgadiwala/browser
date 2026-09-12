@@ -30,6 +30,11 @@ export const SHORTCUTS_LIST = [
     },
   },
   {
+    key: 'F',
+    description: 'Capture the visible page',
+    modifier: { windows: 'Ctrl+Shift', mac: '⌘+Shift', linux: 'Ctrl+Shift' },
+  },
+  {
     key: '→',
     description: 'Next space',
     modifier: { windows: 'Alt+Shift', mac: '⌥+Shift', linux: 'Alt+Shift' },

@@ -43,6 +43,7 @@ const cleanupLegacyToolApprovalStorage = async () => {
   await storage.removeItems([...LEGACY_TOOL_APPROVAL_STORAGE_KEYS])
 }
 
+import { registerCapture } from './capture'
 import { registerSpaces } from './spaces'
 
 export default defineBackground(() => {
@@ -74,6 +75,7 @@ export default defineBackground(() => {
 
   scheduledJobRuns()
   registerSpaces()
+  registerCapture()
 
   chrome.action.onClicked.addListener(async (tab) => {
     if (typeof tab.id === 'number' && typeof tab.windowId === 'number') {
