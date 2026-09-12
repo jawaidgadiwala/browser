@@ -5,13 +5,13 @@ import {
 
 export const SERVER_BUNDLE_ENTRYPOINT = 'apps/server/src/compiled-bootstrap.ts'
 
-const REQUIRED_PROD_VARS = [
-  'BROWSEROS_CONFIG_URL',
-  'POSTHOG_API_KEY',
-  'SENTRY_DSN',
-]
+// Telemetry keys are optional: an empty value disables PostHog/Sentry at the
+// feature boundary, so a product build without telemetry still succeeds.
+const REQUIRED_PROD_VARS = ['BROWSEROS_CONFIG_URL']
+const OPTIONAL_PROD_VARS = ['POSTHOG_API_KEY', 'SENTRY_DSN']
 const INLINED_ENV_VARS = [
   ...REQUIRED_PROD_VARS,
+  ...OPTIONAL_PROD_VARS,
   'NODE_ENV',
   'LOG_LEVEL',
 ] as const
