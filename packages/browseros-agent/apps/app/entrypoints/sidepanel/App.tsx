@@ -8,6 +8,7 @@ import {
   setPanelMode,
   usePanelMode,
 } from '@/modules/sidebar/panel-mode'
+import { ArchiveScreen } from '@/screens/sidebar/ArchiveScreen'
 import { SidebarScreen } from '@/screens/sidebar/SidebarScreen'
 import { ChatHistory } from '@/screens/sidepanel/history/ChatHistory'
 import { Chat } from '@/screens/sidepanel/index/Chat'
@@ -46,6 +47,7 @@ export const App: FC = () => {
       <Routes>
         <Route index element={<ModeRedirect />} />
         <Route path="sidebar" element={<SidebarScreen />} />
+        <Route path="sidebar/archive" element={<ArchiveScreen />} />
         <Route element={<ChatLayout />}>
           <Route path="chat" element={<Chat />} />
           <Route path="history" element={<ChatHistory />} />

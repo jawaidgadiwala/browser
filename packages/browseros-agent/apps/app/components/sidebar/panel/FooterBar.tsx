@@ -1,11 +1,17 @@
-import { Download, MessageSquare, Plus, Settings } from 'lucide-react'
+import { Archive, Download, MessageSquare, Plus, Settings } from 'lucide-react'
 import { type FC, type ReactNode, useState } from 'react'
+import { useNavigate } from 'react-router'
 import {
   SpaceDialog,
   type SpaceDialogValues,
 } from '@/components/spaces/SpaceDialog'
 import type { Space, SpaceId } from '@/lib/sidebar/core/types'
 import { nextColor } from '@/lib/spaces/spaces.helpers'
+import { countLast24h } from '@/modules/sidebar/archive.helpers'
+import {
+  useArchiveCount,
+  useArchiveToast,
+} from '@/modules/sidebar/archive.hooks'
 import { SpaceDots } from './SpaceDots'
 
 export interface FooterBarProps {
@@ -28,6 +34,11 @@ export const FooterBar: FC<FooterBarProps> = ({
   onOpenChat,
 }) => {
   const [creating, setCreating] = useState(false)
+  const navigate = useNavigate()
+  // The footer is always mounted on the sidebar surface, so it owns the
+  // Tidy / Clear undo toast.
+  useArchiveToast()
+  const archived = countLast24h(useArchiveCount())
 
   return (
     <div className="flex items-center gap-1 border-white/15 border-t bg-[var(--sb-bg-toolbar)] px-2 py-1.5">
@@ -41,6 +52,19 @@ export const FooterBar: FC<FooterBarProps> = ({
       />
       <FooterButton label="New space" onClick={() => setCreating(true)}>
         <Plus className="size-4" />
+      </FooterButton>
+      <FooterButton
+        label={archived > 0 ? `Archive (${archived} in 24 h)` : 'Archive'}
+        onClick={() => navigate('/sidebar/archive')}
+      >
+        <span className="relative flex">
+          <Archive className="size-4" />
+          {archived > 0 && (
+            <span className="absolute -top-1 -right-1.5 rounded-full bg-[var(--sb-accent)] px-1 text-[9px] text-white leading-3">
+              {archived > 99 ? '99+' : archived}
+            </span>
+          )}
+        </span>
       </FooterButton>
       <FooterButton label="Downloads" onClick={onOpenDownloads}>
         <Download className="size-4" />

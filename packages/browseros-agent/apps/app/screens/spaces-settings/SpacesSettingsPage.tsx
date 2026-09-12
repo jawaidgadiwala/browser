@@ -10,6 +10,7 @@ import { nextColor, spaceGlyph } from '@/lib/spaces/spaces.helpers'
 import type { Space, SpacesSettings } from '@/lib/spaces/spaces.types'
 import { useIsMac } from '@/lib/useIsMac'
 import { useSpaces } from '@/modules/spaces/spaces.hooks'
+import { SidebarSettingsCard } from './SidebarSettingsCard'
 
 const SETTING_ROWS: Array<{
   key: keyof SpacesSettings
@@ -164,6 +165,8 @@ export const SpacesSettingsPage: FC = () => {
           ))}
         </div>
       </section>
+
+      <SidebarSettingsCard />
 
       <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
         <h3 className="mb-4 font-semibold">Shortcuts</h3>

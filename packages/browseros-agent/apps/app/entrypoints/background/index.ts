@@ -47,6 +47,7 @@ const cleanupLegacyToolApprovalStorage = async () => {
 
 import { registerCapture } from './capture'
 import { registerSidebar } from './sidebar'
+import { registerSidebarArchive } from './sidebar-archive'
 
 export default defineBackground(() => {
   registerDiagnostics('browseros', getAgentServerUrl)
@@ -80,6 +81,7 @@ export default defineBackground(() => {
   // await the same promise, so nothing reads a pre-migration document.
   void ensureMigrated()
   registerSidebar(new ChromeHostAdapter())
+  registerSidebarArchive()
   registerCapture()
 
   chrome.action.onClicked.addListener(async (tab) => {
