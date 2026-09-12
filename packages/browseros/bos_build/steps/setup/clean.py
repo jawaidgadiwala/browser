@@ -11,6 +11,78 @@ from ..storage.download import managed_binary_families
 
 UNIVERSAL_INPUT_ARCHITECTURES = ("arm64", "x64")
 
+# Top-level directories `git clean` is pointed at; only gclient deps that live
+# under one of them need protecting.
+CLEANED_DIRS = ("chrome/", "components/", "third_party/")
+
+# Hand-maintained excludes, kept as the fallback for when DEPS cannot be
+# parsed. gclient hook downloads (llvm, rust, node, ninja) are untracked in the
+# Chromium git tree, so without these every clean forces a full
+# `gclient runhooks` before gn can configure.
+FALLBACK_CLEAN_EXCLUDES = (
+    "build_tools/",
+    "uc_staging/",
+    "buildtools/",
+    "tools/",
+    "build/",
+    "third_party/llvm-build/",
+    "third_party/rust-toolchain/",
+    "third_party/rust-src/",
+    "third_party/node/",
+    "third_party/depot_tools/",
+    "third_party/ninja/",
+)
+
+# Safety net: build 13 failed at gn configure because this CIPD package was
+# swept away (chrome/test/BUILD.gn loads its BUILD.gn). Pinned explicitly so a
+# regression in DEPS parsing cannot reintroduce that failure.
+ALWAYS_CLEAN_EXCLUDES = ("components/variations/test_data/cipd/",)
+
+
+def gclient_managed_paths(deps_path: Path) -> tuple[str, ...]:
+    """Return src-relative paths DEPS declares as gclient-managed dependencies.
+
+    CIPD packages and GCS downloads are untracked in the Chromium git tree, so
+    `git clean -fdx` deletes them; upstream CI hides this by always running
+    `gclient sync` afterwards, while local `--provision none` builds do not.
+    The DEPS file is a Python dict literal that calls `Var`/`Str`, so it is
+    exec'd with those stubbed the way gclient does rather than pattern-matched.
+
+    Only paths under CLEANED_DIRS are returned. An empty tuple means "unknown"
+    (missing or unparseable DEPS), never "nothing is managed".
+    """
+    try:
+        source = deps_path.read_text(encoding="utf-8")
+    except OSError as error:
+        log_warning(f"Could not read {deps_path}: {error}")
+        return ()
+
+    namespace: dict = {
+        # gclient's own stubs: Var() expands to a placeholder (we only need the
+        # dict keys, never the resolved URLs) and Str() is the identity.
+        "Var": lambda name: "{%s}" % name,
+        "Str": lambda value: value,
+    }
+    try:
+        exec(compile(source, str(deps_path), "exec"), namespace)  # noqa: S102
+    except Exception as error:  # DEPS is third-party code; any failure is fatal
+        log_warning(f"Could not evaluate {deps_path}: {error!r}")
+        return ()
+
+    deps = namespace.get("deps")
+    if not isinstance(deps, dict):
+        log_warning(f"No deps dict found in {deps_path}")
+        return ()
+
+    paths: set[str] = set()
+    for key in deps:
+        if not isinstance(key, str) or not key.startswith("src/"):
+            continue
+        relative = key[len("src/") :].strip("/")
+        if relative.startswith(CLEANED_DIRS):
+            paths.add(relative)
+    return tuple(sorted(paths))
+
 
 @step("clean", phase="setup")
 class CleanModule(Step):
@@ -125,23 +197,36 @@ class CleanModule(Step):
                 "git",
                 "clean",
                 "-fdx",
-                "chrome/",
-                "components/",
-                "third_party/",
-                "--exclude=build_tools/",
-                "--exclude=uc_staging/",
-                "--exclude=buildtools/",
-                "--exclude=tools/",
-                "--exclude=build/",
-                # gclient hook downloads: keep them or every clean forces a
-                # full `gclient runhooks` before gn can configure.
-                "--exclude=third_party/llvm-build/",
-                "--exclude=third_party/rust-toolchain/",
-                "--exclude=third_party/rust-src/",
-                "--exclude=third_party/node/",
-                "--exclude=third_party/depot_tools/",
-                "--exclude=third_party/ninja/",
+                *CLEANED_DIRS,
+                *(f"--exclude={pattern}" for pattern in self._clean_excludes(ctx)),
             ],
             cwd=ctx.chromium_src,
         )
         log_success("Git reset and clean complete")
+
+    def _clean_excludes(self, ctx: Context) -> tuple[str, ...]:
+        """Exclude patterns for `git clean`, in stable, de-duplicated order."""
+        managed = gclient_managed_paths(ctx.chromium_src / "DEPS")
+        if managed:
+            log_info(
+                f"Protecting {len(managed)} gclient-managed dependency "
+                "paths from clean"
+            )
+        else:
+            log_warning(
+                "Falling back to the explicit exclude list; gclient-managed "
+                "deps (CIPD/GCS) may be removed and need a `gclient sync`"
+            )
+
+        patterns: list[str] = []
+        seen: set[str] = set()
+        for pattern in (
+            *FALLBACK_CLEAN_EXCLUDES,
+            *(f"{path}/" for path in managed),
+            *ALWAYS_CLEAN_EXCLUDES,
+        ):
+            if pattern in seen:
+                continue
+            patterns.append(pattern)
+            seen.add(pattern)
+        return tuple(patterns)

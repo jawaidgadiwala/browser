@@ -275,5 +275,132 @@ class CleanPruneOrphanBinariesTest(unittest.TestCase):
             self.assertFalse((root.root / "resources" / "binaries").exists())
 
 
+SAMPLE_DEPS = '''
+vars = {
+  'chromium_git': 'https://chromium.googlesource.com',
+  'node_version': 'version:1.2.3',
+}
+
+deps = {
+  'src/components/variations/test_data/cipd': {
+    'packages': [{'package': 'chromium/data/variations', 'version': 'abc'}],
+    'dep_type': 'cipd',
+  },
+  'src/third_party/node/mac': {
+    'dep_type': 'gcs',
+    'bucket': 'chromium-nodejs',
+    'objects': [{'object_name': 'node-mac', 'generation': 1}],
+  },
+  'src/third_party/boringssl/src':
+    Var('chromium_git') + '/boringssl.git' + '@' + 'deadbeef',
+  'src/chrome/test/data/perf/canvas_bench':
+    Var('chromium_git') + '/canvas_bench.git@aa',
+  'src/tools/somewhere/else': {
+    'dep_type': 'cipd',
+    'packages': [{'package': 'chromium/tools/x', 'version': Str('v1')}],
+  },
+  'src-internal': {
+    'url': 'https://chrome-internal.googlesource.com/chrome/src-internal.git',
+  },
+}
+
+hooks = [
+  {'name': 'nodejs', 'pattern': '.', 'action': ['python3', 'x.py']},
+]
+'''
+
+
+class GclientManagedPathsTest(unittest.TestCase):
+    """DEPS-derived protection of untracked gclient dependencies."""
+
+    def _paths(self, deps_text):
+        with tempfile.TemporaryDirectory() as tmp:
+            deps_path = Path(tmp) / "DEPS"
+            deps_path.write_text(deps_text)
+            return clean.gclient_managed_paths(deps_path)
+
+    def test_collects_cipd_gcs_and_git_deps_under_cleaned_dirs(self):
+        self.assertEqual(
+            self._paths(SAMPLE_DEPS),
+            (
+                "chrome/test/data/perf/canvas_bench",
+                "components/variations/test_data/cipd",
+                "third_party/boringssl/src",
+                "third_party/node/mac",
+            ),
+        )
+
+    def test_ignores_paths_outside_cleaned_dirs_and_other_solutions(self):
+        paths = self._paths(SAMPLE_DEPS)
+        self.assertNotIn("tools/somewhere/else", paths)
+        self.assertFalse(any("src-internal" in path for path in paths))
+
+    def test_missing_deps_file_returns_empty(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                clean.gclient_managed_paths(Path(tmp) / "DEPS"), ()
+            )
+
+    def test_unparseable_deps_returns_empty(self):
+        self.assertEqual(self._paths("deps = {  # truncated\n"), ())
+
+    def test_deps_without_dict_returns_empty(self):
+        self.assertEqual(self._paths("vars = {'a': 'b'}\n"), ())
+
+
+class CleanExcludesTest(unittest.TestCase):
+    """The exclude list handed to `git clean`."""
+
+    def _git_clean_command(self, chromium):
+        ctx = make_context(chromium, MockBrowserOSRoot(chromium.root / "bos"))
+        with mock.patch.object(clean, "run_command") as run_cmd:
+            clean.CleanModule().execute(ctx)
+        commands = [call.args[0] for call in run_cmd.call_args_list]
+        return next(cmd for cmd in commands if cmd[:3] == ["git", "clean", "-fdx"])
+
+    def test_excludes_every_managed_dep_plus_fallback_list(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            chromium = MockChromium(Path(tmp))
+            chromium.add_file("DEPS", SAMPLE_DEPS)
+
+            command = self._git_clean_command(chromium)
+
+            self.assertEqual(command[3:6], ["chrome/", "components/", "third_party/"])
+            excludes = [arg for arg in command if arg.startswith("--exclude=")]
+            for pattern in (
+                "--exclude=components/variations/test_data/cipd/",
+                "--exclude=third_party/node/mac/",
+                "--exclude=third_party/boringssl/src/",
+                "--exclude=chrome/test/data/perf/canvas_bench/",
+                "--exclude=uc_staging/",
+                "--exclude=third_party/llvm-build/",
+            ):
+                self.assertIn(pattern, excludes)
+            self.assertEqual(len(excludes), len(set(excludes)))
+
+    def test_missing_deps_falls_back_to_explicit_list_with_safety_net(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            chromium = MockChromium(Path(tmp))
+            self.assertFalse((chromium.src / "DEPS").exists())
+
+            command = self._git_clean_command(chromium)
+
+            excludes = [arg for arg in command if arg.startswith("--exclude=")]
+            self.assertEqual(
+                excludes,
+                [
+                    f"--exclude={pattern}"
+                    for pattern in (
+                        *clean.FALLBACK_CLEAN_EXCLUDES,
+                        *clean.ALWAYS_CLEAN_EXCLUDES,
+                    )
+                ],
+            )
+            # The build-13 failure path stays protected even with no DEPS.
+            self.assertIn(
+                "--exclude=components/variations/test_data/cipd/", excludes
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
