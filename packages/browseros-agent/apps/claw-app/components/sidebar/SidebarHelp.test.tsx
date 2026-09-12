@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, mock } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { PRODUCT_DOCS_URL } from '@/lib/personal/product'
 import { helpItems, openHelpTarget, SidebarHelp } from './SidebarHelp'
 
 const originalChrome = globalThis.chrome
@@ -31,7 +32,7 @@ describe('SidebarHelp', () => {
 
   it('pins Docs and onboarding to their exact targets', () => {
     expect(helpItems.map((item) => [item.name, item.url])).toEqual([
-      ['Docs', 'https://docs.browseros.com/browserclaw'],
+      ['Docs', PRODUCT_DOCS_URL],
       ['Revisit Onboarding', 'chrome://browseros-onboarding'],
       ['Diagnostics', '/diagnostics'],
     ])

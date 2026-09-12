@@ -1,6 +1,7 @@
 import { REPORTER_EXTENSION_ID } from '@browseros/diagnostics/contract'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'wxt'
+import { PRODUCT_DESCRIPTION, PRODUCT_NAME } from './lib/personal/product'
 
 // BROWSEROS_CLAW_EMBEDDED=1 (set by `browseros-dev watch --with-claw`) loads
 // this extension next to the BrowserOS classic agent extension in one
@@ -8,7 +9,6 @@ import { defineConfig } from 'wxt'
 // chrome-extension://<id>/newtab.html instead. The pinned `key` keeps the
 // extension id identical in both modes.
 const embedded = process.env.BROWSEROS_CLAW_EMBEDDED === '1'
-const productName = embedded ? 'Browser Agents' : 'BrowserOS neo'
 
 // `entrypoints/newtab/` is WXT's conventional new-tab entrypoint. WXT
 // auto-wires manifest.chrome_url_overrides.newtab to point at the
@@ -20,9 +20,9 @@ export default defineConfig({
   outDir: 'dist',
   modules: ['@wxt-dev/module-react'],
   manifest: {
-    name: productName,
+    name: PRODUCT_NAME,
     externally_connectable: { ids: [REPORTER_EXTENSION_ID] },
-    description: 'BrowserOS neo — the browser for AI agents.',
+    description: PRODUCT_DESCRIPTION,
     key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyndydRTtd3xudG65Tj5OURAVUveCV+5WMBDvzqGT6lZ2XMMsE2QaOGqofEfgIZG2fP0oQE3Ckjm8VK62WbZ5e1tUUOnsMQS0CUwJf2TF2ELwonL1XC7OISKYmrCutenPBh3kBMpdMvJWwn7oHddQX2P998TJLUsveeo531P5NEs73/CZ9uZQlPYsg8uLaaJU4ZKzutgvGkngsqbdRnc4e4xCxGa4+2FBcB5M+wzKHBHr0lQpCRgBrTqZL9/uVeKpY38yQF2mOqYqxVAwZDDQfmpAHSHso/yfYeVgtdBXdL5j2cg0dD+YPtDs+gDE1OEC74z21cCL2spgV7M7T8ckkwIDAQAB',
     update_url: 'https://cdn.browseros.com/extensions/update-manifest.xml',
     // Keep shared permissions in sync with apps/app/wxt.config.ts; additions
@@ -54,7 +54,7 @@ export default defineConfig({
         48: 'icon/48.png',
         128: 'icon/128.png',
       },
-      default_title: productName,
+      default_title: PRODUCT_NAME,
     },
   },
   hooks: {

@@ -6,6 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { PRODUCT_DOCS_URL } from '@/lib/personal/product'
 import { cn } from '@/lib/utils'
 
 export interface SidebarHelpProps {
@@ -22,7 +23,7 @@ interface HelpItem {
 export const helpItems: HelpItem[] = [
   {
     name: 'Docs',
-    url: 'https://docs.browseros.com/browserclaw',
+    url: PRODUCT_DOCS_URL,
     icon: BookOpen,
   },
   {

@@ -4,7 +4,7 @@ import { InstallExtensionDialog } from './InstallExtensionDialog'
 import { COWORK_REQUIREMENT_LINE } from './install-guide.data'
 
 /**
- * Advertises the BrowserOS neo extension for Claude Desktop. Unlike the
+ * Advertises the cockpit's Claude Desktop extension. Unlike the
  * harness rows, Claude Desktop installs a `.mcpb` through its own Settings,
  * which this app cannot toggle or detect, so the card opens a guided
  * walkthrough instead of offering a connect action.

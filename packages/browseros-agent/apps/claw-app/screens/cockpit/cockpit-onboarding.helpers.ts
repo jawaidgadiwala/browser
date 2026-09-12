@@ -12,7 +12,7 @@
  * discriminant and the copy constants; it never re-derives state.
  */
 
-import { PRODUCT_NAME } from '@/lib/personal/product'
+import { PRODUCT_DOCS_URL, PRODUCT_NAME } from '@/lib/personal/product'
 
 export type OnboardingState = 'first-run' | 'waiting' | 'ready'
 
@@ -42,7 +42,7 @@ export const HERO_COPY = {
   h1Prefix: 'You watch. Your agent',
   h1Accent: 'works.',
   subhead:
-    'Your agents are wired in. Watch a quick demo, then hand your first task to any of them.',
+    'Your agents are wired in. Hand your first task to any of them, then watch it run here.',
 } as const
 
 export const PANEL_COPY = {
@@ -69,10 +69,8 @@ export const CONNECTED_COPY = {
 
 export const FOOTER_COPY = {
   docs: 'Read the docs',
-  // Deep-link to the BrowserClaw section instead of the docs root
-  // so a first-run reader lands on install / first-run / MCP setup
-  // instead of BrowserOS's general index. Mintlify canonicalises
-  // the URL without a trailing slash, so we use the no-slash form
-  // to avoid triggering a redirect on every click.
-  docsHref: 'https://docs.browseros.com/browserclaw',
+  // No docs site of our own yet, so the public source repository is the
+  // documentation of record (and the AGPL source offer). Centralised in
+  // `lib/personal/product` so a real docs host is a one-line change.
+  docsHref: PRODUCT_DOCS_URL,
 } as const

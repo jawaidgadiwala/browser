@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
+import { PRODUCT_DOCS_URL, PRODUCT_NAME } from '@/lib/personal/product'
 import { CockpitOnboarding } from './CockpitOnboarding'
 
 function render(
@@ -24,22 +25,22 @@ function render(
 }
 
 describe('CockpitOnboarding', () => {
-  it('first-run: hero, a paused video, and the start panel render', () => {
+  it('first-run: hero, the local hero art, and the start panel render', () => {
     const html = render('first-run')
     expect(html).toContain('You watch. Your agent')
     expect(html).toContain('works.')
-    // The hero plays inline on demand, without a poster-to-lightbox step or a
-    // youtube embed (blocked from the extension origin).
-    expect(html).toContain('<video')
-    expect(html.toLowerCase()).not.toContain('autoplay')
-    expect(html).toContain('onboarding-recording/video.mp4')
+    // The hero art is inline SVG: no <video>, no upstream CDN stream, no
+    // youtube embed (blocked from the extension origin anyway).
+    expect(html).toContain('<svg')
+    expect(html).not.toContain('<video')
+    expect(html).not.toContain('cdn.browseros.com')
     expect(html).not.toContain('youtube-nocookie.com/embed')
     expect(html).toContain('Hand off your first task')
     expect(html).toContain('Copy task')
     expect(html).toContain('Manage agents')
     expect(html).toContain('Paste this prompt into your agent.')
     expect(html).toContain(
-      'Using BrowserOS neo, search for the current monthly prices',
+      `Using ${PRODUCT_NAME}, search for the current monthly prices`,
     )
   })
 
@@ -47,6 +48,7 @@ describe('CockpitOnboarding', () => {
     const html = render('first-run')
     expect(html).not.toContain('first-run-demo.mp4')
     expect(html).not.toContain('Install BrowserClaw as an MCP.')
+    expect(html).not.toContain('onboarding-recording/video.mp4')
     expect(html).not.toContain('Watch it here.')
   })
 
@@ -86,14 +88,15 @@ describe('CockpitOnboarding', () => {
   it('waiting: retains the starter prompt tile so the reader can still copy', () => {
     const html = render('waiting', ['Claude Code'])
     expect(html).toContain(
-      'Using BrowserOS neo, search for the current monthly prices',
+      `Using ${PRODUCT_NAME}, search for the current monthly prices`,
     )
   })
 
   it('renders the docs link in both states with no refresh affordance', () => {
     for (const state of ['first-run', 'waiting'] as const) {
       const html = render(state)
-      expect(html).toContain('https://docs.browseros.com/')
+      expect(html).toContain(PRODUCT_DOCS_URL)
+      expect(html).not.toContain('docs.browseros.com')
       expect(html).not.toContain('Refresh the page.')
       expect(html).not.toContain('Already set up?')
     }

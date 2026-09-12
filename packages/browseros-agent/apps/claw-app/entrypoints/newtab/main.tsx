@@ -24,8 +24,8 @@ import { queryClient } from '@/modules/api/queryClient'
 import { App } from './App'
 import './styles.css'
 
-// index.html is static, so the tab and history entry would keep upstream's
-// name in an embedded build; the entry is the only place that can correct it.
+// index.html is static; keeping the assignment means the product constant is
+// the single source of truth for the tab and history-entry name.
 document.title = PRODUCT_NAME
 
 const root = document.getElementById('root')

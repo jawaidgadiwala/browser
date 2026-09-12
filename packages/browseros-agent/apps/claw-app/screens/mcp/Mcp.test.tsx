@@ -113,9 +113,11 @@ afterEach(() => {
 
 const { Mcp } = await import('./Mcp')
 const { HeroCard } = await import('./HeroCard')
-const { COWORK_REQUIREMENT_LINE, EXTENSION_DOWNLOAD_URL } = await import(
-  './install-guide.data'
-)
+const {
+  COWORK_REQUIREMENT_LINE,
+  EXTENSION_DOWNLOAD_URL,
+  INSTALL_DIALOG_TITLE,
+} = await import('./install-guide.data')
 
 function renderApp(): string {
   const client = new QueryClient({
@@ -196,7 +198,7 @@ describe('Mcp (editorial)', () => {
 
   it('keeps the install walkthrough closed until the callout is activated', () => {
     const html = renderApp()
-    expect(html).not.toContain('Install BrowserOS neo')
+    expect(html).not.toContain(INSTALL_DIALOG_TITLE)
     expect(html).not.toContain(EXTENSION_DOWNLOAD_URL)
   })
 

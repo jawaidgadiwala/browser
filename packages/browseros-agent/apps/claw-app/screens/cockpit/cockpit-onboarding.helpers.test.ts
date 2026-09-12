@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'bun:test'
-import { PRODUCT_NAME } from '@/lib/personal/product'
+import { PRODUCT_DOCS_URL, PRODUCT_NAME } from '@/lib/personal/product'
 import {
   FOOTER_COPY,
   getOnboardingState,
@@ -47,7 +47,7 @@ describe('cockpit onboarding copy', () => {
     expect(HERO_COPY.h1Prefix).toBe('You watch. Your agent')
     expect(HERO_COPY.h1Accent).toBe('works.')
     expect(HERO_COPY.subhead).toBe(
-      'Your agents are wired in. Watch a quick demo, then hand your first task to any of them.',
+      'Your agents are wired in. Hand your first task to any of them, then watch it run here.',
     )
   })
 
@@ -69,11 +69,9 @@ describe('cockpit onboarding copy', () => {
     expect(MANAGE_COPY.href).toBe('/mcp')
   })
 
-  it('docs footer link deep-links to the BrowserClaw section', () => {
-    // Should NOT bare-root; readers arriving from the cockpit expect
-    // BrowserClaw-specific docs (install / MCP / first-run), not the
-    // BrowserOS index. Guard against accidental drift.
-    expect(FOOTER_COPY.docsHref).toBe('https://docs.browseros.com/browserclaw')
+  it('docs footer link points at our own docs target, never upstream', () => {
+    expect(FOOTER_COPY.docsHref).toBe(PRODUCT_DOCS_URL)
+    expect(FOOTER_COPY.docsHref).not.toContain('browseros.com')
     expect(FOOTER_COPY.docs).toBe('Read the docs')
   })
 })

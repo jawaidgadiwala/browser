@@ -285,7 +285,8 @@ describe('Cockpit (v2)', () => {
     })
     expect(firstRun).toContain('You watch. Your agent')
     expect(firstRun).toContain('Hand off your first task')
-    expect(firstRun).toContain('onboarding-recording/video.mp4')
+    // Hero art is local inline SVG; nothing streams from a CDN on first run.
+    expect(firstRun).not.toContain('cdn.browseros.com')
     expect(firstRun).not.toContain('Since you started')
     expect(statsQueryEnabled()).toBe(false)
 

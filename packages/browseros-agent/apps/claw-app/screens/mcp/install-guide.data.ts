@@ -1,3 +1,5 @@
+import { BROWSER_PRODUCT_NAME, PRODUCT_NAME } from '@/lib/personal/product'
+
 /**
  * The Claude Desktop install walkthrough, as data. The step rail, the
  * counter, the Back/Next bounds, and the tests all derive from this one
@@ -15,14 +17,16 @@ export const MCPB_FILENAME = EXTENSION_DOWNLOAD_URL.slice(
   EXTENSION_DOWNLOAD_URL.lastIndexOf('/') + 1,
 )
 
-export const COWORK_REQUIREMENT_LINE =
-  'To use BrowserOS neo with Claude Cowork, you need to install this extension.'
+export const COWORK_REQUIREMENT_LINE = `To use ${PRODUCT_NAME} with Claude Cowork, you need to install this extension.`
+
+/** Heading of the guided walkthrough dialog. */
+export const INSTALL_DIALOG_TITLE = `Install ${PRODUCT_NAME}`
 
 /**
- * Screenshots live in the `browserclaw` R2 bucket rather than the extension
- * bundle so a Claude Desktop UI change can be corrected by re-uploading the
- * image, with no extension release. Masters are in `~/Desktop/
- * browseros-neo-install-screenshots` and in git history at commit 1d1c794ba.
+ * Screenshots live in an object bucket rather than the extension bundle so a
+ * Claude Desktop UI change can be corrected by re-uploading the image, with no
+ * extension release. Still upstream's bucket: re-host before shipping widely.
+ * Masters are in git history at commit 1d1c794ba.
  */
 const IMAGE_BASE = 'https://pub-c94be9094f01420f9166e717fbd4a20d.r2.dev'
 
@@ -64,7 +68,7 @@ export const INSTALL_STEPS: readonly InstallStep[] = [
     id: 'download',
     title: 'Download',
     kind: 'download',
-    body: `Download the BrowserOS neo extension. It saves to your Downloads folder as ${MCPB_FILENAME}.`,
+    body: `Download the ${PRODUCT_NAME} extension. It saves to your Downloads folder as ${MCPB_FILENAME}.`,
   },
   {
     id: 'install-extension',
@@ -87,10 +91,10 @@ export const INSTALL_STEPS: readonly InstallStep[] = [
   {
     id: 'confirm-install',
     title: 'Click Install',
-    body: 'Claude shows the BrowserOS neo extension details. Click Install to finish — Claude can now drive BrowserOS neo.',
+    body: `Claude shows the extension details. Click Install to finish — Claude can now drive ${BROWSER_PRODUCT_NAME}.`,
     image: {
       src: `${IMAGE_BASE}/step-confirm-install.webp`,
-      alt: "Claude Desktop's BrowserOS neo extension details sheet with the Install button in the top right",
+      alt: "Claude Desktop's extension details sheet with the Install button in the top right",
     },
   },
 ]

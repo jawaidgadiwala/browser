@@ -19,8 +19,8 @@ import {
   STARTER_PROMPT,
   STARTER_PROMPT_LABEL,
 } from '@/screens/cockpit/cockpit-onboarding.helpers'
+import { OnboardingIllustration } from './OnboardingIllustration'
 import { StarterPromptTile } from './StarterPromptTile'
-import { VideoFeature } from './VideoFeature'
 
 interface CockpitOnboardingProps {
   state: Exclude<OnboardingState, 'ready'>
@@ -52,7 +52,7 @@ export function CockpitOnboarding({
       <OnboardingHero />
       <div className="grid gap-6 md:grid-cols-12 md:items-stretch">
         <div className="md:col-span-7">
-          <VideoFeature />
+          <OnboardingIllustration />
         </div>
         <StartPanel
           className="md:col-span-5"
