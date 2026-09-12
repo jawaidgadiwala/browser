@@ -57,6 +57,11 @@ Machine has ~18 GB free disk and 16 GB RAM. Chromium build needs ~100 GB disk, 1
 2. Enable vertical tabs, connect Claude Code via MCP, wire BYOK providers.
 3. Live in it 1 to 2 weeks. Keep a running list in `NOTES.md` of what is missing vs Zen (spaces, compact mode, glance, split view polish, command palette, theming).
 
+### Status log
+- 2026-09-12: Repo mirrored to github.com/jawaidgadiwala/browser (full upstream history, `upstream` remote = browseros-ai/BrowserOS). BrowserOS cask, Go, Lima installed. Dev loop `bun run dev:watch -- --new` verified.
+- 2026-09-12: **Spaces shipped** in extension layer (`apps/app`): `lib/spaces/*`, `entrypoints/background/spaces.ts`, `components/spaces/*`, `screens/spaces-settings/*`, `/settings/spaces`, manifest `commands` (⌥⇧→ ⌥⇧← ⌥⇧S, plus space-1..9 unbound). Tested live over CDP: create, switch, adopt new tabs, follow active tab, rename (group title follows), reorder, delete (tabs ungroup), settings toggles, cmdk switcher. Design: one Chromium tab group per space per window matched by title; switch = expand target + activate last tab + collapse others. Known gap: leaving a space by clicking a tab in another group does not record the old space's last tab (only pill/shortcut switches do).
+- 2026-09-12: Claude Code via ACP is opt-in in Settings → AI & Agents → Add Claude Code. Server launches `npx -y @agentclientprotocol/claude-agent-acp@^0.75.1` (no bundled Bun in dev). First install took ~5 min on this network and exceeded the 120s probe cap; warm the npx cache once before first setup.
+
 ### Phase 1: Agent layer fork (no Chromium build)
 1. Fork `browseros-ai/BrowserOS` to own GitHub. Work only inside `packages/browseros-agent`.
 2. Dev loop: `bun install`, `bun run dev:watch` (classic). Needs Bun, Go, Lima, Rust. macOS only.
@@ -89,4 +94,5 @@ Machine has ~18 GB free disk and 16 GB RAM. Chromium build needs ~100 GB disk, 1
 - Prefer changes in `browseros-agent` (TS) over Chromium patches when both can solve the problem.
 - Follow upstream conventions: Conventional Commits, Bun only (npm/yarn/pnpm rejected), `bun run check` before commits.
 - AGPL-3.0: fine for personal use. If binaries are ever shared, source must be published.
-- Upstream scratch copies live in the session scratchpad (`bos/`, `zen/`). Re-download if missing: `curl -sL https://github.com/browseros-ai/BrowserOS/archive/refs/heads/main.tar.gz | tar xz` (git clone fails without git-lfs).
+- Zen source for UX reference: clone `zen-browser/desktop` into the scratchpad when needed. Upstream BrowserOS is the `upstream` git remote. This repo has LFS filters disabled (`filter.lfs.*` = cat); LFS gifs are pointer files, fine.
+- Dev loop testing: `bun run dev:watch -- --new`, read the CDP port, then `BROWSEROS_CDP_PORT=<port> bun scripts/dev/inspect-ui.ts targets|snapshot|click|fill|eval|screenshot <target>`. `fill` does not clear react-hook-form inputs; use eval with the native value setter + `input` event for renames. Background state: `eval background.js "(async()=>JSON.stringify(await chrome.storage.local.get(null)))()"`.
