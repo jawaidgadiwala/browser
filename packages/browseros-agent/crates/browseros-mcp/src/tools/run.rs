@@ -2087,6 +2087,7 @@ return { pageId: page.pageId, tabId: page.tabId, url: page.url, title: page.titl
             BrowserToolDefaults {
                 default_window_id: Some(WindowId(42)),
                 default_tab_group_id: Some("group-1".to_string()),
+                ..BrowserToolDefaults::default()
             },
         );
         let result = run_tool_with_ctx(
@@ -2141,6 +2142,7 @@ return { pageId: page.pageId, tabId: page.tabId, url: page.url, title: page.titl
             BrowserToolDefaults {
                 default_window_id: Some(WindowId(42)),
                 default_tab_group_id: Some("default-group".to_string()),
+                ..BrowserToolDefaults::default()
             },
         );
         let result = run_tool_with_ctx(

@@ -441,7 +441,12 @@ async fn dispatch_tab_groups(
     let operation_cancel = cancel.child_token();
     let ctx = ToolCtx::new(BrowserToolOptions {
         session: browser.clone(),
-        defaults: BrowserToolDefaults::default(),
+        // Server-owned group bookkeeping only ever touches the agent's own
+        // group, so the user-group guard would be pure overhead here.
+        defaults: BrowserToolDefaults {
+            protect_user_tab_groups: false,
+            ..BrowserToolDefaults::default()
+        },
         cancel: operation_cancel.clone(),
         output_files,
         inner_call_hook: None,

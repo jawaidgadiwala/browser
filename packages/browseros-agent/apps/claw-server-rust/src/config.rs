@@ -66,6 +66,8 @@ pub struct Config {
     pub replay_retention_days: u64,
     pub dev_mode: bool,
     pub auth_token: Option<String>,
+    /// Refuse agent-driven close/ungroup/rename of tab groups the user owns.
+    pub protect_user_tab_groups: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -126,6 +128,8 @@ struct SidecarDirectories {
 #[serde(rename_all = "camelCase")]
 struct SidecarFlags {
     dev_mode: Option<bool>,
+    #[serde(rename = "protect_user_tab_groups", alias = "protectUserTabGroups")]
+    protect_user_tab_groups: Option<bool>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -177,6 +181,7 @@ impl Config {
             .map(|path| resolve_path(&cwd, path))
             .unwrap_or_else(|| cwd.join("resources"));
         let dev_mode = sidecar.flags.dev_mode.unwrap_or(default_dev_mode);
+        let protect_user_tab_groups = sidecar.flags.protect_user_tab_groups.unwrap_or(true);
         let browserclaw_dir = resolve_browserclaw_dir(env, dev_mode, &cwd);
         let auth_token = sidecar
             .auth
@@ -210,6 +215,7 @@ impl Config {
                 .unwrap_or(DEFAULT_REPLAY_RETENTION_DAYS),
             dev_mode,
             auth_token,
+            protect_user_tab_groups,
         })
     }
 
@@ -358,6 +364,22 @@ mod tests {
         assert_eq!(cfg.public_mcp_url(), "http://127.0.0.1:9200/mcp");
         // No proxy configured (dev): falls back to the direct server port.
         assert_eq!(cfg.public_base_url(), "http://127.0.0.1:9200");
+        Ok(())
+    }
+
+    #[test]
+    fn protect_user_tab_groups_defaults_on_and_honors_the_sidecar_flag() -> anyhow::Result<()> {
+        let dir = tempdir()?;
+        let env = ConfigEnv::with_vars(BTreeMap::new(), dir.path().join("home"));
+
+        let default_path = dir.path().join("default.json");
+        fs::write(&default_path, r#"{"flags":{}}"#)?;
+        assert!(Config::load_with_env(&default_path, &env)?.protect_user_tab_groups);
+
+        let off_path = dir.path().join("off.json");
+        fs::write(&off_path, r#"{"flags":{"protect_user_tab_groups":false}}"#)?;
+        assert!(!Config::load_with_env(&off_path, &env)?.protect_user_tab_groups);
+
         Ok(())
     }
 

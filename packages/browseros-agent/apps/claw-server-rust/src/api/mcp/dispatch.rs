@@ -434,6 +434,7 @@ async fn execute_with_cancellation(call: &ToolCall) -> DispatchExecution {
                 defaults: BrowserToolDefaults {
                     default_window_id: None,
                     default_tab_group_id: call.default_tab_group_id.clone(),
+                    protect_user_tab_groups: call.state.config.protect_user_tab_groups,
                 },
                 cancel: call.cancel.clone(),
                 output_files: call.output_files.clone(),

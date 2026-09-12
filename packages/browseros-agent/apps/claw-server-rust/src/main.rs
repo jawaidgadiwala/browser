@@ -365,6 +365,7 @@ mod tests {
             replay_retention_days: 7,
             dev_mode: false,
             auth_token: None,
+            protect_user_tab_groups: true,
         });
         let state = AppState::new_with_home(config.clone(), root.path().join("home")).await?;
         let shutdown = state.shutdown.clone();
@@ -415,6 +416,7 @@ mod tests {
             replay_retention_days: 7,
             dev_mode: false,
             auth_token: None,
+            protect_user_tab_groups: true,
         });
         let state = AppState::new_with_home(config.clone(), root.path().join("home")).await?;
         let mut runtime = AppRuntime::start(state);

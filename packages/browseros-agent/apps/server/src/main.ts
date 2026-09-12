@@ -74,6 +74,7 @@ export class Application {
         executionDir: this.config.executionDir,
         resourcesDir: this.config.resourcesDir,
         aiSdkDevtoolsEnabled: this.config.aiSdkDevtoolsEnabled,
+        protectUserTabGroups: this.config.protectUserTabGroups,
         onShutdown: () => this.stop('shutdown-endpoint'),
       })
     } catch (error) {

@@ -149,6 +149,7 @@ async fn test_router(root: &Path) -> anyhow::Result<Router> {
         replay_retention_days: 7,
         dev_mode: false,
         auth_token: None,
+        protect_user_tab_groups: true,
     });
     let state = AppState::new_with_home(config, root.join("home")).await?;
     Ok(build_router(state))

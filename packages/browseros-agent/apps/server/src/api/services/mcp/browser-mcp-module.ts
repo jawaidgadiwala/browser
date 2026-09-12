@@ -33,6 +33,8 @@ export interface BrowserMcpModuleDeps {
   klavis?: KlavisService
   activity?: ServerActivity
   tabGroups?: Pick<ConversationTabGroups, 'addCreatedPages'>
+  /** Refuse agent close/ungroup/rename of tab groups the user owns. Defaults on. */
+  protectUserTabGroups?: boolean
 }
 
 export interface BrowserToolLeaseInput {
@@ -149,6 +151,7 @@ export class BrowserMcpModule {
       version: this.deps.version,
       browserSession: this.deps.browserSession,
       defaultWindowId: lease?.browserContext?.windowId,
+      protectUserTabGroups: this.deps.protectUserTabGroups,
       instructions: MCP_INSTRUCTIONS,
       registration: {
         tools,

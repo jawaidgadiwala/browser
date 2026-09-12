@@ -22,6 +22,7 @@ export interface SidecarConfig {
   }
   flags: {
     allow_remote_in_mcp?: boolean
+    protect_user_tab_groups?: boolean
   }
   instance: {
     client_id?: string
@@ -70,6 +71,7 @@ const SidecarConfigFileSchema = z
     flags: z
       .object({
         allow_remote_in_mcp: z.boolean().optional(),
+        protect_user_tab_groups: z.boolean().optional(),
       })
       .passthrough()
       .optional(),
@@ -146,6 +148,7 @@ function projectSidecarConfig(
     }),
     flags: omitUndefined({
       allow_remote_in_mcp: parsed.flags?.allow_remote_in_mcp,
+      protect_user_tab_groups: parsed.flags?.protect_user_tab_groups,
     }),
     instance: omitUndefined({
       client_id: parsed.instance?.client_id,

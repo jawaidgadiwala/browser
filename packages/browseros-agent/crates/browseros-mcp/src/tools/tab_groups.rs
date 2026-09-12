@@ -53,6 +53,10 @@ struct TabGroupsArgs {
     color: Option<TabGroupColor>,
     /// Collapse/expand the group for "update".
     collapsed: Option<bool>,
+    /// Set true to act on a group the user owns (a group whose title is not
+    /// "<agent>/<label>", such as a Spaces group). Destructive actions on such
+    /// groups are refused without it.
+    force: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -64,6 +68,7 @@ struct TabGroupWithPages {
     color: String,
     collapsed: bool,
     page_ids: Vec<u32>,
+    owned_by_agent: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -94,13 +99,8 @@ fn handler<'a>(
         let args: TabGroupsArgs = parse_args(raw)?;
         let result = match args.action {
             TabGroupsAction::List => {
-                let groups: GroupsResult = serde_json::from_value(
-                    ctx.session
-                        .cdp("Browser.getTabGroups", json!({}), None)
-                        .await?,
-                )?;
                 let mut resolved = Vec::new();
-                for group in groups.groups {
+                for group in list_groups(ctx).await? {
                     resolved.push(with_pages(ctx, group).await?);
                 }
                 let text = if resolved.is_empty() {
@@ -162,6 +162,17 @@ fn handler<'a>(
                         "tab_groups update: provide at least one of title, color, or collapsed.",
                     )));
                 }
+                // Collapsing is cosmetic and reversible, so only title/color edits are guarded.
+                if (args.title.is_some() || args.color.is_some())
+                    && let Some(blocked) = blocked_group_title(
+                        ctx,
+                        args.force.unwrap_or(false),
+                        std::slice::from_ref(&group_id),
+                    )
+                    .await?
+                {
+                    return Ok(Some(user_group_error(&blocked)));
+                }
                 let mut params = json!({ "groupId": group_id });
                 if let Value::Object(object) = &mut params {
                     if let Some(title) = args.title {
@@ -197,6 +208,12 @@ fn handler<'a>(
                 let Some(page_ids) = args.pages.as_deref().filter(|pages| !pages.is_empty()) else {
                     return Ok(Some(error_result("tab_groups ungroup: pages is required.")));
                 };
+                let owning_groups = group_ids_for_pages(ctx, page_ids).await?;
+                if let Some(blocked) =
+                    blocked_group_title(ctx, args.force.unwrap_or(false), &owning_groups).await?
+                {
+                    return Ok(Some(user_group_error(&blocked)));
+                }
                 let tab_ids = to_tab_ids(ctx, page_ids).await?;
                 ctx.session
                     .cdp(
@@ -214,6 +231,15 @@ fn handler<'a>(
                 let Some(group_id) = args.group_id else {
                     return Ok(Some(error_result("tab_groups close: groupId is required.")));
                 };
+                if let Some(blocked) = blocked_group_title(
+                    ctx,
+                    args.force.unwrap_or(false),
+                    std::slice::from_ref(&group_id),
+                )
+                .await?
+                {
+                    return Ok(Some(user_group_error(&blocked)));
+                }
                 ctx.session
                     .cdp(
                         "Browser.closeTabGroup",
@@ -261,11 +287,89 @@ async fn with_pages(ctx: &ToolCtx, group: TabGroupInfo) -> ToolExecResult<TabGro
     Ok(TabGroupWithPages {
         group_id: group.group_id,
         window_id: group.window_id,
+        owned_by_agent: is_agent_group_title(&group.title),
         title: group.title,
         color: group.color,
         collapsed: group.collapsed,
         page_ids,
     })
+}
+
+/// True when a group title follows the agent-session convention
+/// `<agent>/<label>` (`^[a-z0-9][a-z0-9-]*/`). Anything else — a Spaces group
+/// like "Work", an untitled group — is treated as the user's.
+pub(crate) fn is_agent_group_title(title: &str) -> bool {
+    let Some((prefix, _)) = title.split_once('/') else {
+        return false;
+    };
+    let mut chars = prefix.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    if !first.is_ascii_lowercase() && !first.is_ascii_digit() {
+        return false;
+    }
+    chars.all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-')
+}
+
+/// Decides whether a mutating action on a group with this title may proceed.
+pub(crate) fn may_mutate_group(title: &str, protect: bool, force: bool) -> bool {
+    !protect || force || is_agent_group_title(title)
+}
+
+fn user_group_error(title: &str) -> ToolResult {
+    error_result(format!(
+        "Group '{title}' belongs to the user. Pass force=true to modify it."
+    ))
+}
+
+async fn list_groups(ctx: &ToolCtx) -> ToolExecResult<Vec<TabGroupInfo>> {
+    let groups: GroupsResult = serde_json::from_value(
+        ctx.session
+            .cdp("Browser.getTabGroups", json!({}), None)
+            .await?,
+    )?;
+    Ok(groups.groups)
+}
+
+/// Title of the first user-owned group among `group_ids`, when the guard is on
+/// and the caller did not force. Unknown ids fall through to the browser, which
+/// reports them better than this guard could.
+async fn blocked_group_title(
+    ctx: &ToolCtx,
+    force: bool,
+    group_ids: &[String],
+) -> ToolExecResult<Option<String>> {
+    let protect = ctx.defaults.protect_user_tab_groups;
+    if !protect || force || group_ids.is_empty() {
+        return Ok(None);
+    }
+    let groups = list_groups(ctx).await?;
+    Ok(groups
+        .into_iter()
+        .find(|group| {
+            group_ids.contains(&group.group_id) && !may_mutate_group(&group.title, protect, force)
+        })
+        .map(|group| group.title))
+}
+
+/// Group ids the given pages currently belong to.
+async fn group_ids_for_pages(ctx: &ToolCtx, page_ids: &[u32]) -> ToolExecResult<Vec<String>> {
+    ctx.session.pages.list().await?;
+    let mut out = Vec::new();
+    for page_id in page_ids {
+        if let Some(group_id) = ctx
+            .session
+            .pages
+            .get_info(PageId(*page_id))
+            .await
+            .and_then(|info| info.group_id)
+            && !out.contains(&group_id)
+        {
+            out.push(group_id);
+        }
+    }
+    Ok(out)
 }
 
 fn format_group(group: &TabGroupWithPages) -> String {
@@ -290,4 +394,54 @@ fn format_group(group: &TabGroupWithPages) -> String {
         },
         group.color
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_agent_group_title, may_mutate_group};
+
+    #[test]
+    fn agent_session_titles_match_the_convention() {
+        for title in [
+            "claude-code/invoice",
+            "codex/agile-alpaca",
+            "browseros/book-a-flight",
+            "gpt4/task",
+            "a/b",
+            "claude-code/Work Notes",
+            "claude-code/nested/label",
+        ] {
+            assert!(is_agent_group_title(title), "expected agent title: {title}");
+        }
+    }
+
+    #[test]
+    fn user_titles_do_not_match_the_convention() {
+        for title in [
+            "",
+            "Work",
+            "Personal",
+            "Work/Projects",
+            "claude_code/invoice",
+            "Claude-Code/invoice",
+            "-claude/invoice",
+            "/invoice",
+            "claude code/invoice",
+            "claude-code",
+        ] {
+            assert!(!is_agent_group_title(title), "expected user title: {title}");
+        }
+    }
+
+    #[test]
+    fn guard_allows_agent_groups_and_refuses_user_groups() {
+        assert!(may_mutate_group("claude-code/invoice", true, false));
+        assert!(!may_mutate_group("Work", true, false));
+    }
+
+    #[test]
+    fn guard_yields_to_force_and_to_the_disabled_flag() {
+        assert!(may_mutate_group("Work", true, true));
+        assert!(may_mutate_group("Work", false, false));
+    }
 }

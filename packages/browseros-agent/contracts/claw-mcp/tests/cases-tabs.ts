@@ -169,7 +169,7 @@ export const tabsCases: ContractCase[] = [
         await ctx.mcp.callTool('tab_groups', {
           action: 'create',
           pages: [page],
-          title: 'before-update',
+          title: 'contract/before-update',
           color: 'yellow',
         }),
       )
@@ -178,7 +178,7 @@ export const tabsCases: ContractCase[] = [
         await ctx.mcp.callTool('tab_groups', {
           action: 'update',
           groupId,
-          title: 'after-update',
+          title: 'contract/after-update',
           color: 'green',
           collapsed: true,
         }),
@@ -189,7 +189,10 @@ export const tabsCases: ContractCase[] = [
         list = expectOk(
           await ctx.mcp.callTool('tab_groups', { action: 'list' }),
         )
-        return list.includes('after-update') && !list.includes('before-update')
+        return (
+          list.includes('contract/after-update') &&
+          !list.includes('contract/before-update')
+        )
       }, 'group update to be visible')
     },
   },
@@ -201,7 +204,7 @@ export const tabsCases: ContractCase[] = [
         await ctx.mcp.callTool('tab_groups', {
           action: 'create',
           pages: [page],
-          title: 'to-ungroup',
+          title: 'contract/to-ungroup',
         }),
       )
       parseGroupId(created)
@@ -216,7 +219,7 @@ export const tabsCases: ContractCase[] = [
         const list = expectOk(
           await ctx.mcp.callTool('tab_groups', { action: 'list' }),
         )
-        return !list.includes('to-ungroup')
+        return !list.includes('contract/to-ungroup')
       }, 'ungrouped group to disappear')
       const tabs = expectOk(await ctx.mcp.callTool('tabs', { action: 'list' }))
       if (!tabs.includes('/links.html')) {
@@ -232,7 +235,7 @@ export const tabsCases: ContractCase[] = [
         await ctx.mcp.callTool('tab_groups', {
           action: 'create',
           pages: [page],
-          title: 'to-close',
+          title: 'contract/to-close',
         }),
       )
       const groupId = parseGroupId(created)
@@ -253,7 +256,10 @@ export const tabsCases: ContractCase[] = [
         await ctx.mcp.callTool('tab_groups', { action: 'list' }),
         'tab_groups list',
       )
-      if (text.includes('to-close') || text.includes('after-update')) {
+      if (
+        text.includes('contract/to-close') ||
+        text.includes('contract/after-update')
+      ) {
         throw new Error(`closed groups remained in the list: ${text}`)
       }
     },

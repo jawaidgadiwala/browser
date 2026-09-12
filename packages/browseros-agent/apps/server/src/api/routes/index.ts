@@ -66,6 +66,7 @@ export function createApiRoutes(deps: CreateApiRoutesDeps) {
     conversationRuns,
     klavis,
     activity,
+    protectUserTabGroups: config.protectUserTabGroups,
   })
   const resolvedAgentRoutes =
     agentRoutes ??

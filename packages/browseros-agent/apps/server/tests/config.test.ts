@@ -72,10 +72,29 @@ describe('loadServerConfig', () => {
       path.join(tempDir, 'execution'),
     )
     assert.strictEqual(result.value.mcpAllowRemote, true)
+    // Unset in the sidecar: the user tab-group guard stays on.
+    assert.strictEqual(result.value.protectUserTabGroups, true)
     assert.strictEqual(result.value.instanceClientId, 'user-123')
     assert.strictEqual(result.value.instanceInstallId, 'install-456')
     assert.strictEqual(result.value.instanceBrowserosVersion, '1.0.0')
     assert.strictEqual(result.value.instanceChromiumVersion, '140.0.0.0')
+  })
+
+  it('lets the sidecar turn off the user tab-group guard', () => {
+    const configPath = writeSidecarConfig({
+      flags: { allow_remote_in_mcp: false, protect_user_tab_groups: false },
+    })
+
+    const result = loadServerConfig([
+      'bun',
+      'src/index.ts',
+      '--config',
+      configPath,
+    ])
+
+    assert.strictEqual(result.ok, true)
+    if (!result.ok) return
+    assert.strictEqual(result.value.protectUserTabGroups, false)
   })
 
   it('accepts standalone binary argv without a script path', () => {

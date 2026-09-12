@@ -18,10 +18,24 @@ pub type ToolHandler = for<'a> fn(
     &'a mut ToolResponse,
 ) -> BoxFuture<'a, ToolExecResult<Option<ToolResult>>>;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct BrowserToolDefaults {
     pub default_window_id: Option<WindowId>,
     pub default_tab_group_id: Option<String>,
+    /// Refuse destructive `tab_groups` actions on groups whose title does not
+    /// follow the agent-session convention, so an agent cannot close or rename
+    /// the user's own groups (Spaces). Defaults on; `force: true` still passes.
+    pub protect_user_tab_groups: bool,
+}
+
+impl Default for BrowserToolDefaults {
+    fn default() -> Self {
+        Self {
+            default_window_id: None,
+            default_tab_group_id: None,
+            protect_user_tab_groups: true,
+        }
+    }
 }
 
 /// A saved helper the host hot-loads into a script's runtime so the agent can

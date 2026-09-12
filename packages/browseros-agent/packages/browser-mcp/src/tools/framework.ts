@@ -13,6 +13,8 @@ export interface ToolContext {
   session: BrowserSession
   defaultWindowId?: number
   defaultTabGroupId?: string
+  /** See BrowserToolDefaults.protectUserTabGroups. Defaults on when unset. */
+  protectUserTabGroups?: boolean
   signal?: AbortSignal
 }
 

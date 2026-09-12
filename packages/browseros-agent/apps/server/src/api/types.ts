@@ -158,6 +158,8 @@ export interface HttpServerConfig {
   executionDir: string
   resourcesDir: string
   aiSdkDevtoolsEnabled?: boolean
+  /** Refuse agent close/ungroup/rename of tab groups the user owns. Defaults on. */
+  protectUserTabGroups?: boolean
   activity?: ServerActivity
   onShutdown?: () => void
 }

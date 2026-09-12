@@ -1,6 +1,12 @@
 import type { TabGroup } from '@browseros/browser-core/tab-groups'
 import { z } from 'zod/v4'
-import { defineTool, errorResult, textResult } from './framework'
+import {
+  defineTool,
+  errorResult,
+  type ToolContext,
+  type ToolResult,
+  textResult,
+} from './framework'
 
 const TAB_GROUP_COLORS = [
   'grey',
@@ -16,6 +22,72 @@ const TAB_GROUP_COLORS = [
 
 interface TabGroupWithPages extends Omit<TabGroup, 'tabIds'> {
   pageIds: number[]
+  ownedByAgent: boolean
+}
+
+/**
+ * True when a group title follows the agent-session convention
+ * `<agent>/<label>`. Anything else - a Spaces group like "Work", an untitled
+ * group - is treated as the user's.
+ */
+export function isAgentGroupTitle(title: string): boolean {
+  return /^[a-z0-9][a-z0-9-]*\//.test(title)
+}
+
+/** Decides whether a mutating action on a group with this title may proceed. */
+export function mayMutateGroup(
+  title: string,
+  protect: boolean,
+  force: boolean,
+): boolean {
+  return !protect || force || isAgentGroupTitle(title)
+}
+
+function userGroupError(title: string) {
+  return errorResult(
+    `Group '${title}' belongs to the user. Pass force=true to modify it.`,
+  )
+}
+
+async function listGroups(ctx: ToolContext): Promise<TabGroup[]> {
+  const { groups } = (await ctx.session.cdp('Browser.getTabGroups')) as {
+    groups: TabGroup[]
+  }
+  return groups
+}
+
+/**
+ * Title of the first user-owned group among `groupIds`, when the guard is on
+ * and the caller did not force. Unknown ids fall through to the browser, which
+ * reports them better than this guard could.
+ */
+async function blockedGroupTitle(
+  ctx: ToolContext,
+  force: boolean,
+  groupIds: readonly string[],
+): Promise<string | undefined> {
+  const protect = ctx.protectUserTabGroups !== false
+  if (!protect || force || groupIds.length === 0) return undefined
+  const groups = await listGroups(ctx)
+  return groups.find(
+    (group) =>
+      groupIds.includes(group.groupId) &&
+      !mayMutateGroup(group.title, protect, force),
+  )?.title
+}
+
+/** Group ids the given pages currently belong to. */
+async function groupIdsForPages(
+  ctx: ToolContext,
+  pageIds: readonly number[],
+): Promise<string[]> {
+  await ctx.session.pages.list()
+  const ids = new Set<string>()
+  for (const pageId of pageIds) {
+    const groupId = ctx.session.pages.getInfo(pageId)?.groupId
+    if (groupId) ids.add(groupId)
+  }
+  return [...ids]
 }
 
 function formatGroup(group: TabGroupWithPages): string {
@@ -24,45 +96,82 @@ function formatGroup(group: TabGroupWithPages): string {
   return `[${group.groupId}] "${group.title || '(unnamed)'}" (${group.color})${collapsed} pages: ${pages}`
 }
 
+const inputSchema = z
+  .object({
+    action: z
+      .enum(['list', 'create', 'update', 'ungroup', 'close'])
+      .default('list'),
+    pages: z
+      .array(z.number().int())
+      .optional()
+      .describe('Page ids for action="create" or "ungroup".'),
+    groupId: z
+      .string()
+      .optional()
+      .describe(
+        'Group id. Required for "update"/"close". Optional on "create" to add pages to an existing group.',
+      ),
+    title: z.string().optional().describe('Group title for "create"/"update".'),
+    color: z
+      .enum(TAB_GROUP_COLORS)
+      .optional()
+      .describe('Group color for "update".'),
+    collapsed: z
+      .boolean()
+      .optional()
+      .describe('Collapse/expand the group for "update".'),
+    force: z
+      .boolean()
+      .optional()
+      .describe(
+        'Set true to act on a group the user owns (a group whose title is not "<agent>/<label>", such as a Spaces group). Destructive actions on such groups are refused without it.',
+      ),
+  })
+  .strict()
+
+type TabGroupsArgs = z.infer<typeof inputSchema>
+
+/**
+ * Refuses destructive actions aimed at a group the user owns. Collapsing is
+ * cosmetic and reversible, so only title/color edits are guarded on "update".
+ */
+async function refuseUserGroupAction(
+  args: TabGroupsArgs,
+  ctx: ToolContext,
+): Promise<ToolResult | undefined> {
+  const force = args.force === true
+  const groupIds = await guardedGroupIds(args, ctx)
+  const blocked = await blockedGroupTitle(ctx, force, groupIds)
+  return blocked === undefined ? undefined : userGroupError(blocked)
+}
+
+async function guardedGroupIds(
+  args: TabGroupsArgs,
+  ctx: ToolContext,
+): Promise<string[]> {
+  if (args.action === 'ungroup') {
+    return args.pages?.length ? await groupIdsForPages(ctx, args.pages) : []
+  }
+  if (!args.groupId) return []
+  if (args.action === 'close') return [args.groupId]
+  const edits = args.title !== undefined || args.color !== undefined
+  return args.action === 'update' && edits ? [args.groupId] : []
+}
+
 export const tab_groups = defineTool({
   name: 'tab_groups',
   description:
     'Manage tab groups: list groups, group pages, update a group (title/color/collapsed), ungroup pages, or close a group. Page ids come from the tabs tool.',
-  input: z
-    .object({
-      action: z
-        .enum(['list', 'create', 'update', 'ungroup', 'close'])
-        .default('list'),
-      pages: z
-        .array(z.number().int())
-        .optional()
-        .describe('Page ids for action="create" or "ungroup".'),
-      groupId: z
-        .string()
-        .optional()
-        .describe(
-          'Group id. Required for "update"/"close". Optional on "create" to add pages to an existing group.',
-        ),
-      title: z
-        .string()
-        .optional()
-        .describe('Group title for "create"/"update".'),
-      color: z
-        .enum(TAB_GROUP_COLORS)
-        .optional()
-        .describe('Group color for "update".'),
-      collapsed: z
-        .boolean()
-        .optional()
-        .describe('Collapse/expand the group for "update".'),
-    })
-    .strict(),
+  input: inputSchema,
   annotations: {
     title: 'Manage tab groups',
     destructiveHint: true,
     openWorldHint: true,
   },
   handler: async (args, ctx) => {
+    const refusal = await refuseUserGroupAction(args, ctx)
+    if (refusal) return refusal
+
     const { pages } = ctx.session
 
     // The tools speak page ids; the CDP tab-group API speaks tab ids. Convert in both directions.
@@ -89,15 +198,18 @@ export const tab_groups = defineTool({
 
     const withPages = async (group: TabGroup): Promise<TabGroupWithPages> => {
       const { tabIds, ...rest } = group
-      return { ...rest, pageIds: await toPageIds(tabIds) }
+      return {
+        ...rest,
+        pageIds: await toPageIds(tabIds),
+        ownedByAgent: isAgentGroupTitle(group.title),
+      }
     }
 
     switch (args.action) {
       case 'list': {
-        const { groups } = (await ctx.session.cdp('Browser.getTabGroups')) as {
-          groups: TabGroup[]
-        }
-        const resolved = await Promise.all(groups.map(withPages))
+        const resolved = await Promise.all(
+          (await listGroups(ctx)).map(withPages),
+        )
         const text = resolved.length
           ? resolved.map(formatGroup).join('\n')
           : '(no tab groups)'

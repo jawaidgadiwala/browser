@@ -50,6 +50,7 @@ export function createBrowserMcpServer(
     {
       defaultWindowId: options.defaultWindowId,
       defaultTabGroupId: options.defaultTabGroupId,
+      protectUserTabGroups: options.protectUserTabGroups,
     },
     options.registration,
   )

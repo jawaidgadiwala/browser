@@ -892,6 +892,7 @@ async fn test_router(browserclaw_dir: &Path, home: &Path) -> anyhow::Result<Rout
         replay_retention_days: 7,
         dev_mode: false,
         auth_token: None,
+        protect_user_tab_groups: true,
     });
     let state = AppState::new_with_home(config, home.to_path_buf()).await?;
     Ok(build_router(state))

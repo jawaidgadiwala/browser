@@ -134,7 +134,7 @@ function createContractSession(): BrowserSession {
             {
               groupId: 'group-1',
               windowId: 7,
-              title: 'Work',
+              title: 'claude-code/work',
               color: 'blue',
               collapsed: false,
               tabIds: [11],
@@ -165,7 +165,7 @@ function createContractSession(): BrowserSession {
           group: {
             groupId: 'group-1',
             windowId: 7,
-            title: 'Work',
+            title: 'claude-code/work',
             color: 'blue',
             collapsed: false,
             tabIds: [11],

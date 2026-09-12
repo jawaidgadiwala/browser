@@ -87,6 +87,12 @@ type RegisterFn = (
 export interface BrowserToolDefaults {
   defaultWindowId?: number
   defaultTabGroupId?: string
+  /**
+   * Refuse destructive `tab_groups` actions on groups whose title does not
+   * follow the agent-session convention, so an agent cannot close or rename
+   * the user's own groups (Spaces). Defaults on; `force: true` still passes.
+   */
+  protectUserTabGroups?: boolean
 }
 
 interface BrowserToolLogger {
