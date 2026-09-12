@@ -1,20 +1,23 @@
 # Browser
 
-Personal, AI-driven, sidebar-first browser for Jawaid. One user, one Mac (Apple M2 Pro, 16 GB RAM). Not a product. Repo: github.com/jawaidgadiwala/browser (public). Product name: **Browser**. Logo: blue folded "B" (`branding/`). Accent: #2C6BF2.
+An AI-driven, sidebar-first browser. A product by KoderLabs for many users, macOS first, then Windows and Linux. Repo: github.com/jawaidgadiwala/browser (public, AGPL-3.0). Product name: **Browser**. Bundle id `net.koderlabs.browser`. Logo: blue folded "B" (`branding/`). Accent: #2C6BF2. Dev machine: Apple M2 Pro, 16 GB RAM.
 
 ## Goal
 
-A daily-driver browser that combines:
-- **Sidebar UX of the reference browsers**: spaces with per-space theme, essentials grid, folders, pinned tabs, today tabs, archive, swipe between spaces, compact mode, glance.
+A browser that combines:
+- **Sidebar UX inspired by the reference browsers**: side panel with apps (essentials), spaces with per-space theme, profile switcher, folders, pinned tabs, today tabs, archive, smooth swipe between spaces, compact mode, glance.
 - **AI agents as first-class**: Claude Code (and others) inside the browser chat and from the terminal driving the logged-in browser over MCP, with cockpit, replay, audit, tab isolation.
 - **Chromium under the hood**: Chrome extensions, CDP, tab groups, side panel.
-- Memory-efficient, stable, and easy to rebase onto upstream BrowserOS.
+- **Bring your own AI**: user's own provider keys or connected coding agents (Claude Code, Codex); no dependency on upstream's hosted model.
+- Memory-efficient, stable, cross-platform, easy to rebase onto upstream BrowserOS.
+
+Product rules: nothing assumes one user or one platform. "Personal" flags (`personal-build.ts`) are the product flags and will be renamed. AGPL-3.0 means every distributed build ships with source (this repo).
 
 ## What we build on, and how each is used
 
 | Source | License | Role | Rule |
 |---|---|---|---|
-| **BrowserOS** (browseros-ai/BrowserOS), git remote `upstream` | AGPL-3.0 | The base. Chromium 151 fork + extension/server monorepo. Both "classic" and "neo" ship from it; we run classic as the browser and mount neo's cockpit + Rust server alongside | Keep LICENSE and attribution (`NOTICE`). Publish source (repo is public). Keep our changes small and feature-gated so `git rebase upstream/main` stays cheap |
+| **BrowserOS** (browseros-ai/BrowserOS), git remote `upstream` | AGPL-3.0 | The base. Their hosted AI provider, CDN feeds, metrics keys, and bug reporter are theirs, not ours: disabled or replaced in the product. Chromium 151 fork + extension/server monorepo. Both "classic" and "neo" ship from it; we run classic as the browser and mount neo's cockpit + Rust server alongside | Keep LICENSE and attribution (`NOTICE`). Publish source (repo is public). Keep our changes small and feature-gated so `git rebase upstream/main` stays cheap |
 | **Chromium** | BSD-3 | The engine, checked out at `~/chromium/src` (151.0.7922.137) for native patches | Patches only, via `packages/browseros/chromium_patches` + `.features.yaml`. Never vendor the tree |
 | **ungoogled-chromium** patches | BSD-3 | Privacy patches upstream already applies | Keep notice; do not use their name to endorse |
 | **Zen Browser** (zen-browser/desktop) | MPL-2.0 | **Behavior reference only** for sidebar, spaces, essentials, compact mode, glance, split view, swipe physics, constants | No code, CSS, or assets copied. Studies: `docs/personal/zen-spaces-design-reference.md`, `docs/personal/zen-sidebar-implementation-review.md` |
@@ -71,4 +74,5 @@ Storage and identity rules: persist by URL and our own ids, never Chromium tab o
 1. Finish build 1 (pipeline proof). Apply batch 1 patches, build 2, install via launcher.
 2. Batch 2 native: window tint, glance, compact mode. Then spaces in the macOS menu bar.
 3. Sidebar polish from daily use; command palette; split-view shortcuts.
-4. Optional: GitHub Actions mac build for reproducibility once the local flow is stable.
+4. Windows and Linux lanes via upstream's GitHub Actions workflows (free ubuntu/windows runners on the public repo); signing certs; our own update feed and installer branding.
+5. Profile switcher in the sidebar (Chromium profiles), sidebar apps row polish, onboarding for new users, docs site.
