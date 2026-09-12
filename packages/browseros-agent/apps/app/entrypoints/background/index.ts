@@ -43,6 +43,8 @@ const cleanupLegacyToolApprovalStorage = async () => {
   await storage.removeItems([...LEGACY_TOOL_APPROVAL_STORAGE_KEYS])
 }
 
+import { registerSpaces } from './spaces'
+
 export default defineBackground(() => {
   registerDiagnostics('browseros', getAgentServerUrl)
   // One background broker owns the long-lived server subscription and all
@@ -71,6 +73,7 @@ export default defineBackground(() => {
   startLocalFirstMigration()
 
   scheduledJobRuns()
+  registerSpaces()
 
   chrome.action.onClicked.addListener(async (tab) => {
     if (typeof tab.id === 'number' && typeof tab.windowId === 'number') {

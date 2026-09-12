@@ -5,6 +5,7 @@ import {
   Bot,
   Compass,
   CreditCard,
+  Layers,
   MessageSquare,
   Palette,
   Server,
@@ -75,6 +76,7 @@ const primarySettingsSections: NavSection[] = [
         to: '/settings/customization',
         icon: Palette,
       },
+      { name: 'Spaces', to: '/settings/spaces', icon: Layers },
       { name: 'BrowserOS as MCP', to: '/settings/mcp', icon: Server },
       {
         name: 'Usage & Billing',

@@ -20,6 +20,7 @@ import { Personalize } from '@/screens/newtab/personalize/Personalize'
 import { OnboardingAiPage } from '@/screens/onboarding-ai/OnboardingAiPage'
 import { ProfilePage } from '@/screens/profile/ProfilePage'
 import { ScheduledTasksPage } from '@/screens/scheduled-tasks/ScheduledTasksPage'
+import { SpacesSettingsPage } from '@/screens/spaces-settings/SpacesSettingsPage'
 import { UsagePage } from '@/screens/usage/UsagePage'
 
 function getSurveyParams(): { maxTurns?: number; experimentId?: string } {
@@ -79,6 +80,7 @@ export const App: FC = () => {
             <Route path="chat" element={<LlmHubPage />} />
             <Route path="mcp" element={<MCPSettingsPage />} />
             <Route path="customization" element={<CustomizationPage />} />
+            <Route path="spaces" element={<SpacesSettingsPage />} />
             <Route path="diagnostics" element={<DiagnosticsPage />} />
             <Route
               path="search"

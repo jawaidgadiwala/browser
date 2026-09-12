@@ -1,16 +1,25 @@
 import type { FC } from 'react'
 import { Outlet, useLocation } from 'react-router'
+import { SpacesBar } from '@/components/spaces/SpacesBar'
+import { SpacesSwitcher } from '@/components/spaces/SpacesSwitcher'
 import { ChatSessionProvider } from '@/modules/chat/chat-session-context'
 import { NewTabFocusGrid } from './NewTabFocusGrid'
-import { shouldHideFocusGrid, shouldUseChatSession } from './route-utils'
+import {
+  isAgentCommandPath,
+  shouldHideFocusGrid,
+  shouldUseChatSession,
+} from './route-utils'
 
 export const NewTabLayout: FC = () => {
   const location = useLocation()
   const hideGrid = shouldHideFocusGrid(location.pathname)
   const useChatSession = shouldUseChatSession(location.pathname)
+  const showSpaces = isAgentCommandPath(location.pathname)
   const content = (
     <>
       {!hideGrid && <NewTabFocusGrid />}
+      {showSpaces && <SpacesBar />}
+      <SpacesSwitcher />
       <Outlet />
     </>
   )

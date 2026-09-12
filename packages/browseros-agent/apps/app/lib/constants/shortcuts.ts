@@ -29,4 +29,19 @@ export const SHORTCUTS_LIST = [
       linux: 'Ctrl+Shift',
     },
   },
+  {
+    key: '→',
+    description: 'Next space',
+    modifier: { windows: 'Alt+Shift', mac: '⌥+Shift', linux: 'Alt+Shift' },
+  },
+  {
+    key: '←',
+    description: 'Previous space',
+    modifier: { windows: 'Alt+Shift', mac: '⌥+Shift', linux: 'Alt+Shift' },
+  },
+  {
+    key: 'S',
+    description: 'Open space switcher',
+    modifier: { windows: 'Alt+Shift', mac: '⌥+Shift', linux: 'Alt+Shift' },
+  },
 ]

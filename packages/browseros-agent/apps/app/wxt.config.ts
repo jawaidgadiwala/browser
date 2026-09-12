@@ -60,6 +60,28 @@ export default defineConfig({
       },
       default_title: 'Ask BrowserOS',
     },
+    // Spaces. Chrome allows default keys on at most four commands; the
+    // numbered jumps are assignable at chrome://extensions/shortcuts.
+    commands: {
+      'space-next': {
+        suggested_key: { default: 'Alt+Shift+Right' },
+        description: 'Switch to the next space',
+      },
+      'space-prev': {
+        suggested_key: { default: 'Alt+Shift+Left' },
+        description: 'Switch to the previous space',
+      },
+      'space-switcher': {
+        suggested_key: { default: 'Alt+Shift+S' },
+        description: 'Open the space switcher',
+      },
+      ...Object.fromEntries(
+        Array.from({ length: 9 }, (_, i) => [
+          `space-${i + 1}`,
+          { description: `Switch to space ${i + 1}` },
+        ]),
+      ),
+    },
     permissions: [
       'system.cpu',
       'system.memory',
