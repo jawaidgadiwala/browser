@@ -1,0 +1,6 @@
+Browser is based on BrowserOS (AGPL-3.0, Felafax, Inc.) and Chromium
+(BSD-3-Clause); ungoogled-chromium patches are BSD-3-Clause.
+
+All upstream LICENSE files and copyright notices are retained unchanged:
+see LICENSE (AGPL-3.0), LICENSE.ungoogled_chromium (BSD-3-Clause), and the
+license headers in packages/browseros/ and packages/browseros-agent/.

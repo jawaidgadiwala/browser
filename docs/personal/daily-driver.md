@@ -16,7 +16,7 @@ bun run personal:start   # launch the stack; runs until the browser quits
 bun run personal:stop    # stop whatever personal:start started
 ```
 
-Double-clickable launcher: `tools/personal/BrowserOS Personal.command`. Drag it
+Double-clickable launcher: `tools/personal/Browser.command`. Drag it
 onto the Dock (right-hand side, next to the Trash — the Dock only accepts files
 there) or into `~/Applications` and give it a custom icon via Finder → Get Info.
 Double-clicking opens Terminal, `cd`s to the repo, and runs `personal:start`.
@@ -41,9 +41,13 @@ from the configured claw port, so re-run `personal:build` after changing it.
 
 ## Runtime layout
 
-- Profile: `~/Library/Application Support/BrowserOS Personal` (persistent; the
+- Profile: `~/Library/Application Support/Browser` (persistent; the
   released app's `~/Library/Application Support/BrowserOS` is never touched).
-- Logs: `~/Library/Logs/BrowserOS Personal/{browser,server,claw-server}.log`.
+- Logs: `~/Library/Logs/Browser/{browser,server,claw-server}.log`.
+- Migration: the first `personal:start` after the rename to **Browser** renames
+  `~/Library/Application Support/BrowserOS Personal` -> `.../Browser` and
+  `~/Library/Logs/BrowserOS Personal` -> `.../Browser`, but only when the old
+  path exists and the new one does not. Nothing is deleted; it logs each move.
 - Server state: `~/.browseros-personal`, `~/.browserclaw-personal`.
 - Sidecar configs: `<profile>/sidecars/{browseros-server,claw-server}.json`,
   written on every start in the same format `tools/dev` uses.

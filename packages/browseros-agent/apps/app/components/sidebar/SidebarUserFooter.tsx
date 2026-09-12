@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { cn } from '@/lib/utils'
 
 export interface SidebarUserFooterProps {
@@ -31,7 +32,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
   //         expanded ? 'opacity-100' : 'opacity-0',
   //       )}
   //     >
-  //       Sign in to BrowserOS
+  //       Sign in to {PRODUCT_NAME}
   //     </span>
   //   </Button>
   // )
@@ -50,7 +51,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
           expanded ? 'opacity-100' : 'opacity-0',
         )}
       >
-        About BrowserOS
+        About {PRODUCT_NAME}
       </span>
     </a>
   )
@@ -90,7 +91,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>{aboutLink}</TooltipTrigger>
-            <TooltipContent side="right">About BrowserOS</TooltipContent>
+            <TooltipContent side="right">About {PRODUCT_NAME}</TooltipContent>
           </Tooltip>
         )}
       </div>

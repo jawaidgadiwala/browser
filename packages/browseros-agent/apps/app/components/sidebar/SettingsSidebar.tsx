@@ -16,6 +16,7 @@ import { NavLink } from 'react-router'
 import { ThemeToggle } from '@/components/elements/theme-toggle'
 import { Feature } from '@/lib/browseros/capabilities'
 import { NEO_ROUTES, neoCockpitUrl } from '@/lib/personal/neo-extension'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { useNeoInstalled } from '@/lib/personal/useNeoInstalled'
 import { cn } from '@/lib/utils'
 import { useCapabilities } from '@/modules/browseros/capabilities.hooks'
@@ -78,12 +79,12 @@ const primarySettingsSections: NavSection[] = [
     label: 'Other',
     items: [
       {
-        name: 'Customize BrowserOS',
+        name: `Customize ${PRODUCT_NAME}`,
         to: '/settings/customization',
         icon: Palette,
       },
       { name: 'Spaces', to: '/settings/spaces', icon: Layers },
-      { name: 'BrowserOS as MCP', to: '/settings/mcp', icon: Server },
+      { name: `${PRODUCT_NAME} as MCP`, to: '/settings/mcp', icon: Server },
       {
         name: 'Agent connections',
         href: neoCockpitUrl(NEO_ROUTES.mcp),

@@ -20,6 +20,7 @@ import {
   type LauncherState,
   LOG_DIR,
   log,
+  migrateLegacyDirs,
   type PersonalPorts,
   PROFILE_DIR,
   personalPorts,
@@ -168,6 +169,7 @@ function clawServerCommand(): string[] {
 async function main(): Promise<void> {
   const ports = personalPorts()
   assertBuilt()
+  migrateLegacyDirs()
   for (const dir of [
     PROFILE_DIR,
     LOG_DIR,

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useSessionInfo } from '@/lib/auth/sessionStorage'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { cn } from '@/lib/utils'
 import { useGraphqlQuery } from '@/modules/graphql/graphql-query.hooks'
 import { useWorkspace } from '@/modules/workspace/workspace.hooks'
@@ -68,7 +69,7 @@ export const SidebarBranding: FC<SidebarBrandingProps> = ({
       </div>
     )
   ) : (
-    <img src={ProductLogo} alt="BrowserOS" className="size-8" />
+    <img src={ProductLogo} alt={PRODUCT_NAME} className="size-8" />
   )
 
   return (
@@ -93,7 +94,7 @@ export const SidebarBranding: FC<SidebarBrandingProps> = ({
                 <span className="truncate font-semibold">
                   {isLoggedIn
                     ? displayName
-                    : selectedFolder?.name || 'BrowserOS'}
+                    : selectedFolder?.name || PRODUCT_NAME}
                 </span>
                 <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
               </div>

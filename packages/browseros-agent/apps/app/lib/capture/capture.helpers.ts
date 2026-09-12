@@ -1,6 +1,7 @@
 import dayjs from 'dayjs'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 
-export const CAPTURE_FOLDER = 'BrowserOS Captures'
+export const CAPTURE_FOLDER = `${PRODUCT_NAME} Captures`
 
 /** Only pages the extension can capture and script after an activeTab grant. */
 export function isCapturableUrl(url: string | undefined): boolean {
@@ -8,9 +9,9 @@ export function isCapturableUrl(url: string | undefined): boolean {
   return /^(https?|file):/.test(url)
 }
 
-/** File name: `BrowserOS Capture 2026-09-12 at 14.03.05.png`. */
+/** File name: `Browser Capture 2026-09-12 at 14.03.05.png`. */
 export function captureFilename(date: Date): string {
-  return `BrowserOS Capture ${dayjs(date).format('YYYY-MM-DD [at] HH.mm.ss')}.png`
+  return `${PRODUCT_NAME} Capture ${dayjs(date).format('YYYY-MM-DD [at] HH.mm.ss')}.png`
 }
 
 export function captureDownloadPath(date: Date): string {

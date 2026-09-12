@@ -8,7 +8,7 @@ import { defineConfig } from 'wxt'
 // chrome-extension://<id>/newtab.html instead. The pinned `key` keeps the
 // extension id identical in both modes.
 const embedded = process.env.BROWSEROS_CLAW_EMBEDDED === '1'
-const productName = embedded ? 'BrowserOS Agents' : 'BrowserOS neo'
+const productName = embedded ? 'Browser Agents' : 'BrowserOS neo'
 
 // `entrypoints/newtab/` is WXT's conventional new-tab entrypoint. WXT
 // auto-wires manifest.chrome_url_overrides.newtab to point at the

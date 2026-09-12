@@ -1,5 +1,5 @@
 #!/bin/bash
-# Double-clickable launcher for the personal BrowserOS stack.
+# Double-clickable launcher for the personal Browser stack.
 # Drag this file onto the Dock (right side, near the Trash) for one-click start.
 set -euo pipefail
 cd "$(dirname "$0")/../.."

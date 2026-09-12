@@ -6,6 +6,7 @@ import { Feature } from '@/lib/browseros/capabilities'
 import { createBrowserOSAction } from '@/lib/chat-actions/types'
 import { openSidePanelWithSearch } from '@/lib/messaging/sidepanel/openSidepanelWithSearch'
 import { showUpstreamPromos } from '@/lib/personal/personal-build'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { useCapabilities } from '@/modules/browseros/capabilities.hooks'
 import { stagePendingHomeMessage } from '@/modules/chat/pending-home-message'
 import { useChatTargetSelection } from '@/modules/chat/use-chat-target-selection'
@@ -94,8 +95,8 @@ export const AgentCommandHome: FC = () => {
               next?
             </h1>
             <p className="mx-auto max-w-2xl text-muted-foreground text-sm leading-6 [text-wrap:pretty]">
-              Pick BrowserOS AI or any agent, then start a task — all without
-              leaving this tab.
+              Pick {PRODUCT_NAME} AI or any agent, then start a task — all
+              without leaving this tab.
             </p>
           </div>
 

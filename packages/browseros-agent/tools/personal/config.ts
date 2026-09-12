@@ -2,7 +2,13 @@
 // launcher. Mirrors tools/dev (Go) so the browser sees identical Chromium
 // flags and the servers identical sidecar JSON, minus the hot-reload loop.
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
@@ -12,13 +18,21 @@ export const BROWSEROS_BINARY =
   process.env.BROWSEROS_PERSONAL_BINARY ||
   '/Applications/BrowserOS.app/Contents/MacOS/BrowserOS'
 
+// Product name of the personal build; mirrors apps/app/lib/personal/product.ts.
+const PRODUCT_NAME = 'Browser'
+
+const APP_SUPPORT = join(homedir(), 'Library', 'Application Support')
+
 export const PROFILE_DIR =
-  process.env.BROWSEROS_PERSONAL_PROFILE ||
-  join(homedir(), 'Library', 'Application Support', 'BrowserOS Personal')
+  process.env.BROWSEROS_PERSONAL_PROFILE || join(APP_SUPPORT, PRODUCT_NAME)
+
+/** Pre-rename locations, kept only so migrateLegacyDirs can move them once. */
+const LEGACY_PROFILE_DIR = join(APP_SUPPORT, 'BrowserOS Personal')
+const LEGACY_LOG_DIR = join(homedir(), 'Library', 'Logs', 'BrowserOS Personal')
 
 export const LOG_DIR =
   process.env.BROWSEROS_PERSONAL_LOG_DIR ||
-  join(homedir(), 'Library', 'Logs', 'BrowserOS Personal')
+  join(homedir(), 'Library', 'Logs', PRODUCT_NAME)
 
 // Server state (db, cache, installation.json). Kept separate from the dev
 // loop's ~/.browseros-dev and from a released BrowserOS install's ~/.browseros.
@@ -148,4 +162,22 @@ export async function isPortFree(value: number): Promise<boolean> {
 
 export function log(message: string): void {
   console.log(`[personal] ${message}`)
+}
+
+/**
+ * One-time rename of the pre-"Browser" profile and log directories. Only ever
+ * moves when the old path exists and the new one does not; never deletes.
+ */
+export function migrateLegacyDirs(): void {
+  for (const [from, to, label] of [
+    [LEGACY_PROFILE_DIR, PROFILE_DIR, 'profile'],
+    [LEGACY_LOG_DIR, LOG_DIR, 'logs'],
+  ] as const) {
+    if (from === to || !existsSync(from) || existsSync(to)) {
+      continue
+    }
+    mkdirSync(dirname(to), { recursive: true })
+    renameSync(from, to)
+    log(`migrated ${label}: ${from} -> ${to}`)
+  }
 }
