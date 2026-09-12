@@ -1,0 +1,221 @@
+import { type FC, useState } from 'react'
+import { useNavigate } from 'react-router'
+import { FooterBar } from '@/components/sidebar/panel/FooterBar'
+import { PinnedList } from '@/components/sidebar/panel/PinnedList'
+import { SearchBox } from '@/components/sidebar/panel/SearchBox'
+import { Separator } from '@/components/sidebar/panel/Separator'
+import { SidebarRoot } from '@/components/sidebar/panel/SidebarRoot'
+import { SpaceHeader } from '@/components/sidebar/panel/SpaceHeader'
+import { TodayList } from '@/components/sidebar/panel/TodayList'
+import type { SpaceDialogValues } from '@/components/spaces/SpaceDialog'
+import {
+  adjacentSpace,
+  isDrifted,
+  pinnedTree,
+} from '@/lib/sidebar/core/selectors'
+import { computeTheme, themeSpecForColor } from '@/lib/sidebar/core/theme'
+import type { ItemId, SidebarState, SpaceId } from '@/lib/sidebar/core/types'
+import { useLiveTabs } from '@/modules/sidebar/live-tabs.hooks'
+import { setPanelMode } from '@/modules/sidebar/panel-mode'
+import { openUrlInTab, sidebarActions } from '@/modules/sidebar/sidebar-actions'
+import { useElementWidth } from '@/modules/sidebar/sidebar-layout.hooks'
+import {
+  groupIdForSpace,
+  isIconOnly,
+  pinnedUrls,
+  searchRows,
+  todayRows,
+} from '@/modules/sidebar/sidebar-rows.helpers'
+import { useSidebarState } from '@/modules/sidebar/sidebar-state.hooks'
+
+const SETTINGS_URL = '/app.html#/settings/spaces'
+const DOWNLOADS_URL = 'chrome://downloads'
+
+/**
+ * The sidebar surface of the side panel. It only reads state: every mutation
+ * is an intent sent to the background reconciler.
+ */
+export const SidebarScreen: FC = () => {
+  const navigate = useNavigate()
+  const {
+    ready,
+    spaces,
+    spaceList,
+    activeSpaceId,
+    activeSpace,
+    items,
+    settings,
+    tabLinks,
+  } = useSidebarState()
+  const live = useLiveTabs()
+  const [query, setQuery] = useState('')
+  const { ref, width } = useElementWidth<HTMLDivElement>()
+  const iconOnly = isIconOnly(width)
+
+  const theme = computeTheme(
+    activeSpace?.theme ?? themeSpecForColor(activeSpace?.color ?? 'grey'),
+  )
+
+  const state: SidebarState = {
+    spaces,
+    activeSpaceId,
+    items,
+    archive: [],
+    settings,
+  }
+
+  const groupId = activeSpace
+    ? groupIdForSpace(live.groups, activeSpace, live.windowId)
+    : null
+  const pinned = activeSpace
+    ? pinnedUrls(items, activeSpace)
+    : new Set<string>()
+  const today = todayRows(live.tabs, groupId, pinned)
+  const results = searchRows(
+    live.tabs,
+    live.groups,
+    spaceList,
+    activeSpaceId,
+    query,
+    live.windowId,
+  )
+  const rows = query.trim() ? results : today
+
+  const pinnedRows = activeSpace ? pinnedTree(state, activeSpace.id) : []
+  const driftedIds = driftedPinnedIds(state, tabLinks, live.tabs)
+
+  const switchTo = (direction: -1 | 1) => {
+    const target = adjacentSpace(
+      spaces.order,
+      activeSpaceId,
+      direction,
+      settings.wrapAround,
+    )
+    if (target) sidebarActions.switchSpace(target)
+  }
+
+  const openChat = () => {
+    setPanelMode('chat')
+    navigate('/chat')
+  }
+
+  const createSpace = async (values: SpaceDialogValues) => {
+    await sidebarActions.createSpace({ ...values, switchTo: true })
+  }
+
+  if (!ready) return null
+
+  return (
+    <SidebarRoot
+      ref={ref}
+      theme={theme}
+      onNextSpace={() => switchTo(1)}
+      onPrevSpace={() => switchTo(-1)}
+      onToggleMode={openChat}
+    >
+      <SearchBox
+        value={query}
+        onChange={setQuery}
+        iconOnly={iconOnly}
+        onSubmit={() => {
+          const first = rows[0]
+          if (first) sidebarActions.activateTab(first.tabId)
+        }}
+      />
+      <div
+        key={activeSpaceId ?? 'none'}
+        className="sb-space-strip flex min-h-0 flex-1 flex-col"
+      >
+        {activeSpace ? (
+          <>
+            <SpaceHeader
+              space={activeSpace}
+              iconOnly={iconOnly}
+              onToggleCollapsed={() =>
+                sidebarActions.updateSpace({
+                  spaceId: activeSpace.id,
+                  pinnedCollapsed: !activeSpace.pinnedCollapsed,
+                })
+              }
+              onRename={(name) =>
+                sidebarActions.updateSpace({ spaceId: activeSpace.id, name })
+              }
+              onAssignActiveTab={() =>
+                sidebarActions.assignActiveTab(activeSpace.id)
+              }
+              onAdoptLooseTabs={() =>
+                sidebarActions.adoptLooseTabs(activeSpace.id)
+              }
+            />
+            {!activeSpace.pinnedCollapsed && (
+              <PinnedList
+                rows={pinnedRows}
+                driftedIds={driftedIds}
+                iconOnly={iconOnly}
+                onOpen={(itemId) => sidebarActions.openItem(itemId)}
+                onSetExpansion={(itemId, expansion) =>
+                  sidebarActions.setExpansion(itemId, expansion)
+                }
+                onReset={(itemId) => sidebarActions.resetPinned(itemId)}
+                onUnpin={(itemId) => sidebarActions.unpinItem(itemId)}
+              />
+            )}
+            <Separator
+              iconOnly={iconOnly}
+              onNewTab={() => sidebarActions.newTab(activeSpace.id)}
+              onTidy={() => sidebarActions.tidy(activeSpace.id)}
+              onClear={() => sidebarActions.clear(activeSpace.id)}
+            />
+          </>
+        ) : (
+          <p className="px-3 py-4 text-xs opacity-70">
+            No space yet. Use + below to create one.
+          </p>
+        )}
+        <TodayList
+          rows={rows}
+          iconOnly={iconOnly}
+          emptyLabel={
+            query.trim() ? 'No tabs match' : 'No tabs in this space yet'
+          }
+          onActivate={(tabId) => sidebarActions.activateTab(tabId)}
+          onClose={(tabId) =>
+            sidebarActions.closeTabs([tabId], 'sidebar-row-close')
+          }
+        />
+      </div>
+      <FooterBar
+        spaces={spaceList}
+        activeSpaceId={activeSpaceId}
+        onSwitch={(spaceId: SpaceId) => sidebarActions.switchSpace(spaceId)}
+        onCreate={createSpace}
+        onOpenSettings={() => openUrlInTab(chrome.runtime.getURL(SETTINGS_URL))}
+        onOpenDownloads={() => openUrlInTab(DOWNLOADS_URL)}
+        onOpenChat={openChat}
+      />
+    </SidebarRoot>
+  )
+}
+
+/**
+ * A pinned tab drifted when the tab linked to it left the canonical URL. The
+ * link map is session state written by the background reconciler.
+ */
+function driftedPinnedIds(
+  state: SidebarState,
+  tabLinks: Record<string, string>,
+  tabs: { id?: number; url?: string }[],
+): Set<ItemId> {
+  const drifted = new Set<ItemId>()
+  const urlByTabId = new Map<number, string>()
+  for (const tab of tabs) {
+    if (tab.id !== undefined && tab.url) urlByTabId.set(tab.id, tab.url)
+  }
+  for (const [tabId, itemId] of Object.entries(tabLinks)) {
+    const item = state.items.byId[itemId]
+    if (item?.data.kind !== 'tab') continue
+    const liveUrl = urlByTabId.get(Number(tabId))
+    if (liveUrl && isDrifted(item.data.url, liveUrl)) drifted.add(itemId)
+  }
+  return drifted
+}
