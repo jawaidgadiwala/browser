@@ -1,0 +1,52 @@
+diff --git a/components/vector_icons/browseros_mark.icon b/components/vector_icons/browseros_mark.icon
+new file mode 100644
+index 0000000..8db6be1
+--- /dev/null
++++ b/components/vector_icons/browseros_mark.icon
+@@ -0,0 +1,46 @@
++// Copyright 2025 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// The Browser mark: a geometric "B" with two open counters. Monochrome on
++// purpose -- callers tint it (the toolbar action paints it in the brand blue
++// #2C6BF2), so it stays legible in light and dark themes. Drawn on the
++// default 48x48 canvas; the counters are separate subpaths and are knocked
++// out by the default even-odd fill rule.
++
++// Stem.
++MOVE_TO, 10, 8,
++LINE_TO, 17, 8,
++LINE_TO, 17, 40,
++LINE_TO, 10, 40,
++CLOSE,
++
++// Upper bowl.
++MOVE_TO, 17, 8,
++LINE_TO, 26, 8,
++CUBIC_TO, 31, 8, 34, 11, 34, 15.5f,
++CUBIC_TO, 34, 20, 31, 23, 26, 23,
++LINE_TO, 17, 23,
++CLOSE,
++// Upper counter.
++MOVE_TO, 20, 12,
++LINE_TO, 25.5f, 12,
++CUBIC_TO, 28, 12, 29.5f, 13.5f, 29.5f, 15.5f,
++CUBIC_TO, 29.5f, 17.5f, 28, 19, 25.5f, 19,
++LINE_TO, 20, 19,
++CLOSE,
++
++// Lower bowl.
++MOVE_TO, 17, 25,
++LINE_TO, 28, 25,
++CUBIC_TO, 33.5f, 25, 37, 28, 37, 32.5f,
++CUBIC_TO, 37, 37, 33.5f, 40, 28, 40,
++LINE_TO, 17, 40,
++CLOSE,
++// Lower counter.
++MOVE_TO, 20, 29,
++LINE_TO, 27.5f, 29,
++CUBIC_TO, 30.5f, 29, 32.5f, 30.5f, 32.5f, 32.5f,
++CUBIC_TO, 32.5f, 34.5f, 30.5f, 36, 27.5f, 36,
++LINE_TO, 20, 36,
++CLOSE

@@ -1,9 +1,9 @@
 diff --git a/chrome/browser/browseros/core/browseros_prefs.h b/chrome/browser/browseros/core/browseros_prefs.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..893ade589e58d07c85848b790079481c2452b9e7
+index 0000000..538c508
 --- /dev/null
 +++ b/chrome/browser/browseros/core/browseros_prefs.h
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,165 @@
 +// Copyright 2025 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -68,6 +68,27 @@ index 0000000000000000000000000000000000000000..893ade589e58d07c85848b790079481c
 +inline constexpr char kAutomationNeverStealsFocus[] =
 +    "browseros.automation_never_steals_focus";
 +
++// Browser product UI prefs. Each defaults to browseros::IsBrowserProduct(),
++// so stock behaviour is one chrome.browserOS.setPref() away.
++
++// Boolean: dock the side panel on the left. Mirrored (inverted) onto the
++// upstream pref ::prefs::kSidePanelHorizontalAlignment. Default: on for the
++// Browser product.
++inline constexpr char kSidePanelLeft[] = "browseros.side_panel_left";
++
++// Boolean: hide the side panel header (title, pin, new-tab, more, close) while
++// a BrowserOS extension panel is shown. The panel is then chrome-less and is
++// closed from the toolbar action or the accelerator. Default: on for the Browser product.
++inline constexpr char kHideSidePanelHeader[] =
++    "browseros.hide_side_panel_header";
++
++// Boolean: do not draw either tab strip (horizontal or vertical). Tab
++// switching is expected to happen from the side panel. Gated at the view
++// layer (BrowserView::ShouldDrawTabStrip) only -- the window still *supports*
++// a tab strip, so tab dragging, session restore and chrome.tabs are
++// unaffected. Default: on for the Browser product.
++inline constexpr char kHideTabStrip[] = "browseros.hide_tab_strip";
++
 +}  // namespace prefs
 +
 +// Registers BrowserOS profile preferences.
@@ -100,6 +121,25 @@ index 0000000000000000000000000000000000000000..893ade589e58d07c85848b790079481c
 +// Syncs the BrowserOS saved tab groups bookmark bar pref to the upstream Chrome
 +// pref only while the upstream pref is still at its default value.
 +void SyncShowTabGroupsInBookmarkBarPref(PrefService* pref_service);
++
++// Check if the side panel should be docked on the left.
++bool IsSidePanelLeft(PrefService* pref_service);
++
++// Applies the BrowserOS left-dock pref onto the upstream side panel alignment
++// pref (unconditional write; use as a PrefChangeRegistrar callback).
++void ApplySidePanelLeftPref(PrefService* pref_service);
++
++// Seeds the upstream side panel alignment pref from the BrowserOS pref only
++// while the upstream pref is still at its default value, so a user who moved
++// the panel themselves keeps their choice.
++void SyncSidePanelLeftPref(PrefService* pref_service);
++
++// Check if the side panel header should be hidden. Callers additionally
++// verify the shown entry belongs to an active BrowserOS extension.
++bool ShouldHideSidePanelHeader(PrefService* pref_service);
++
++// Check if both tab strips should be hidden.
++bool ShouldHideTabStrip(PrefService* pref_service);
 +
 +// Sets the default BrowserOS theme (blue tonal spot) on first run
 +// when the user hasn't customized the theme yet.

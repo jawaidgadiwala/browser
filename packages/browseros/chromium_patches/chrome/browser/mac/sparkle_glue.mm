@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000..7a5da195279c1
 --- /dev/null
 +++ b/chrome/browser/mac/sparkle_glue.mm
-@@ -0,0 +1,673 @@
+@@ -0,0 +1,688 @@
 +// Copyright 2024 BrowserOS Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -32,12 +32,23 @@ index 0000000000000..7a5da195279c1
 +
 +namespace {
 +
++// Base URL of the Sparkle appcast, without the architecture suffix or the
++// ".xml" extension. An empty value means "no update feed is configured":
++// Sparkle stays compiled in and fully functional, it simply never has an
++// appcast to check, which is the shipping default for Browser. Point a build
++// at a feed either by setting this constant or, per run, with
++// --browseros-sparkle-url=<full url>.
++constexpr char kDefaultFeedBaseURL[] = "";
++
++// Returns nil when no feed is configured. Sparkle treats a nil feed URL as
++// "nothing to check", so updates are inert rather than failing noisily.
 +NSString* GetArchitectureSpecificFeedURL() {
 +  // Feed keys are owned by release/feeds/spec.py (_BROWSER_FEED_SLUGS) in
 +  // the BrowserOS repo; keep the two in lockstep.
-+  const char* base_url = browseros::IsBrowserClawProduct()
-+                             ? "https://cdn.browseros.com/appcast-claw"
-+                             : "https://cdn.browseros.com/appcast";
++  const char* base_url = kDefaultFeedBaseURL;
++  if (base_url[0] == '\0') {
++    return nil;
++  }
 +
 +  if (base::SysInfo::OperatingSystemArchitecture() == "x86_64") {
 +    return [NSString stringWithFormat:@"%s-x86_64.xml", base_url];
@@ -551,7 +562,11 @@ index 0000000000000..7a5da195279c1
 +    return base::SysUTF8ToNSString(url);
 +  }
 +
-+  return GetArchitectureSpecificFeedURL();
++  NSString* feed = GetArchitectureSpecificFeedURL();
++  if (!feed) {
++    LOG(WARNING) << "Sparkle: No update feed configured; updates are off.";
++  }
++  return feed;
 +}
 +
 +- (void)updater:(SPUUpdater*)updater

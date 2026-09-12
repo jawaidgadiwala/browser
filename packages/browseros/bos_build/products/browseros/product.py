@@ -6,19 +6,53 @@ from pathlib import Path
 from ...core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
     BROWSEROS_BUG_REPORTER_EXTENSION_ID,
+    MacProductIdentity,
     ProductDescriptor,
+    WindowsProductIdentity,
+    _replacements,
 )
 from ..server_binaries import ServerBundle, SignSpec
 
+# Ships as "Browser" by Jawaid Gadiwala.
+#
+# `display_name` stays "BrowserOS" on purpose: it derives app_base_name, which
+# names BrowserOS.app and its inner Contents/MacOS/BrowserOS executable, and
+# packages/browseros-agent/tools/personal/config.ts launches that exact path.
+# The user-visible name comes from the BRANDING overlay (PRODUCT_FULLNAME=
+# Browser -> CFBundleName / CFBundleDisplayName) and from `string_replacements`
+# below (IDS_PRODUCT_NAME -> menu bar, About page, first run, crash reporter).
+# Renaming the bundle itself is a follow-up that must land together with the
+# agent-side launcher path.
 BROWSEROS_PRODUCT = ProductDescriptor.define(
     id="browseros",
     display_name="BrowserOS",
+    company="Jawaid Gadiwala",
     windows_installer_guid="{5d8d08af-2df9-4da2-86c1-eac353a0ca32}",
-    summary="The open source agentic browser",
-    description="BrowserOS is a privacy-focused web browser built on Chromium.",
+    summary="A personal agentic browser",
+    description="Browser is a privacy-focused web browser built on Chromium.",
     required_extensions=(
         (BROWSEROS_AGENT_EXTENSION_ID, "BrowserOS agent"),
         (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "BrowserOS bug reporter"),
+    ),
+    # Every Chromium string that says "Chromium"/"Chrome" becomes "Browser",
+    # not the (bundle-derived) display name.
+    string_replacements=_replacements("Browser"),
+    # Bundle identity is the product's own, independent of the bundle *name*.
+    # Keep in lockstep with MAC_BUNDLE_ID in
+    # chromium_files/products/browseros/chrome/app/theme/chromium/BRANDING.*
+    # and with mac_browser_bundle_identifier in chrome/updater/branding.gni.
+    mac=MacProductIdentity(
+        bundle_id="com.jawaidgadiwala.browser",
+        dev_bundle_id="com.jawaidgadiwala.browser.dev",
+        signing_identifier="com.jawaidgadiwala.browser",
+        dev_signing_identifier="com.jawaidgadiwala.browser.dev",
+        framework_name="BrowserOS Framework.framework",
+        dev_framework_name="BrowserOS Dev Framework.framework",
+        dmg_volume_name="Browser",
+    ),
+    windows=WindowsProductIdentity(
+        app_user_model_id="JawaidGadiwala.Browser",
+        installer_app_id="{5d8d08af-2df9-4da2-86c1-eac353a0ca32}",
     ),
 )
 

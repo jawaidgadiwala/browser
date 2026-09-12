@@ -74,7 +74,7 @@ features:
       - chrome/browser/ui/cocoa/dock_icon.mm
       # Custom vector icons
       - components/vector_icons/BUILD.gn
-      - components/vector_icons/chat_orange.icon
+      - components/vector_icons/browseros_mark.icon
 
   browserclaw-product-dir:
     description: "feat: per-product user-data dir via browseros_product buildflag"
@@ -491,3 +491,33 @@ features:
       - extensions/browser/crx_installer.h
       - extensions/browser/external_install_info.cc
       - extensions/browser/external_install_info.h
+
+  # ── LAYER 7: BROWSER PRODUCT ──────────────────────────────
+  # Browser (Jawaid Gadiwala) product layer. Applied last so a
+  # rebase resolves upstream BrowserOS first and these on top. Every feature
+  # here is gated by a browseros.* pref whose default is
+  # browseros::IsBrowserProduct() -- never by an #if at a call site -- so
+  # stock behaviour is one chrome.browserOS.setPref() away.
+
+  browser-branding:
+    description: "feat: Browser product identity and gating"
+    files:
+      - chrome/browser/browseros/core/browseros_browser_product.h
+
+  browser-side-panel-left:
+    description: "feat: left-docked side panel by default"
+    files: []
+
+  browser-side-panel-no-header:
+    description: "feat: headerless side panel for browseros extension entries"
+    files: []
+
+  browser-hide-tab-strip:
+    description: "feat: hide both tab strips, tab switching from the side panel"
+    files:
+      - chrome/browser/ui/views/frame/browser_view.cc
+      - chrome/browser/ui/views/frame/browser_view.h
+
+  browser-toolbar:
+    description: "feat: clean toolbar defaults for the Browser product"
+    files: []

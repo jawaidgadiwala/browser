@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/ui/views/side_panel/BUILD.gn b/chrome/browser/ui/views/side_panel/BUILD.gn
-index 7fcad1f0628fc181d7fe9320ab98a06880734989..a57b2ec737c87dd34333446d2f132bc5f21d35eb 100644
+index 7fcad1f..d03b58a 100644
 --- a/chrome/browser/ui/views/side_panel/BUILD.gn
 +++ b/chrome/browser/ui/views/side_panel/BUILD.gn
 @@ -11,6 +11,8 @@ source_set("side_panel") {
@@ -11,7 +11,7 @@ index 7fcad1f0628fc181d7fe9320ab98a06880734989..a57b2ec737c87dd34333446d2f132bc5
      "comments/comments_side_panel_coordinator.cc",
      "comments/comments_side_panel_coordinator.h",
      "customize_chrome/customize_chrome_utils.cc",
-@@ -58,11 +60,17 @@ source_set("side_panel") {
+@@ -58,11 +60,18 @@ source_set("side_panel") {
      "tabs_from_other_devices/tabs_from_other_devices_side_panel_coordinator.h",
      "tabs_from_other_devices/tabs_from_other_devices_side_panel_metrics.cc",
      "tabs_from_other_devices/tabs_from_other_devices_side_panel_metrics.h",
@@ -24,6 +24,7 @@ index 7fcad1f0628fc181d7fe9320ab98a06880734989..a57b2ec737c87dd34333446d2f132bc5
      "//base",
      "//chrome/browser:browser_public_dependencies",
      "//chrome/browser:primitives",
++    "//chrome/browser/browseros/core",
 +    "//chrome/browser/browseros/core:prefs",
 +    "//chrome/browser/browseros/metrics",
      "//chrome/browser/history_clusters",

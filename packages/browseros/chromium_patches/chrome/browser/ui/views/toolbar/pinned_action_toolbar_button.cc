@@ -98,10 +98,10 @@ index 91fef775c36b9068bb041d044504345f9aead372..8a8673236f93929ce127159d32519e4c
                                      : icons->icon;
  
 -  if (is_icon_visible_ && action_engaged_) {
-+  // Special case for Third Party LLM - use custom orange color
++  // Special case for Third Party LLM - use the brand blue
 +  if (action_id_ == kActionSidePanelShowThirdPartyLlm) {
-+    const SkColor orange = SkColorSetRGB(0xFB, 0x65, 0x18);
-+    UpdateIconsWithColors(icon, orange, orange, orange,
++    const SkColor brand = SkColorSetRGB(0x2C, 0x6B, 0xF2);
++    UpdateIconsWithColors(icon, brand, brand, brand,
 +                          GetForegroundColor(ButtonState::STATE_DISABLED));
 +  } else if (is_icon_visible_ && action_engaged_) {
      UpdateIconsWithColors(

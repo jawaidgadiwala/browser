@@ -49,7 +49,7 @@ def _env(**values):
 
 
 PASSKEY_TEAM_ID = "8YMKWU47S5"
-PASSKEY_BUNDLE_ID = "com.browseros.BrowserOS"
+PASSKEY_BUNDLE_ID = "com.jawaidgadiwala.browser"
 PASSKEY_BUNDLE_IDS = {
     "browseros": PASSKEY_BUNDLE_ID,
     "browserclaw": "com.browseros.BrowserClaw",

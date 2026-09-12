@@ -1,9 +1,9 @@
 diff --git a/chrome/browser/browseros/core/browseros_prefs.cc b/chrome/browser/browseros/core/browseros_prefs.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..68597d68ae413015f8783404d822d8a3f7dacb44
+index 0000000..32fd1a2
 --- /dev/null
 +++ b/chrome/browser/browseros/core/browseros_prefs.cc
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,170 @@
 +// Copyright 2025 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -11,6 +11,7 @@ index 0000000000000000000000000000000000000000..68597d68ae413015f8783404d822d8a3
 +#include "chrome/browser/browseros/core/browseros_prefs.h"
 +
 +#include "chrome/browser/browseros/core/browseros_constants.h"
++#include "chrome/browser/browseros/core/browseros_browser_product.h"
 +#include "chrome/browser/browseros/core/browseros_product.h"
 +#include "chrome/browser/ui/actions/chrome_action_id.h"
 +#include "chrome/common/pref_names.h"
@@ -22,7 +23,10 @@ index 0000000000000000000000000000000000000000..68597d68ae413015f8783404d822d8a3
 +namespace browseros {
 +
 +void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
-+  const bool show_toolbar_controls_by_default = !IsBrowserClawProduct();
++  // Browser ships a clean toolbar: the Chat and Assistant actions are
++  // unpinned by default and the side panel is driven from the extension.
++  const bool show_toolbar_controls_by_default =
++      !IsBrowserClawProduct() && !IsBrowserProduct();
 +
 +  registry->RegisterBooleanPref(prefs::kShowLLMChat,
 +                                show_toolbar_controls_by_default);
@@ -43,6 +47,13 @@ index 0000000000000000000000000000000000000000..68597d68ae413015f8783404d822d8a3
 +  // default. BrowserOS keeps stock focus behaviour.
 +  registry->RegisterBooleanPref(prefs::kAutomationNeverStealsFocus,
 +                                IsBrowserClawProduct());
++
++  // Browser UI defaults. See browseros_browser_product.h: these are defaults,
++  // not compile-time gates, so stock behaviour stays one setPref() away.
++  registry->RegisterBooleanPref(prefs::kSidePanelLeft, IsBrowserProduct());
++  registry->RegisterBooleanPref(prefs::kHideSidePanelHeader,
++                                IsBrowserProduct());
++  registry->RegisterBooleanPref(prefs::kHideTabStrip, IsBrowserProduct());
 +}
 +
 +bool ShouldShowLLMChat(PrefService* pref_service) {
@@ -89,6 +100,32 @@ index 0000000000000000000000000000000000000000..68597d68ae413015f8783404d822d8a3
 +          browseros_enabled) {
 +    ApplyShowTabGroupsInBookmarkBarPref(pref_service);
 +  }
++}
++
++bool IsSidePanelLeft(PrefService* pref_service) {
++  return pref_service->GetBoolean(prefs::kSidePanelLeft);
++}
++
++void ApplySidePanelLeftPref(PrefService* pref_service) {
++  // The upstream pref is "is right aligned"; ours is "is left docked".
++  pref_service->SetBoolean(::prefs::kSidePanelHorizontalAlignment,
++                           !IsSidePanelLeft(pref_service));
++}
++
++void SyncSidePanelLeftPref(PrefService* pref_service) {
++  const PrefService::Preference* upstream_pref =
++      pref_service->FindPreference(::prefs::kSidePanelHorizontalAlignment);
++  if (upstream_pref && upstream_pref->IsDefaultValue()) {
++    ApplySidePanelLeftPref(pref_service);
++  }
++}
++
++bool ShouldHideSidePanelHeader(PrefService* pref_service) {
++  return pref_service->GetBoolean(prefs::kHideSidePanelHeader);
++}
++
++bool ShouldHideTabStrip(PrefService* pref_service) {
++  return pref_service->GetBoolean(prefs::kHideTabStrip);
 +}
 +
 +void SyncDefaultTheme(PrefService* pref_service) {

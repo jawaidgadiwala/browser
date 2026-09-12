@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 0777bf71430c810f7b6ae41a7708cdd069b6c5a4..5b9c9d1d371ff49436c0deedfa031d18f53192cc 100644
+index 0777bf7..a003435 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -47,6 +47,7 @@
@@ -33,11 +33,12 @@ index 0777bf71430c810f7b6ae41a7708cdd069b6c5a4..5b9c9d1d371ff49436c0deedfa031d18
  const extensions::Extension* GetExtensionForOrigin(
      Profile* profile,
      const GURL& security_origin) {
-@@ -555,11 +572,17 @@ Browser::Browser(const CreateParams& params)
+@@ -555,11 +572,22 @@ Browser::Browser(const CreateParams& params)
  
    tab_strip_model_->AddObserver(this);
  
 +  browseros::SyncShowTabGroupsInBookmarkBarPref(profile_->GetPrefs());
++  browseros::SyncSidePanelLeftPref(profile_->GetPrefs());
 +
    profile_pref_registrar_.Init(profile_->GetPrefs());
    profile_pref_registrar_.Add(
@@ -48,10 +49,14 @@ index 0777bf71430c810f7b6ae41a7708cdd069b6c5a4..5b9c9d1d371ff49436c0deedfa031d18
 +      browseros::prefs::kShowTabGroupsInBookmarkBar,
 +      base::BindRepeating(&browseros::ApplyShowTabGroupsInBookmarkBarPref,
 +                          base::Unretained(profile_->GetPrefs())));
++  profile_pref_registrar_.Add(
++      browseros::prefs::kSidePanelLeft,
++      base::BindRepeating(&browseros::ApplySidePanelLeftPref,
++                          base::Unretained(profile_->GetPrefs())));
  
    ProfileMetrics::LogProfileLaunch(profile_);
  
-@@ -1684,6 +1707,24 @@ content::WebContents* Browser::AddNewContents(
+@@ -1684,6 +1712,24 @@ content::WebContents* Browser::AddNewContents(
      }
    }
  
@@ -76,7 +81,7 @@ index 0777bf71430c810f7b6ae41a7708cdd069b6c5a4..5b9c9d1d371ff49436c0deedfa031d18
    return chrome::AddWebContents(this, source, std::move(new_contents),
                                  target_url, disposition, window_features,
                                  window_action, user_gesture);
-@@ -1696,6 +1737,13 @@ void Browser::ActivateContents(WebContents* contents) {
+@@ -1696,6 +1742,13 @@ void Browser::ActivateContents(WebContents* contents) {
    if (index == TabStripModel::kNoTab) {
      return;
    }
@@ -90,7 +95,7 @@ index 0777bf71430c810f7b6ae41a7708cdd069b6c5a4..5b9c9d1d371ff49436c0deedfa031d18
    tab_strip_model_->ActivateTabAt(index);
    window_->Activate();
  }
-@@ -1824,6 +1872,11 @@ bool Browser::ShouldFocusLocationBarByDefault(WebContents* source) {
+@@ -1824,6 +1877,11 @@ bool Browser::ShouldFocusLocationBarByDefault(WebContents* source) {
        source->GetController().GetPendingEntry()
            ? source->GetController().GetPendingEntry()
            : source->GetController().GetLastCommittedEntry();
@@ -102,7 +107,7 @@ index 0777bf71430c810f7b6ae41a7708cdd069b6c5a4..5b9c9d1d371ff49436c0deedfa031d18
    if (entry) {
      const GURL& url = entry->GetURL();
      const GURL& virtual_url = entry->GetVirtualURL();
-@@ -1836,15 +1889,18 @@ bool Browser::ShouldFocusLocationBarByDefault(WebContents* source) {
+@@ -1836,15 +1894,18 @@ bool Browser::ShouldFocusLocationBarByDefault(WebContents* source) {
           url.host() == chrome::kChromeUINewTabHost) ||
          (virtual_url.SchemeIs(content::kChromeUIScheme) &&
           virtual_url.host() == chrome::kChromeUINewTabHost)) {
