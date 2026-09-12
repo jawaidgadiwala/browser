@@ -42,6 +42,11 @@ mock.module('@/lib/constants/analyticsEvents', () => ({
   BROWSERCLAW_MCP_BANNER_CLICKED_EVENT,
 }))
 
+// The personal build hides the banner; the test covers upstream composition.
+mock.module('@/lib/personal/personal-build', () => ({
+  showUpstreamPromos: () => true,
+}))
+
 mock.module('@/lib/browseros/helpers', () => ({
   getMcpServerUrl: async () => 'http://127.0.0.1:9200/mcp',
 }))

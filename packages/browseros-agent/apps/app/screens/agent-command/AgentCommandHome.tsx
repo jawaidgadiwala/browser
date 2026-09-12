@@ -5,6 +5,7 @@ import { ProductHuntBanner } from '@/components/promo/ProductHuntBanner'
 import { Feature } from '@/lib/browseros/capabilities'
 import { createBrowserOSAction } from '@/lib/chat-actions/types'
 import { openSidePanelWithSearch } from '@/lib/messaging/sidepanel/openSidepanelWithSearch'
+import { showUpstreamPromos } from '@/lib/personal/personal-build'
 import { useCapabilities } from '@/modules/browseros/capabilities.hooks'
 import { stagePendingHomeMessage } from '@/modules/chat/pending-home-message'
 import { useChatTargetSelection } from '@/modules/chat/use-chat-target-selection'
@@ -119,12 +120,14 @@ export const AgentCommandHome: FC = () => {
 
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 pb-12">
           <RecentSites />
-          <ProductHuntBanner fallback={<BrowserClawPromoBanner />} />
+          {showUpstreamPromos() && (
+            <ProductHuntBanner fallback={<BrowserClawPromoBanner />} />
+          )}
           <ScheduleResults />
         </div>
       </div>
 
-      {showImportHint ? <ImportDataHint /> : null}
+      {showImportHint && showUpstreamPromos() ? <ImportDataHint /> : null}
     </div>
   )
 }

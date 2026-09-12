@@ -22,6 +22,7 @@ import { getQueryKeyFromDocument } from '@/lib/graphql/getQueryKeyFromDocument'
 import { testProvider } from '@/lib/llm-providers/testProvider'
 import type { LlmProviderConfig } from '@/lib/llm-providers/types'
 import { track } from '@/lib/metrics/track'
+import { showUpstreamPromos } from '@/lib/personal/personal-build'
 import { sentry } from '@/lib/sentry/sentry'
 import { useAgentServerUrl } from '@/modules/browseros/agent-server-url.hooks'
 import { useGraphqlMutation } from '@/modules/graphql/graphql-mutation.hooks'
@@ -258,7 +259,7 @@ export const BrowserOsAiPane: FC = () => {
 
       <CloudSyncRetiredNotice />
 
-      <BrowserClawPromoBanner />
+      {showUpstreamPromos() && <BrowserClawPromoBanner />}
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">

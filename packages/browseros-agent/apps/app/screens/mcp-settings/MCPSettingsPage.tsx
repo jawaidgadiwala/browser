@@ -1,5 +1,6 @@
 import { type FC, useCallback, useEffect, useState } from 'react'
 import { getMcpServerUrl } from '@/lib/browseros/helpers'
+import { showUpstreamPromos } from '@/lib/personal/personal-build'
 import { BrowserClawMcpBanner } from './BrowserClawMcpBanner'
 import { IntegrationsSection } from './IntegrationsSection'
 import { MCPServerHeader } from './MCPServerHeader'
@@ -36,7 +37,7 @@ export const MCPSettingsPage: FC = () => {
         onServerRestart={loadServerUrl}
       />
 
-      <BrowserClawMcpBanner />
+      {showUpstreamPromos() && <BrowserClawMcpBanner />}
 
       <IntegrationsSection serverUrl={serverUrl} />
 
