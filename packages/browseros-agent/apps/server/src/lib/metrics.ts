@@ -7,7 +7,6 @@ import { PostHog } from 'posthog-node'
 
 import { INLINED_ENV } from '../env'
 
-const POSTHOG_API_KEY = INLINED_ENV.POSTHOG_API_KEY
 const EVENT_PREFIX = 'browseros.server.'
 const DEFAULT_METRICS_SAMPLE_RATE = 1 / 5
 
@@ -153,8 +152,11 @@ class MetricsService {
   initialize(config: MetricsConfig): void {
     this.config = { ...this.config, ...config }
 
-    if (!this.client && POSTHOG_API_KEY) {
-      this.client = new PostHog(POSTHOG_API_KEY, {
+    // Read at initialize time, not module load: the build still inlines the
+    // literal through INLINED_ENV, and initialize runs once at startup.
+    const apiKey = INLINED_ENV.POSTHOG_API_KEY
+    if (!this.client && apiKey) {
+      this.client = new PostHog(apiKey, {
         host: EXTERNAL_URLS.POSTHOG_DEFAULT,
       })
     }

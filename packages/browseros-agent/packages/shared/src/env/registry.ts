@@ -288,7 +288,7 @@ export const ENV_REGISTRY: readonly EnvKeySpec[] = [
     schema: stringSchema,
     modes: {
       development: {
-        value: '~/Library/Application Support/BrowserOS Personal',
+        value: '~/Library/Application Support/Browser',
         commented: true,
       },
     },
@@ -302,7 +302,7 @@ export const ENV_REGISTRY: readonly EnvKeySpec[] = [
     schema: stringSchema,
     modes: {
       development: {
-        value: '~/Library/Logs/BrowserOS Personal',
+        value: '~/Library/Logs/Browser',
         commented: true,
       },
     },

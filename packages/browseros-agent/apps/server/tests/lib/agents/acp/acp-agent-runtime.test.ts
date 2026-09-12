@@ -142,7 +142,7 @@ describe('AcpAgentRuntime', () => {
       mcpServers: [
         {
           type: 'http',
-          name: 'browseros',
+          name: 'browser',
           url: 'http://127.0.0.1:9100/mcp',
           headers: {
             'X-BrowserOS-Internal-Lease': BROWSER_TOOL_LEASE_TOKEN,

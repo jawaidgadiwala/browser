@@ -203,8 +203,9 @@ describe('resolveAcpSpawnCommand', () => {
     expect(out.argv.slice(0, 2)).toEqual(['node', '--eval'])
     const payload = decodeEnvironmentPayload(out.argv[3])
     expect(payload.argv[0]).toBe('C:\\Windows\\System32\\cmd.exe')
+    // The spec is pinned exactly, so it survives cmd.exe caret-escaping as-is.
     expect(payload.argv[4]).toContain(
-      '@agentclientprotocol/claude-agent-acp@^^0.75.1',
+      HOST_ACP_ADAPTER_CONFIG.claude.acpPackageSpec,
     )
   })
 

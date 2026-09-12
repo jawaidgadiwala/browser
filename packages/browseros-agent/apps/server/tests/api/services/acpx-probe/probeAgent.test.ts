@@ -4,6 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it, mock } from 'bun:test'
+import { HOST_ACP_ADAPTER_CONFIG } from '../../../../src/lib/agents/host-acp/config'
 
 interface CapturedCall {
   agent?: string
@@ -73,7 +74,7 @@ describe('probeAcpAgent — input shape', () => {
     await probeAcpAgent({ type: 'claude' })
     expect(lastCall?.agent).toBeUndefined()
     expect(lastCall?.argv).toContain(
-      '@agentclientprotocol/claude-agent-acp@^0.75.1',
+      HOST_ACP_ADAPTER_CONFIG.claude.acpPackageSpec,
     )
     expect(lastCall?.authPolicy).toBe('skip')
   })
@@ -136,7 +137,7 @@ describe('probeAcpAgent — bundled-Bun launcher swap', () => {
     expect(lastCall?.agent).toBeUndefined()
     expect(lastCall?.argv).toContain(bunPath)
     expect(lastCall?.argv).toContain(
-      '@agentclientprotocol/claude-agent-acp@^0.75.1',
+      HOST_ACP_ADAPTER_CONFIG.claude.acpPackageSpec,
     )
 
     fs.rmSync(tmpRoot, { recursive: true, force: true })
@@ -147,7 +148,7 @@ describe('probeAcpAgent — bundled-Bun launcher swap', () => {
     await probeAcpAgent({ type: 'claude' })
     expect(lastCall?.agent).toBeUndefined()
     expect(lastCall?.argv).toContain(
-      '@agentclientprotocol/claude-agent-acp@^0.75.1',
+      HOST_ACP_ADAPTER_CONFIG.claude.acpPackageSpec,
     )
   })
 

@@ -12,6 +12,7 @@ import { type AcpSessionRecord, createFileSessionStore } from 'acpx/runtime'
 import { buildAcpAgentPolicy } from '../../../../src/lib/agents/acp/acp-agent-policy'
 import { BROWSEROS_ACP_INSTRUCTIONS } from '../../../../src/lib/agents/acp/browseros-instructions'
 import type { AcpAgentDefinition } from '../../../../src/lib/agents/agent-types'
+import { HOST_ACP_ADAPTER_CONFIG } from '../../../../src/lib/agents/host-acp/config'
 import { BROWSEROS_TOOL_LEASE_HEADER } from '../../../../src/lib/browser-tool-lease'
 
 const SKILL = [
@@ -92,7 +93,7 @@ describe('buildAcpAgentPolicy', () => {
     expect(policy.cwd).toBe('/work/project')
     expect(policy.sessionKey).toBe('acp:claude-agent-id:conversation-1')
     expect(agentArgv(policy, 'claude')).toContain(
-      '@agentclientprotocol/claude-agent-acp@^0.75.1',
+      HOST_ACP_ADAPTER_CONFIG.claude.acpPackageSpec,
     )
     expect(policy.mcpServers.map((server) => server.name)).toEqual([
       'browser',

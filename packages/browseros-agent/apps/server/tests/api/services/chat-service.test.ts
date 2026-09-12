@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test'
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test'
 import type { UIMessageChunk } from 'ai'
 import * as _ai from 'ai'
 import type { KlavisProxyStatus } from '../../../src/api/services/klavis'
@@ -104,10 +104,23 @@ mock.module('../../../src/agent/ai-sdk-agent', () => ({
 // the one function under test.
 import * as llmConfigModule from '../../../src/lib/clients/llm/config'
 
+// Snapshot eagerly: after mock.module the namespace's own live bindings point
+// at the spy, so a later spread of it would restore the spy, not the real one.
+const realLlmConfigModule = { ...llmConfigModule }
+
 mock.module('../../../src/lib/clients/llm/config', () => ({
-  ...llmConfigModule,
+  ...realLlmConfigModule,
   resolveLLMConfig: resolveLLMConfigSpy,
 }))
+
+// ...and put the real one back once this file is done, for the same reason:
+// a later file that exercises resolveLLMConfig itself would otherwise get the
+// spy and fail only when file ordering puts it second.
+afterAll(() => {
+  mock.module('../../../src/lib/clients/llm/config', () => ({
+    ...realLlmConfigModule,
+  }))
+})
 
 mock.module('../../../src/lib/logger', () => ({
   logger: {

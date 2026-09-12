@@ -62,6 +62,14 @@ function textOf(result: { content: Array<{ type: string; text?: string }> }) {
     .join('\n')
 }
 
+/** Mutating actions run the user-group guard first, which lists groups. */
+function callTo(calls: CdpCall[], method: string): CdpCall | undefined {
+  return calls.find((call) => call.method === method)
+}
+
+/** `<agent>/<label>` marks a group as agent-owned and thus freely mutable. */
+const AGENT_TITLE = 'claude-code/renamed'
+
 const GROUP: TabGroup = {
   groupId: 'g1',
   windowId: 1,
@@ -117,6 +125,8 @@ describe('tab_groups tool', () => {
           color: 'blue',
           collapsed: false,
           pageIds: [1, 2],
+          // "Work" has no "<agent>/" prefix, so it reads as the user's group.
+          ownedByAgent: false,
         },
       ],
       count: 1,
@@ -177,23 +187,25 @@ describe('tab_groups tool', () => {
   })
 
   it('updates a group title and color', async () => {
+    // Agent-owned title: renaming a user group is refused by the
+    // protect_user_tab_groups guard (covered in browser-mcp's own tests).
     const { session, calls } = createSession({
       pageTabs: { 1: 11, 2: 22 },
-      groups: [{ ...GROUP, title: 'Renamed', color: 'red' }],
+      groups: [{ ...GROUP, title: AGENT_TITLE, color: 'red' }],
     })
     const result = await executeTool(
       tab_groups,
-      { action: 'update', groupId: 'g1', title: 'Renamed', color: 'red' },
+      { action: 'update', groupId: 'g1', title: AGENT_TITLE, color: 'red' },
       { session },
     )
 
     expect(result.isError).toBeFalsy()
-    expect(calls[0]).toEqual({
+    expect(callTo(calls, 'Browser.updateTabGroup')).toEqual({
       method: 'Browser.updateTabGroup',
-      params: { groupId: 'g1', title: 'Renamed', color: 'red' },
+      params: { groupId: 'g1', title: AGENT_TITLE, color: 'red' },
     })
     expect(result.structuredContent).toMatchObject({
-      group: { title: 'Renamed', color: 'red' },
+      group: { title: AGENT_TITLE, color: 'red' },
     })
   })
 
@@ -214,7 +226,9 @@ describe('tab_groups tool', () => {
   })
 
   it('closes a group', async () => {
-    const { session, calls } = createSession()
+    const { session, calls } = createSession({
+      groups: [{ ...GROUP, title: AGENT_TITLE }],
+    })
     const result = await executeTool(
       tab_groups,
       { action: 'close', groupId: 'g1' },
@@ -222,7 +236,7 @@ describe('tab_groups tool', () => {
     )
 
     expect(result.isError).toBeFalsy()
-    expect(calls[0]).toEqual({
+    expect(callTo(calls, 'Browser.closeTabGroup')).toEqual({
       method: 'Browser.closeTabGroup',
       params: { groupId: 'g1' },
     })
