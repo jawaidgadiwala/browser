@@ -58,8 +58,18 @@ impl AnalyticsConfig {
         }
     }
 
+    /**
+     * An absent *or blank* project key means no telemetry at all: no client is built, so no
+     * socket is opened and `capture` returns immediately. Blank is checked here as well as in
+     * `from_env` so a build that inlines `CLAW_POSTHOG_KEY=""` is inert by construction rather
+     * than by the accident of which constructor ran.
+     */
     fn is_configured(&self) -> bool {
-        self.project_key.is_some() && self.environment_enabled
+        self.project_key
+            .as_deref()
+            .and_then(non_empty_value)
+            .is_some()
+            && self.environment_enabled
     }
 }
 
@@ -402,6 +412,58 @@ mod tests {
             Some("compiled-key".to_string())
         );
         assert_eq!(configured_value(Some("  "), Some("  ")), None);
+    }
+
+    /// The shipping default: no key inlined, no key in the environment, so the service must
+    /// open no socket and deliver nothing even with consent granted.
+    #[tokio::test]
+    async fn a_blank_project_key_captures_nothing_and_reports_disabled() -> anyhow::Result<()> {
+        for project_key in [None, Some(""), Some("   ")] {
+            let directory = tempdir()?;
+            let stable_id = "2e087632-1f4e-4ee7-b8bb-cf8ad53e91a8";
+            seed_installation(directory.path(), stable_id).await?;
+            persist_state(
+                &state_path(directory.path()),
+                &AnalyticsState { enabled: true },
+            )
+            .await?;
+            let (host, mut requests, endpoint) = local_endpoint().await?;
+            let service = AnalyticsService::new_with_config(
+                directory.path(),
+                AnalyticsConfig {
+                    project_key: project_key.map(str::to_string),
+                    host,
+                    environment_enabled: true,
+                },
+            )
+            .await?;
+
+            let state = service.get_state().await;
+            assert!(!state.enabled, "{project_key:?} must not enable delivery");
+            // Consent is still remembered, so flipping a key on later needs no re-consent.
+            assert!(state.consent);
+
+            service.capture(
+                AGENT_SESSION_STARTED,
+                json!({ "client_name": "Claude Code" }),
+            );
+            // Re-granting consent must not build a client either.
+            service.set_consent(true).await?;
+            service.capture(
+                AGENT_SESSION_STARTED,
+                json!({ "client_name": "Claude Code" }),
+            );
+            service.shutdown().await;
+
+            assert!(
+                tokio::time::timeout(Duration::from_millis(250), requests.recv())
+                    .await
+                    .is_err(),
+                "{project_key:?} sent a request"
+            );
+            endpoint.abort();
+        }
+        Ok(())
     }
 
     #[tokio::test]

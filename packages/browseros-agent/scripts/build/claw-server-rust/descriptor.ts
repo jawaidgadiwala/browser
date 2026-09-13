@@ -21,11 +21,14 @@ export const clawServerRustBuildProduct: ResourceBuildProductDescriptor = {
     'resources/skills/browserclaw/SKILL.md',
   ],
   env: {
-    requiredInlineEnvKeys: ['CLAW_POSTHOG_KEY'],
+    // Deliberately not required. An absent or empty CLAW_POSTHOG_KEY makes the
+    // Rust analytics service a no-op that opens no socket, which is the
+    // shipping default for this product: no key, no telemetry, no build break.
+    // Set the key only for a build that genuinely wants its own PostHog
+    // project. The same reasoning drops the CI placeholder key, which would
+    // have pointed CI builds at upstream's PostHog host.
+    requiredInlineEnvKeys: [],
     inlineEnvKeys: INLINE_ENV_KEYS,
-    ciInlineEnvOverrides: {
-      CLAW_POSTHOG_KEY: 'phc_browseros_ci',
-    },
     defaultR2UploadPrefix: 'claw-server-rust/prod-resources',
   },
 }

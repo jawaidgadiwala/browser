@@ -28,13 +28,13 @@ describe('BrowserClaw Rust build descriptor', () => {
       includeArtifactIdentity: true,
       archiveFilesOnly: true,
       env: {
-        requiredInlineEnvKeys: ['CLAW_POSTHOG_KEY'],
+        requiredInlineEnvKeys: [],
         defaultR2UploadPrefix: 'claw-server-rust/prod-resources',
       },
     })
   })
 
-  it('reads the canonical Cargo version and supplies a CI-only telemetry key', () => {
+  it('reads the canonical Cargo version and inlines no telemetry key', () => {
     const config = loadBuildConfig(agentRoot, clawServerRustBuildProduct, {
       ci: true,
     })
@@ -46,7 +46,9 @@ describe('BrowserClaw Rust build descriptor', () => {
     ) as { package: { version: string } }
 
     expect(config.version).toBe(cargo.package.version)
-    expect(config.envVars.CLAW_POSTHOG_KEY).toBe('phc_browseros_ci')
+    // No key inlined: the Rust analytics service is a no-op with no socket,
+    // rather than reporting to upstream's PostHog project.
+    expect(config.envVars.CLAW_POSTHOG_KEY ?? '').toBe('')
   })
 
   it('defaults to all five uploads and stages only the canonical skill', () => {
