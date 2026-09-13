@@ -25,7 +25,7 @@ An MCP workspace `manifest.json` records which server entry the library wrote to
 
 ### Managed skill reconciliation
 
-The skill reconciler resolves catalog-defined global roots against an explicit environment, groups harnesses that share a physical target, and converges product-owned skill content. A workspace `skills.json` manifest and a `.browserclaw-managed.json` marker establish ownership; foreign directories are preserved and reported as warnings.
+The skill reconciler resolves catalog-defined global roots against an explicit environment, groups harnesses that share a physical target, and converges product-owned skill content. A workspace `skills.json` manifest and a `.browser-managed.json` marker establish ownership (the pre-rename `.browserclaw-managed.json` is still read, so existing installs are adopted); foreign directories are preserved and reported as warnings.
 
 Both APIs are synchronous. Async callers should use their runtime's blocking-task facility.
 

@@ -18,7 +18,7 @@ export interface SidebarBrandingProps {
  * the intended reading. Same call the palette already makes for
  * --mcp-endpoint, which holds #0454ec in both themes.
  *
- * #2406 briefly shipped a browserclaw-dark.svg behind a dark:hidden /
+ * #2406 briefly shipped a dark variant behind a dark:hidden /
  * dark:block pair. Re-tinting inverted the mark: the white fill in this
  * asset is the DOG, showing through a hole in the blue tile path, not a
  * backing plate. Darkening it to #303333 and lifting the tile to #4d8dff
@@ -34,7 +34,7 @@ export function SidebarBranding({ expanded = false }: SidebarBrandingProps) {
   return (
     <div className="flex h-14 shrink-0 items-center gap-3 px-3">
       <img
-        src="/icons/browserclaw.svg"
+        src="/icons/browser.svg"
         alt={PRODUCT_NAME}
         className="size-8 shrink-0 rounded-md shadow-card"
       />

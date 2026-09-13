@@ -3,7 +3,7 @@
   "type": "module",
   "private": true,
   "version": "0.0.2",
-  "description": "Standalone Vite app for the BrowserOS onboarding flow (app theme, base-ui).",
+  "description": "Standalone Vite app for the first-run onboarding flow (app theme, base-ui).",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
