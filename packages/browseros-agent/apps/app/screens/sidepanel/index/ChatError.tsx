@@ -6,6 +6,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react'
 import type { FC } from 'react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { connectionIssuesHelpUrl } from '@/lib/constants/productUrls'
 import { PRODUCT_NAME } from '@/lib/personal/product'
 
 const SURVEY_DIRECTIONS = [
@@ -104,7 +105,7 @@ function fromMessage(message: string, providerType?: string): ChatErrorView {
     return {
       title: 'Connection failed',
       text: `Unable to connect to the ${PRODUCT_NAME} agent. Follow below instructions.`,
-      url: 'https://docs.browseros.com/troubleshooting/connection-issues',
+      url: connectionIssuesHelpUrl,
       linkLabel: 'View troubleshooting guide',
       canRetry: true,
       showSurvey: false,
@@ -134,8 +135,9 @@ function fromMessage(message: string, providerType?: string): ChatErrorView {
     return {
       title: 'Daily limit reached',
       text: 'Add your own API key for unlimited usage.',
-      url: 'https://dub.sh/browseros-usage-limit',
-      linkLabel: 'About daily limits',
+      // No hosted model ships with this product, so there is no daily-limit
+      // page of ours to link to.
+      linkLabel: undefined,
       canRetry: false,
       showSurvey: true,
     }

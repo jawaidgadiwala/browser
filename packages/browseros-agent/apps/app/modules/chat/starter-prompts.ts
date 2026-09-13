@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { productRepositoryUrl } from '@/lib/constants/productUrls'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import type { ChatMode } from './chat-types'
 
 /** Fixed shortcut slots shared by new-tab and side-panel conversations. */
@@ -44,14 +46,13 @@ const defaults: Record<ChatMode, StarterPrompt[]> = {
   ],
   agent: [
     {
-      display: 'Read about our vision and upvote',
+      display: 'Summarize the top Hacker News stories',
       prompt:
-        'Go to https://dub.sh/browseros-launch in current tab. Find and click the upvote button',
+        'Go to https://news.ycombinator.com in current tab and summarize the top 5 stories as bullet points',
     },
     {
-      display: 'Support BrowserOS on Github',
-      prompt:
-        'Go to http://git.new/browseros in current tab and star the repository',
+      display: `Star ${PRODUCT_NAME} on GitHub`,
+      prompt: `Go to ${productRepositoryUrl} in current tab and star the repository`,
     },
     {
       display: 'Open amazon.com and order Sensodyne toothpaste',

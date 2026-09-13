@@ -192,7 +192,7 @@ export const FeaturesPage: FC = () => {
 
             {/* Centered Large Video */}
             <VideoFrame
-              title="browseros.com/demo"
+              title={`${PRODUCT_NAME} demo`}
               className={cn(
                 'transition-all delay-500 duration-700',
                 mounted
@@ -280,53 +280,57 @@ export const FeaturesPage: FC = () => {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Discord */}
-            <a
-              href={discordUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="community-card group flex items-start gap-4 rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-[var(--accent-orange)]/50 hover:bg-card/80 hover:shadow-[var(--accent-orange)]/5 hover:shadow-lg"
-            >
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg transition-all group-hover:scale-110">
-                <img
-                  src={DiscordLogo}
-                  className="h-full w-full"
-                  alt="discord-logo"
-                />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-semibold text-lg transition-colors group-hover:text-[var(--accent-orange)]">
-                  Join Discord
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  To suggest features / provide feedback
-                </p>
-              </div>
-            </a>
+            {/* Discord, hidden when the product has no community server */}
+            {discordUrl && (
+              <a
+                href={discordUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="community-card group flex items-start gap-4 rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-[var(--accent-orange)]/50 hover:bg-card/80 hover:shadow-[var(--accent-orange)]/5 hover:shadow-lg"
+              >
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg transition-all group-hover:scale-110">
+                  <img
+                    src={DiscordLogo}
+                    className="h-full w-full"
+                    alt="discord-logo"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-lg transition-colors group-hover:text-[var(--accent-orange)]">
+                    Join Discord
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    To suggest features / provide feedback
+                  </p>
+                </div>
+              </a>
+            )}
 
-            {/* Slack */}
-            <a
-              href={slackUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="community-card group flex items-start gap-4 rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-[var(--accent-orange)]/50 hover:bg-card/80 hover:shadow-[var(--accent-orange)]/5 hover:shadow-lg"
-            >
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg transition-all group-hover:scale-110">
-                <img
-                  src={SlackLogo}
-                  className="h-full w-full"
-                  alt="slack-logo"
-                />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-semibold text-lg transition-colors group-hover:text-[var(--accent-orange)]">
-                  Join Slack
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  To suggest features / provide feedback
-                </p>
-              </div>
-            </a>
+            {/* Slack, hidden when the product has no community server */}
+            {slackUrl && (
+              <a
+                href={slackUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="community-card group flex items-start gap-4 rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-[var(--accent-orange)]/50 hover:bg-card/80 hover:shadow-[var(--accent-orange)]/5 hover:shadow-lg"
+              >
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg transition-all group-hover:scale-110">
+                  <img
+                    src={SlackLogo}
+                    className="h-full w-full"
+                    alt="slack-logo"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-lg transition-colors group-hover:text-[var(--accent-orange)]">
+                    Join Slack
+                  </h3>
+                  <p className="text-muted-foreground text-sm">
+                    To suggest features / provide feedback
+                  </p>
+                </div>
+              </a>
+            )}
 
             {/* GitHub */}
             <a

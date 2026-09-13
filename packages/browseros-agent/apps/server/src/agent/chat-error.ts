@@ -34,10 +34,7 @@ export interface ChatErrorContext {
 // Bounded, but large, so a pathological body still cannot flood the wire or card.
 const DETAILS_MAX_LENGTH = 20000
 
-const USAGE_DOCS_URL = 'https://dub.sh/browseros-usage-limit'
 const USAGE_PAGE_URL = '/app.html#/settings/usage'
-const CONNECTION_DOCS_URL =
-  'https://docs.browseros.com/troubleshooting/connection-issues'
 
 const REDACTED = '[REDACTED]'
 
@@ -167,7 +164,6 @@ function fromApiCallError(
     details: upstreamDetails(error),
   }
   const code = gatewayCode(error)
-  const isBrowserOs = ctx.provider === 'browseros'
 
   if (code === 'CREDITS_EXHAUSTED') {
     return {
@@ -176,7 +172,7 @@ function fromApiCallError(
       title: 'Daily limit reached',
       message: safeMessage(
         error.message,
-        'You have used all your BrowserOS credits. They reset at midnight UTC.',
+        'The provider reports your daily quota is used up. It resets at midnight UTC.',
       ),
       retryable: false,
       docsUrl: USAGE_PAGE_URL,
@@ -206,7 +202,6 @@ function fromApiCallError(
           'The provider is rate limiting requests. Wait a moment and try again.',
         ),
         retryable: true,
-        docsUrl: isBrowserOs ? USAGE_DOCS_URL : undefined,
         retryAfterSeconds: retryAfterSeconds(error),
       }
     case 413:
@@ -258,7 +253,6 @@ function fromMessage(message: string, ctx: ChatErrorContext): ChatError | null {
         'Could not reach the model provider. Check your network connection and any local provider URL.',
       retryable: true,
       provider: ctx.provider,
-      docsUrl: CONNECTION_DOCS_URL,
       details: toDetails(message),
     }
   }

@@ -15,6 +15,7 @@ import type { FC } from 'react'
 import { NavLink } from 'react-router'
 import { ThemeToggle } from '@/components/elements/theme-toggle'
 import { Feature } from '@/lib/browseros/capabilities'
+import { docsUrl } from '@/lib/constants/productUrls'
 import { NEO_ROUTES, neoCockpitUrl } from '@/lib/personal/neo-extension'
 import { hostedProviderEnabled } from '@/lib/personal/personal-build'
 import { PRODUCT_NAME } from '@/lib/personal/product'
@@ -107,7 +108,7 @@ const primarySettingsSections: NavSection[] = [
 ]
 
 const helpItems: NavItem[] = [
-  { name: 'Docs', href: 'https://docs.browseros.com/', icon: BookOpen },
+  { name: 'Docs', href: docsUrl, icon: BookOpen },
   { name: 'Features', to: '/features', icon: Compass },
   { name: 'Diagnostics', to: '/settings/diagnostics', icon: Activity },
 ]
