@@ -7,8 +7,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from bos_build.release.extensions.build import build_extension_crx
-from bos_build.release.extensions.specs import spec_by_name
+from bos_build.release.extensions.build import (
+    _UPDATE_FEED_NAMES,
+    build_extension_crx,
+    is_placeholder_feed_url,
+    validate_manifest_update_url,
+)
+from bos_build.release.extensions.specs import EXTENSION_SPECS, spec_by_name
 
 
 MODULE = "bos_build.release.extensions.build"
@@ -25,14 +30,7 @@ class ExtensionBuildTest(unittest.TestCase):
             manifest.parent.mkdir(parents=True)
             manifest.write_text(json.dumps({"version": "0.0.101"}))
             dist.mkdir(parents=True)
-            (dist / "manifest.json").write_text(
-                json.dumps(
-                    {
-                        "version": "0.0.101",
-                        "update_url": "https://updates.browser.invalid/extensions/update-manifest.xml",
-                    }
-                )
-            )
+            (dist / "manifest.json").write_text(json.dumps({"version": "0.0.101"}))
             output = root / "agent.crx"
 
             with (
@@ -75,14 +73,7 @@ class ExtensionBuildTest(unittest.TestCase):
             manifest.parent.mkdir(parents=True)
             manifest.write_text(json.dumps({"version": "0.1.7"}))
             dist.mkdir(parents=True)
-            (dist / "manifest.json").write_text(
-                json.dumps(
-                    {
-                        "version": "0.1.7",
-                        "update_url": "https://updates.browser.invalid/extensions/update-manifest.xml",
-                    }
-                )
-            )
+            (dist / "manifest.json").write_text(json.dumps({"version": "0.1.7"}))
 
             with (
                 patch(f"{MODULE}.resolve_source", return_value=source),
@@ -130,6 +121,81 @@ class ExtensionBuildTest(unittest.TestCase):
                         chrome_binary="chrome",
                         stamp_version=False,
                     )
+
+
+class PlaceholderFeedUrlTest(unittest.TestCase):
+    def test_empty_and_sentinel_urls_are_placeholders(self) -> None:
+        for url in (None, "", "   ", "https://updates.browser.invalid/x.xml"):
+            with self.subTest(url=url):
+                self.assertTrue(is_placeholder_feed_url(url))
+
+    def test_real_host_is_not_a_placeholder(self) -> None:
+        self.assertFalse(
+            is_placeholder_feed_url("https://updates.example.com/extensions/u.xml")
+        )
+
+
+class ManifestUpdateUrlTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.dist_path = Path("apps/app/dist/chrome-mv3")
+        self.real_url = "https://updates.example.com/extensions/update-manifest.xml"
+
+    def _expect(self, url: str):
+        return patch(f"{MODULE}._UPDATE_MANIFEST_URL", url)
+
+    def test_sentinel_feed_accepts_missing_update_url(self) -> None:
+        with self._expect("https://updates.browser.invalid/extensions/u.xml"):
+            validate_manifest_update_url(spec_by_name("agent"), {}, self.dist_path)
+
+    def test_unconfigured_feed_accepts_missing_update_url(self) -> None:
+        with self._expect(""):
+            validate_manifest_update_url(spec_by_name("agent"), {}, self.dist_path)
+
+    def test_sentinel_feed_still_rejects_a_foreign_update_url(self) -> None:
+        sentinel = "https://updates.browser.invalid/extensions/u.xml"
+        with self._expect(sentinel):
+            with self.assertRaisesRegex(RuntimeError, "agent.*apps/app/dist/chrome-mv3"):
+                validate_manifest_update_url(
+                    spec_by_name("agent"),
+                    {"update_url": "https://example.com/update.xml"},
+                    self.dist_path,
+                )
+
+    def test_sentinel_feed_accepts_a_matching_update_url(self) -> None:
+        sentinel = "https://updates.browser.invalid/extensions/u.xml"
+        with self._expect(sentinel):
+            validate_manifest_update_url(
+                spec_by_name("agent"), {"update_url": sentinel}, self.dist_path
+            )
+
+    def test_real_feed_requires_the_update_url(self) -> None:
+        with self._expect(self.real_url):
+            with self.assertRaisesRegex(RuntimeError, "expected"):
+                validate_manifest_update_url(spec_by_name("agent"), {}, self.dist_path)
+
+    def test_real_feed_rejects_a_mismatched_update_url(self) -> None:
+        with self._expect(self.real_url):
+            with self.assertRaisesRegex(RuntimeError, "expected"):
+                validate_manifest_update_url(
+                    spec_by_name("agent"),
+                    {"update_url": "https://example.com/update.xml"},
+                    self.dist_path,
+                )
+
+    def test_real_feed_accepts_the_expected_update_url(self) -> None:
+        with self._expect(self.real_url):
+            validate_manifest_update_url(
+                spec_by_name("agent"), {"update_url": self.real_url}, self.dist_path
+            )
+
+    def test_extension_outside_the_feed_is_never_checked(self) -> None:
+        outside = [
+            spec for spec in EXTENSION_SPECS if spec.name not in _UPDATE_FEED_NAMES
+        ]
+        if not outside:
+            self.skipTest("every spec is in the update feed")
+        with self._expect(self.real_url):
+            validate_manifest_update_url(outside[0], {}, self.dist_path)
 
 
 if __name__ == "__main__":

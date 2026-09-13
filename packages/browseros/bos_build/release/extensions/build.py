@@ -5,8 +5,10 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Optional
+from urllib.parse import urlsplit
 
 from ..components import component_version_from_package, normalize_component_version
+from ..feeds.spec import CDN_BASE_URL
 from .crx import pack_crx
 from .specs import ExtensionSpec, InRepoSource
 from .workspace import (
@@ -18,7 +20,10 @@ from .workspace import (
 )
 
 
-_UPDATE_MANIFEST_URL = "https://updates.browser.invalid/extensions/update-manifest.xml"
+_UPDATE_MANIFEST_PATH = "extensions/update-manifest.xml"
+_UPDATE_MANIFEST_URL = (
+    f"{CDN_BASE_URL.rstrip('/')}/{_UPDATE_MANIFEST_PATH}" if CDN_BASE_URL.strip() else ""
+)
 _UPDATE_FEED_NAMES = frozenset({"agent", "browserclaw"})
 
 
@@ -51,14 +56,31 @@ def _validate_built_manifest(
     validate_manifest_update_url(spec, manifest, dist_path)
 
 
+def is_placeholder_feed_url(url: Optional[str]) -> bool:
+    """True while no real update feed is configured (empty or a .invalid host)."""
+    if not url or not url.strip():
+        return True
+    host = urlsplit(url).hostname or ""
+    return host.endswith(".invalid")
+
+
 def validate_manifest_update_url(
     spec: ExtensionSpec, manifest: Mapping[str, object], dist_path: Path
 ) -> None:
-    """Require bundled update-feed extensions to use the stable updater."""
-    if spec.name in _UPDATE_FEED_NAMES and manifest.get("update_url") != _UPDATE_MANIFEST_URL:
+    """Require bundled update-feed extensions to use the stable updater.
+
+    With no feed host configured yet, builds ship without auto-update: a
+    missing ``update_url`` is accepted. A declared one must still match.
+    """
+    if spec.name not in _UPDATE_FEED_NAMES:
+        return
+    actual = manifest.get("update_url")
+    if actual is None and is_placeholder_feed_url(_UPDATE_MANIFEST_URL):
+        return
+    if actual != _UPDATE_MANIFEST_URL:
         raise RuntimeError(
             f"Extension '{spec.name}' build at '{dist_path}' has update_url "
-            f"{manifest.get('update_url')!r}; expected '{_UPDATE_MANIFEST_URL}'"
+            f"{actual!r}; expected '{_UPDATE_MANIFEST_URL}'"
         )
 
 
