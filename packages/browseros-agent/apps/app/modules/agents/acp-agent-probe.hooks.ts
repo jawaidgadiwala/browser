@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { useAgentServerUrl } from '@/modules/browseros/agent-server-url.hooks'
 import type { AcpAgentType, AcpProbeResult } from './acp-agent-types'
 
@@ -17,7 +18,8 @@ export function useProbeCustomAgent() {
 
   return useMutation<AcpProbeResult, Error, ProbeCustomAgentInput>({
     mutationFn: async ({ command, env, cwd }) => {
-      if (!baseUrl) throw new Error('BrowserOS agent server URL is not ready')
+      if (!baseUrl)
+        throw new Error(`${PRODUCT_NAME} agent server URL is not ready`)
       const response = await fetch(`${baseUrl}/acpx/probe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

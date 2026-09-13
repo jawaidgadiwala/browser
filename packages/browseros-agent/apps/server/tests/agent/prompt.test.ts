@@ -13,6 +13,7 @@
  */
 
 import { describe, expect, it } from 'bun:test'
+import { PRODUCT_NAME } from '@browseros/shared/constants/product'
 import {
   type BuildSystemPromptOptions,
   buildSystemPrompt,
@@ -124,12 +125,12 @@ describe('workspace gating (P11)', () => {
       workspaceDir: undefined,
       generatedOutputReadAvailable: true,
     })
-    expect(withRead).toContain('BrowserOS-generated output file')
+    expect(withRead).toContain(`${PRODUCT_NAME}-generated output file`)
     expect(withRead).toContain('filesystem_read')
 
     const withoutRead = buildRegular({ workspaceDir: undefined })
     expect(withoutRead).not.toContain('filesystem_read')
-    expect(withoutRead).not.toContain('BrowserOS-generated output file')
+    expect(withoutRead).not.toContain(`${PRODUCT_NAME}-generated output file`)
   })
 })
 

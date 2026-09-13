@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { mkdir, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
+import { PRODUCT_NAME } from '@browseros/shared/constants/product'
 import { getToolOutputDir } from '../../../src/lib/browseros-dir'
 import {
   detectLineEnding,
@@ -367,7 +368,7 @@ describe('filesystem path boundaries', () => {
 
   it('rejects relative BrowserOS tool output paths', async () => {
     await expect(resolveBrowserToolOutputPath('snapshot.md')).rejects.toThrow(
-      'absolute BrowserOS tool output path',
+      `absolute ${PRODUCT_NAME} tool output path`,
     )
   })
 
@@ -378,7 +379,7 @@ describe('filesystem path boundaries', () => {
     await writeFile(siblingPath, '{}')
 
     await expect(resolveBrowserToolOutputPath(siblingPath)).rejects.toThrow(
-      'outside BrowserOS tool output',
+      `outside ${PRODUCT_NAME} tool output`,
     )
   })
 
@@ -389,7 +390,7 @@ describe('filesystem path boundaries', () => {
     await writeFile(join(outsideDir, 'snapshot.md'), 'snapshot')
 
     await expect(resolveBrowserToolOutputPath(outputPath)).rejects.toThrow(
-      'BrowserOS tool output directory must be a real directory',
+      `${PRODUCT_NAME} tool output directory must be a real directory`,
     )
   })
 })

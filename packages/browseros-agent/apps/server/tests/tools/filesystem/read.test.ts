@@ -9,6 +9,7 @@ import {
 import { getToolOutputDir } from '@browseros/browser-mcp/tool-output-dir'
 import { read as browserRead } from '@browseros/browser-mcp/tools/read'
 import { TOOL_LIMITS } from '@browseros/shared/constants/limits'
+import { PRODUCT_NAME } from '@browseros/shared/constants/product'
 import {
   createReadTool,
   type ReadToolOptions,
@@ -192,7 +193,7 @@ describe('filesystem_read', () => {
 
     const result = await exec({ path: statePath })
     expect(result.isError).toBe(true)
-    expect(result.text).toContain('outside BrowserOS tool output')
+    expect(result.text).toContain(`outside ${PRODUCT_NAME} tool output`)
   })
 
   it('reads BrowserOS-generated output files without a workspace', async () => {
@@ -228,7 +229,7 @@ describe('filesystem_read', () => {
 
     expect(result.isError).toBe(true)
     expect(result.text).toContain('No workspace selected')
-    expect(result.text).toContain('BrowserOS-generated tool output')
+    expect(result.text).toContain(`${PRODUCT_NAME}-generated tool output`)
   })
 
   it('rejects BrowserOS state paths outside generated outputs without a workspace', async () => {
@@ -240,7 +241,7 @@ describe('filesystem_read', () => {
     const result = await noWorkspaceExec({ path: statePath })
 
     expect(result.isError).toBe(true)
-    expect(result.text).toContain('outside BrowserOS tool output')
+    expect(result.text).toContain(`outside ${PRODUCT_NAME} tool output`)
   })
 
   it('preserves browser trust markers when reading saved page content without a workspace', async () => {

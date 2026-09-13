@@ -1,5 +1,6 @@
 import { lstat, realpath } from 'node:fs/promises'
 import { dirname, isAbsolute, relative, resolve, win32 } from 'node:path'
+import { PRODUCT_NAME } from '@browseros/shared/constants/product'
 import { getBrowserosDir, getToolOutputDir } from '../../lib/browseros-dir'
 
 function isAbsoluteInput(inputPath: string): boolean {
@@ -39,7 +40,9 @@ function assertRelativeWorkspaceInput(inputPath: string): void {
 
 function assertAbsoluteBrowserosOutputInput(inputPath: string): void {
   if (!isAbsoluteInput(inputPath)) {
-    throw new Error('Path must be an absolute BrowserOS tool output path.')
+    throw new Error(
+      `Path must be an absolute ${PRODUCT_NAME} tool output path.`,
+    )
   }
 }
 
@@ -127,7 +130,7 @@ export async function resolveWorkspaceWritePath(
   return resolved
 }
 
-/** Resolves a BrowserOS-generated output file without exposing sibling app state. */
+/** Resolves a product-generated output file without exposing sibling app state. */
 export async function resolveBrowserToolOutputPath(
   inputPath: string,
 ): Promise<string> {
@@ -136,7 +139,7 @@ export async function resolveBrowserToolOutputPath(
   const candidate = resolve(inputPath)
   const canonical = await realpath(candidate)
   if (!isPathInside(outputRoot, canonical)) {
-    throw new Error('Path is outside BrowserOS tool output.')
+    throw new Error(`Path is outside ${PRODUCT_NAME} tool output.`)
   }
   return canonical
 }

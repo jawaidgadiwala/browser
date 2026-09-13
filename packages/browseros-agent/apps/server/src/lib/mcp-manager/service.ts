@@ -29,6 +29,7 @@ import {
   ServerNotFoundError,
   UnsupportedTransportError,
 } from '@browseros/agent-mcp-manager'
+import { PRODUCT_NAME } from '@browseros/shared/constants/product'
 import { logger } from '../logger'
 import {
   BROWSEROS_LEGACY_MCP_SERVER_NAMES,
@@ -235,8 +236,7 @@ export async function uninstallFrom(
   if (foreignError) {
     return {
       success: false,
-      message:
-        'Cannot remove a user-edited entry. Please remove BrowserOS from this agent manually and try again.',
+      message: `Cannot remove a user-edited entry. Please remove ${PRODUCT_NAME} from this agent manually and try again.`,
     }
   }
   return { success: true }
@@ -274,8 +274,7 @@ export function humaniseInstallError(err: unknown): {
   }
   if (err instanceof ForeignEntryError) {
     return {
-      message:
-        "Cannot replace a user-edited entry. Please remove BrowserOS from this agent's config manually and try again.",
+      message: `Cannot replace a user-edited entry. Please remove ${PRODUCT_NAME} from this agent's config manually and try again.`,
       status: 409,
     }
   }

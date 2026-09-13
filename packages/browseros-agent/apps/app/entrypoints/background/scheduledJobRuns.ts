@@ -1,4 +1,5 @@
 import { onScheduleMessage } from '@/lib/messaging/schedules/scheduleMessages'
+import { PRODUCT_NAME } from '@/lib/personal/product'
 import { createAlarmFromJob } from '@/lib/schedules/createAlarmFromJob'
 import { getChatServerResponse } from '@/lib/schedules/getChatServerResponse'
 import type { ScheduledJobRun } from '@/lib/schedules/scheduleTypes'
@@ -98,7 +99,7 @@ export const scheduledJobRuns = async () => {
   const executeScheduledJob = async (jobId: string): Promise<void> => {
     const jobs = await listScheduledJobsOrNull()
     if (jobs === null) {
-      throw new Error('Cannot reach the BrowserOS server to load the job')
+      throw new Error(`Cannot reach the ${PRODUCT_NAME} server to load the job`)
     }
 
     const job = jobs.find((each) => each.id === jobId)

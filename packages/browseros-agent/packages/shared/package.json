@@ -18,6 +18,10 @@
       "types": "./src/constants/ports.ts",
       "default": "./src/constants/ports.ts"
     },
+    "./constants/product": {
+      "types": "./src/constants/product.ts",
+      "default": "./src/constants/product.ts"
+    },
     "./constants/timeouts": {
       "types": "./src/constants/timeouts.ts",
       "default": "./src/constants/timeouts.ts"

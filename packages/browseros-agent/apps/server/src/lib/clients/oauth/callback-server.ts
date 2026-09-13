@@ -16,6 +16,7 @@
  */
 
 import { OAUTH_CALLBACK_PORT } from '@browseros/shared/constants/ports'
+import { PRODUCT_NAME } from '@browseros/shared/constants/product'
 import { logger } from '../../logger'
 import type { OAuthTokenManager } from './token-manager'
 
@@ -66,7 +67,7 @@ export class OAuthCallbackServer {
 
     throw new Error(
       `OAuth callback port ${OAUTH_CALLBACK_PORT} is in use by another process. ` +
-        'Close other BrowserOS instances or CLI tools and try again.',
+        `Close other ${PRODUCT_NAME} instances or CLI tools and try again.`,
     )
   }
 
@@ -174,11 +175,11 @@ function htmlResponse(html: string): Response {
 
 function successPage(): string {
   return `<!DOCTYPE html>
-<html><head><title>BrowserOS - Authentication Successful</title>
+<html><head><title>${PRODUCT_NAME} - Authentication Successful</title>
 <style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8f9fa}
 .card{text-align:center;padding:2rem;background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
 h1{color:#22c55e;font-size:1.5rem}p{color:#6b7280}</style></head>
-<body><div class="card"><h1>Authentication Successful</h1><p>You can close this tab and return to BrowserOS.</p></div></body></html>`
+<body><div class="card"><h1>Authentication Successful</h1><p>You can close this tab and return to ${PRODUCT_NAME}.</p></div></body></html>`
 }
 
 function errorPage(message: string): string {
@@ -187,7 +188,7 @@ function errorPage(message: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
   return `<!DOCTYPE html>
-<html><head><title>BrowserOS - Authentication Failed</title>
+<html><head><title>${PRODUCT_NAME} - Authentication Failed</title>
 <style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f8f9fa}
 .card{text-align:center;padding:2rem;background:white;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
 h1{color:#ef4444;font-size:1.5rem}p{color:#6b7280}</style></head>
