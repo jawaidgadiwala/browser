@@ -188,19 +188,53 @@ auto-open in JS (`chrome.sidePanel.open()`), zero native lines.
 
 | File | Change |
 |---|---|
-| `chrome/browser/ui/views/frame/browser_view.cc` | `ShouldDrawTabStrip()` returns false when the pref is on; `registrar_` entry → `OnBrowserOSHideTabStripChanged()` |
+| `chrome/browser/ui/views/frame/browser_view.cc` | `ShouldDrawTabStrip()` returns false when the pref is on; `GetFrameElementInfo()` reports the toolbar height as the top row; `registrar_` entry → `OnBrowserOSHideTabStripChanged()` |
 | `chrome/browser/ui/views/frame/browser_view.h` | declares `OnBrowserOSHideTabStripChanged()` |
+| `chrome/browser/ui/views/frame/browser_native_widget_mac.mm` | drops the web-app `kWebAppMenuMargin * 2` term from the NSWindow titlebar height when the pref is on |
 
 Gated at the **view** layer only. `Browser::SupportsWindowFeature` is untouched,
 so tab dragging, session restore, tab-strip model assumptions and `chrome.tabs`
 behave exactly as upstream. `ShouldDrawVerticalTabStrip()` calls
 `ShouldDrawTabStrip()` first, so this kills both orientations with one gate.
 
+**Top row and the macOS traffic lights.** With the strip hidden the toolbar
+becomes the top row, which is the layout Chromium already has for a *vertical*
+tab strip, so we reuse that path instead of inventing geometry:
+`GetFrameElementInfo()` reports `toolbar_minimum_height` when the tab strip is
+hidden, exactly as it does when the strip is vertical. On macOS that value is
+what `BrowserNativeWidgetMac::GetWindowFrameTitlebarHeight()` turns into the
+NSWindow titlebar height, and `BrowserWindowFrame` centres the traffic lights
+in it (`-_shouldCenterTrafficLights`), so the lights land on the toolbar row
+with the usual left inset. The `+ kWebAppMenuMargin * 2` in that function
+belongs to web-app windows (whose top row is the web-app frame toolbar, laid
+out with those margins — see `BrowserFrameViewMac::LayoutWindowControlsOverlay`)
+and is skipped for our windows; without that, the lights sit ~7pt below the
+toolbar centre. Build 16 had neither: both heights were reported as 0, the
+titlebar collapsed to `2 * kWebAppMenuMargin` = 14pt and the lights centred 7pt
+from the window top while the toolbar row centred at ~24pt.
+
 **Verify:** new window has no horizontal and no vertical tab strip; ⌘T still
 opens a tab and ⌘1–9 / ⌃Tab still switch; enter and leave fullscreen without a
 layout glitch;
 `chrome.browserOS.setPref('browseros.hide_tab_strip', false)` brings the strip
 back **without a restart**.
+
+Eyeball the top of the window specifically:
+
+- the three traffic lights are vertically centred on the toolbar row — same
+  centre line as the back/forward/reload glyphs and the omnibox, not floating
+  in a band above them — with the normal macOS left inset;
+- the toolbar is the first row in the window: no empty band above it and no
+  empty band between the omnibox and the top of the web contents (the contents
+  separator should sit directly under the toolbar). Measured against build 16
+  the whole top chrome should be one toolbar row (~48pt), not ~80pt;
+- drag the window by the empty toolbar space either side of the omnibox, and
+  double-click there to zoom — the caption area still has to hit-test;
+- repeat maximized and after toggling the pref off and on;
+- if anything is still off, relaunch with `--show-browser-frame-regions`: it
+  outlines the client area (cyan) and the caption exclusion (magenta/red), which
+  is the fastest way to see whether the toolbar row or something below it owns
+  the leftover space.
 
 Tab search lives inside the strip and is therefore hidden — per the plan, the
 replacement is the sidebar tab tree in `apps/app`, not native work.

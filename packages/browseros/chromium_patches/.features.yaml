@@ -515,6 +515,7 @@ features:
   browser-hide-tab-strip:
     description: "feat: hide both tab strips, tab switching from the side panel"
     files:
+      - chrome/browser/ui/views/frame/browser_native_widget_mac.mm
       - chrome/browser/ui/views/frame/browser_view.cc
       - chrome/browser/ui/views/frame/browser_view.h
 

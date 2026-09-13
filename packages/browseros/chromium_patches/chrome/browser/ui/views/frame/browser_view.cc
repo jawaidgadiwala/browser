@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
-index 4a2d263..d38f9b5 100644
+index 4a2d263..f7d6aae 100644
 --- a/chrome/browser/ui/views/frame/browser_view.cc
 +++ b/chrome/browser/ui/views/frame/browser_view.cc
 @@ -43,6 +43,7 @@
@@ -42,7 +42,25 @@ index 4a2d263..d38f9b5 100644
    UpdateFullscreenAllowedFromPolicy(CanFullscreen());
  
    WebUIContentsPreloadManager::GetInstance()->WarmupForBrowser(browser_.get());
-@@ -1377,7 +1396,21 @@ bool BrowserView::ShouldDrawTabStrokes() const {
+@@ -1242,7 +1261,16 @@ ClientFrameElementInfo BrowserView::GetFrameElementInfo() const {
+                 ->GetPreferredSize()
+                 .height()
+           : 0;
+-  if (toolbar_ && ShouldDrawVerticalTabStrip()) {
++  // BrowserOS: with the tab strip hidden the toolbar becomes the top row of
++  // the window, exactly as it is when the tab strip is vertical. Reporting the
++  // toolbar height on that path too is what makes the frame reserve a
++  // toolbar-sized top area instead of a zero-height one -- on macOS this is
++  // the value BrowserNativeWidgetMac::GetWindowFrameTitlebarHeight() uses for
++  // the NSWindow titlebar the traffic lights are centred in.
++  const bool toolbar_is_top_row =
++      ShouldDrawVerticalTabStrip() ||
++      browseros::ShouldHideTabStrip(GetProfile()->GetPrefs());
++  if (toolbar_ && toolbar_is_top_row) {
+     info.toolbar_minimum_height = toolbar_->GetMinimumSize().height();
+   } else if (web_app_frame_toolbar_ && ShouldDrawWebAppFrameToolbar()) {
+     info.toolbar_minimum_height =
+@@ -1377,7 +1405,21 @@ bool BrowserView::ShouldDrawTabStrokes() const {
  #endif  // !BUILDFLAG(IS_CHROMEOS)
  }
  
@@ -64,7 +82,7 @@ index 4a2d263..d38f9b5 100644
    // Return false if this window does not normally display a tabstrip or if the
    // tabstrip is currently hidden, e.g. because we're in fullscreen.
    if (!browser_->SupportsWindowFeature(
-@@ -2956,6 +2989,14 @@ void BrowserView::DisableTabStripEditingForTesting() {
+@@ -2956,6 +2998,14 @@ void BrowserView::DisableTabStripEditingForTesting() {
  }
  
  bool BrowserView::IsToolbarVisible() const {
@@ -79,7 +97,7 @@ index 4a2d263..d38f9b5 100644
  #if BUILDFLAG(IS_MAC)
    // Immersive full screen makes it possible to display the toolbar when
    // kShowFullscreenToolbar is not set.
-@@ -4993,10 +5034,26 @@ void BrowserView::AddedToWidget() {
+@@ -4993,10 +5043,26 @@ void BrowserView::AddedToWidget() {
    dialog_anchor_ = std::make_unique<views::ViewSubregionAnchor>(
        kBrowserDialogAnchorElementId, *this);
  
