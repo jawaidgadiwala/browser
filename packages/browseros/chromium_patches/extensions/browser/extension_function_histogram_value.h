@@ -1,8 +1,8 @@
 diff --git a/extensions/browser/extension_function_histogram_value.h b/extensions/browser/extension_function_histogram_value.h
-index 8cb9d5c89164a32cdc53a4f1bfe48b1ea52b7442..0b893cea38e61eedb25382eba2bec01a33092c9d 100644
+index 8cb9d5c..7db0440 100644
 --- a/extensions/browser/extension_function_histogram_value.h
 +++ b/extensions/browser/extension_function_histogram_value.h
-@@ -2040,6 +2040,34 @@ enum HistogramValue {
+@@ -2040,6 +2040,36 @@ enum HistogramValue {
    CONTEXTUALTASKSPRIVATE_LAUNCHPANELINNEWTAB = 1975,
    DICTATIONPRIVATE_UPDATETRANSCRIPTION = 1976,
    DICTATIONPRIVATE_SETSTREAMSTATE = 1977,
@@ -34,6 +34,8 @@ index 8cb9d5c89164a32cdc53a4f1bfe48b1ea52b7442..0b893cea38e61eedb25382eba2bec01a
 +  BROWSER_OS_CHOOSEPATH = 2002,
 +  BROWSER_OS_SHOWTOAST = 2003,
 +  BROWSER_OS_SHOWINFOBAR = 2004,
++  BROWSER_OS_OPENGLANCE = 2005,
++  BROWSER_OS_SETWINDOWTINT = 2006,
    // Last entry: Add new entries above, then run:
    // tools/metrics/histograms/update_extension_histograms.py
    ENUM_BOUNDARY

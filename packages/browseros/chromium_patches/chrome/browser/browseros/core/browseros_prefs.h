@@ -1,9 +1,9 @@
 diff --git a/chrome/browser/browseros/core/browseros_prefs.h b/chrome/browser/browseros/core/browseros_prefs.h
 new file mode 100644
-index 0000000..538c508
+index 0000000..b7305c4
 --- /dev/null
 +++ b/chrome/browser/browseros/core/browseros_prefs.h
-@@ -0,0 +1,165 @@
+@@ -0,0 +1,204 @@
 +// Copyright 2025 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -11,9 +11,11 @@ index 0000000..538c508
 +#ifndef CHROME_BROWSER_BROWSEROS_CORE_BROWSEROS_PREFS_H_
 +#define CHROME_BROWSER_BROWSEROS_CORE_BROWSEROS_PREFS_H_
 +
++#include <optional>
 +#include <string>
 +
 +#include "components/prefs/pref_service.h"
++#include "third_party/skia/include/core/SkColor.h"
 +#include "ui/actions/action_id.h"
 +
 +namespace user_prefs {
@@ -89,6 +91,27 @@ index 0000000..538c508
 +// unaffected. Default: on for the Browser product.
 +inline constexpr char kHideTabStrip[] = "browseros.hide_tab_strip";
 +
++// String: per-profile window tint as "#RRGGBB" (a leading "#" is optional).
++// Applied through views::Widget::SetUserColorOverride(), so Chromium
++// regenerates the window's ColorProvider and the frame, toolbar, omnibox,
++// bubbles and side panel all recolour together. Empty (the default) means
++// stock theme colours. The extension sets this per space; a single window can
++// be tinted independently with chrome.browserOS.setWindowTint().
++inline constexpr char kWindowTint[] = "browseros.window_tint";
++
++// Boolean: compact mode. The toolbar (and, while it is hidden, the side panel)
++// is dropped from the browser window layout and comes back while the cursor is
++// within a few pixels of the window's top or left edge, retracting a short
++// while after the cursor leaves. Default: off even for the Browser product --
++// this is the most invasive of the window features and stays opt-in until it
++// has had real use.
++inline constexpr char kCompactMode[] = "browseros.compact_mode";
++
++// Boolean: glance. Gates chrome.browserOS.openGlance(), which floats a URL in
++// a centred overlay over the active window instead of opening a tab.
++// Default: on for the Browser product.
++inline constexpr char kGlance[] = "browseros.glance";
++
 +}  // namespace prefs
 +
 +// Registers BrowserOS profile preferences.
@@ -140,6 +163,22 @@ index 0000000..538c508
 +
 +// Check if both tab strips should be hidden.
 +bool ShouldHideTabStrip(PrefService* pref_service);
++
++// Parses browseros.window_tint. Returns std::nullopt when the pref is empty or
++// is not a "#RRGGBB" / "RRGGBB" string, which means "use the stock theme".
++std::optional<SkColor> GetWindowTint(PrefService* pref_service);
++
++// Parses an arbitrary "#RRGGBB" / "RRGGBB" string the same way. An empty or
++// whitespace-only string yields std::nullopt (clear the tint); anything else
++// that does not parse also yields std::nullopt, so callers that must tell
++// "clear" from "malformed" should check the string themselves.
++std::optional<SkColor> ParseTintColor(std::string_view value);
++
++// Check if compact mode is on.
++bool IsCompactModeEnabled(PrefService* pref_service);
++
++// Check if the glance overlay is available.
++bool IsGlanceEnabled(PrefService* pref_service);
 +
 +// Sets the default BrowserOS theme (blue tonal spot) on first run
 +// when the user hasn't customized the theme yet.

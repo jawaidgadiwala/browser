@@ -1,9 +1,9 @@
 diff --git a/chrome/common/extensions/api/browser_os.idl b/chrome/common/extensions/api/browser_os.idl
 new file mode 100644
-index 0000000000000..baeb98959b39a
+index 0000000..9b02a0a
 --- /dev/null
 +++ b/chrome/common/extensions/api/browser_os.idl
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,168 @@
 +// Copyright 2024 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -70,6 +70,12 @@ index 0000000000000..baeb98959b39a
 +
 +  // Callback for showInfoBar.
 +  callback ShowInfoBarCallback = void(boolean shown);
++
++  // Callback for openGlance.
++  callback OpenGlanceCallback = void(boolean opened);
++
++  // Callback for setWindowTint.
++  callback SetWindowTintCallback = void(boolean applied);
 +
 +  interface Functions {
 +    // Settings API functions - compatible with chrome.settingsPrivate
@@ -140,5 +146,29 @@ index 0000000000000..baeb98959b39a
 +    static void showInfoBar(
 +        DOMString message,
 +        ShowInfoBarCallback callback);
++
++    // Floats |url| in a glance overlay centred over the last active browser
++    // window instead of opening a tab. Escape, a click outside, or the
++    // overlay's Close button dismiss it; its "Open in tab" button promotes
++    // whatever it is showing to a real tab.
++    // |url|: An http or https URL. Other schemes are rejected.
++    // |callback|: Called with true if the overlay opened, false if glance is
++    //     off (browseros.glance), there is no browser window, or the URL was
++    //     rejected.
++    static void openGlance(
++        DOMString url,
++        OpenGlanceCallback callback);
++
++    // Tints the last active browser window. The colour is fed to the window's
++    // colour provider, so the frame, toolbar, omnibox, tab strip, bubbles and
++    // side panel recolour together.
++    // |color|: "#RRGGBB" or "RRGGBB". An empty string drops the per-window
++    //     tint, so the window falls back to the browseros.window_tint pref.
++    // |callback|: Called with true if the tint was applied, false if the
++    //     string was neither empty nor a valid colour, or there is no browser
++    //     window.
++    static void setWindowTint(
++        DOMString color,
++        SetWindowTintCallback callback);
 +  };
 +};

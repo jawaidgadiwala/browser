@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
-index 4a2d263..f75e04c 100644
+index 4a2d263..d38f9b5 100644
 --- a/chrome/browser/ui/views/frame/browser_view.cc
 +++ b/chrome/browser/ui/views/frame/browser_view.cc
 @@ -43,6 +43,7 @@
@@ -10,7 +10,17 @@ index 4a2d263..f75e04c 100644
  #include "chrome/browser/browsing_data/browsing_data_important_sites_util.h"
  #include "chrome/browser/desktop_to_mobile_promos/promos_utils.h"
  #include "chrome/browser/devtools/devtools_ui_controller.h"
-@@ -1057,6 +1058,11 @@ BrowserView::BrowserView(Browser* browser)
+@@ -133,6 +134,9 @@
+ #include "chrome/browser/ui/views/accessibility/caret_browsing_dialog_delegate.h"
+ #include "chrome/browser/ui/views/autofill/autofill_bubble_handler_impl.h"
+ #include "chrome/browser/ui/views/bookmarks/bookmark_bar_view.h"
++#include "chrome/browser/ui/views/browseros/browseros_compact_mode_controller.h"
++#include "chrome/browser/ui/views/browseros/browseros_glance_controller.h"
++#include "chrome/browser/ui/views/browseros/browseros_window_tint_controller.h"
+ #include "chrome/browser/ui/views/bookmarks/bookmark_bubble_view.h"
+ #include "chrome/browser/ui/views/bookmarks/bookmark_page_action_controller.h"
+ #include "chrome/browser/ui/views/bubble_anchor_util_views.h"
+@@ -1057,6 +1061,21 @@ BrowserView::BrowserView(Browser* browser)
        prefs::kFullscreenAllowed,
        base::BindRepeating(&BrowserView::UpdateFullscreenAllowedFromPolicy,
                            base::Unretained(this), CanFullscreen()));
@@ -19,10 +29,20 @@ index 4a2d263..f75e04c 100644
 +  registrar_.Add(browseros::prefs::kHideTabStrip,
 +                 base::BindRepeating(&BrowserView::OnBrowserOSHideTabStripChanged,
 +                                     base::Unretained(this)));
++  // BrowserOS window features. Constructing them here (rather than from
++  // BrowserWindowFeatures, whose BrowserView-dependent phase is explicitly
++  // closed to new code) keeps the whole batch inside files this product
++  // already patches. Each one is inert until its own browseros.* pref is on.
++  browseros_window_tint_controller_ =
++      std::make_unique<BrowserOSWindowTintController>(this);
++  browseros_glance_controller_ =
++      std::make_unique<BrowserOSGlanceController>(this);
++  browseros_compact_mode_controller_ =
++      std::make_unique<BrowserOSCompactModeController>(this);
    UpdateFullscreenAllowedFromPolicy(CanFullscreen());
  
    WebUIContentsPreloadManager::GetInstance()->WarmupForBrowser(browser_.get());
-@@ -1377,7 +1383,21 @@ bool BrowserView::ShouldDrawTabStrokes() const {
+@@ -1377,7 +1396,21 @@ bool BrowserView::ShouldDrawTabStrokes() const {
  #endif  // !BUILDFLAG(IS_CHROMEOS)
  }
  
@@ -44,3 +64,45 @@ index 4a2d263..f75e04c 100644
    // Return false if this window does not normally display a tabstrip or if the
    // tabstrip is currently hidden, e.g. because we're in fullscreen.
    if (!browser_->SupportsWindowFeature(
+@@ -2956,6 +2989,14 @@ void BrowserView::DisableTabStripEditingForTesting() {
+ }
+ 
+ bool BrowserView::IsToolbarVisible() const {
++  // BrowserOS: compact mode drops the toolbar out of the window layout until
++  // the cursor reaches the window edge. Every BrowserViewLayout implementation
++  // consults this one method, so this is the whole gate.
++  if (browseros_compact_mode_controller_ &&
++      browseros_compact_mode_controller_->ShouldHideTopChrome()) {
++    return false;
++  }
++
+ #if BUILDFLAG(IS_MAC)
+   // Immersive full screen makes it possible to display the toolbar when
+   // kShowFullscreenToolbar is not set.
+@@ -4993,10 +5034,26 @@ void BrowserView::AddedToWidget() {
+   dialog_anchor_ = std::make_unique<views::ViewSubregionAnchor>(
+       kBrowserDialogAnchorElementId, *this);
+ 
++  // BrowserOS: the window features need a widget -- for the color provider
++  // override and for the mouse monitor -- so they are wired up here rather
++  // than in the constructor.
++  if (browseros_window_tint_controller_) {
++    browseros_window_tint_controller_->Apply();
++  }
++  if (browseros_compact_mode_controller_) {
++    browseros_compact_mode_controller_->OnBrowserViewAddedToWidget();
++  }
++
+   initialized_ = true;
+ }
+ 
+ void BrowserView::RemovedFromWidget() {
++  // BrowserOS: the compact-mode mouse monitor must not outlive the window it
++  // watches.
++  if (browseros_compact_mode_controller_) {
++    browseros_compact_mode_controller_->OnBrowserViewRemovedFromWidget();
++  }
++
+   CHECK(GetFocusManager());
+ #if BUILDFLAG(IS_WIN)
+   pip_exclusion_observer_.reset();

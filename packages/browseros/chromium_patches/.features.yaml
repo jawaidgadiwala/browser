@@ -521,3 +521,33 @@ features:
   browser-toolbar:
     description: "feat: clean toolbar defaults for the Browser product"
     files: []
+
+  # Batch 2. Each of these is a window feature gated by its own browseros.*
+  # pref. Shared files they also touch (browser_view.{cc,h},
+  # chrome/browser/ui/BUILD.gn, browseros_prefs.{cc,h}, browser_os.idl,
+  # browser_os_api.{cc,h}, extension_function_histogram_value.h and the
+  # extensions enums.xml) stay claimed by their existing owners, per the
+  # layering note above -- only files introduced by a feature are listed here.
+
+  browser-window-tint:
+    description: "feat: per-window color tint via the color provider"
+    files:
+      - chrome/browser/ui/views/browseros/browseros_window_tint_controller.cc
+      - chrome/browser/ui/views/browseros/browseros_window_tint_controller.h
+
+  browser-glance:
+    description: "feat: glance floating overlay for a url"
+    files:
+      - chrome/browser/ui/browseros_window_ui.h
+      - chrome/browser/ui/tab_helpers.h
+      - chrome/browser/ui/views/browseros/browseros_glance_controller.cc
+      - chrome/browser/ui/views/browseros/browseros_glance_controller.h
+      - chrome/browser/ui/views/browseros/browseros_glance_overlay_view.cc
+      - chrome/browser/ui/views/browseros/browseros_glance_overlay_view.h
+      - chrome/browser/ui/views/browseros/browseros_window_ui.cc
+
+  browser-compact-mode:
+    description: "feat: compact mode with edge-revealed window chrome"
+    files:
+      - chrome/browser/ui/views/browseros/browseros_compact_mode_controller.cc
+      - chrome/browser/ui/views/browseros/browseros_compact_mode_controller.h

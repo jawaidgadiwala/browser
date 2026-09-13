@@ -1,15 +1,20 @@
 diff --git a/chrome/browser/browseros/core/browseros_prefs.cc b/chrome/browser/browseros/core/browseros_prefs.cc
 new file mode 100644
-index 0000000..32fd1a2
+index 0000000..c5ead0a
 --- /dev/null
 +++ b/chrome/browser/browseros/core/browseros_prefs.cc
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,207 @@
 +// Copyright 2025 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
 +
 +#include "chrome/browser/browseros/core/browseros_prefs.h"
 +
++#include <string>
++#include <string_view>
++
++#include "base/strings/string_number_conversions.h"
++#include "base/strings/string_util.h"
 +#include "chrome/browser/browseros/core/browseros_constants.h"
 +#include "chrome/browser/browseros/core/browseros_browser_product.h"
 +#include "chrome/browser/browseros/core/browseros_product.h"
@@ -54,6 +59,11 @@ index 0000000..32fd1a2
 +  registry->RegisterBooleanPref(prefs::kHideSidePanelHeader,
 +                                IsBrowserProduct());
 +  registry->RegisterBooleanPref(prefs::kHideTabStrip, IsBrowserProduct());
++  registry->RegisterStringPref(prefs::kWindowTint, std::string());
++  // Compact mode is opt-in even in the Browser product: it removes the toolbar
++  // from the layout, which is a big behavioural change to hand a new profile.
++  registry->RegisterBooleanPref(prefs::kCompactMode, false);
++  registry->RegisterBooleanPref(prefs::kGlance, IsBrowserProduct());
 +}
 +
 +bool ShouldShowLLMChat(PrefService* pref_service) {
@@ -126,6 +136,33 @@ index 0000000..32fd1a2
 +
 +bool ShouldHideTabStrip(PrefService* pref_service) {
 +  return pref_service->GetBoolean(prefs::kHideTabStrip);
++}
++
++std::optional<SkColor> ParseTintColor(std::string_view value) {
++  std::string_view hex = base::TrimWhitespaceASCII(value, base::TRIM_ALL);
++  if (!hex.empty() && hex.front() == '#') {
++    hex.remove_prefix(1);
++  }
++  if (hex.size() != 6u) {
++    return std::nullopt;
++  }
++  uint32_t rgb = 0;
++  if (!base::HexStringToUInt(hex, &rgb)) {
++    return std::nullopt;
++  }
++  return SkColorSetRGB((rgb >> 16) & 0xFFu, (rgb >> 8) & 0xFFu, rgb & 0xFFu);
++}
++
++std::optional<SkColor> GetWindowTint(PrefService* pref_service) {
++  return ParseTintColor(pref_service->GetString(prefs::kWindowTint));
++}
++
++bool IsCompactModeEnabled(PrefService* pref_service) {
++  return pref_service->GetBoolean(prefs::kCompactMode);
++}
++
++bool IsGlanceEnabled(PrefService* pref_service) {
++  return pref_service->GetBoolean(prefs::kGlance);
 +}
 +
 +void SyncDefaultTheme(PrefService* pref_service) {

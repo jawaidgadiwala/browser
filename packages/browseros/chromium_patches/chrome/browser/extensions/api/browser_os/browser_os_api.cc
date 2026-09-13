@@ -1,9 +1,9 @@
 diff --git a/chrome/browser/extensions/api/browser_os/browser_os_api.cc b/chrome/browser/extensions/api/browser_os/browser_os_api.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..99a8b9c8df1bdc73113bc78ecf559c454adfa267
+index 0000000..9d3c040
 --- /dev/null
 +++ b/chrome/browser/extensions/api/browser_os/browser_os_api.cc
-@@ -0,0 +1,349 @@
+@@ -0,0 +1,396 @@
 +// Copyright 2024 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -30,6 +30,7 @@ index 0000000000000000000000000000000000000000..99a8b9c8df1bdc73113bc78ecf559c45
 +#include "chrome/browser/ui/browser_window/public/browser_window_features.h"
 +#include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 +#include "chrome/browser/ui/browser_window/public/profile_browser_collection.h"
++#include "chrome/browser/ui/browseros_window_ui.h"
 +#include "chrome/browser/ui/select_file_policy/chrome_select_file_policy.h"
 +#include "chrome/browser/ui/tabs/tab_strip_model.h"
 +#include "chrome/browser/ui/toasts/api/toast_id.h"
@@ -42,6 +43,7 @@ index 0000000000000000000000000000000000000000..99a8b9c8df1bdc73113bc78ecf559c45
 +#include "components/prefs/pref_service.h"
 +#include "content/public/browser/web_contents.h"
 +#include "ui/shell_dialogs/selected_file_info.h"
++#include "url/gurl.h"
 +
 +namespace extensions {
 +namespace api {
@@ -349,6 +351,51 @@ index 0000000000000000000000000000000000000000..99a8b9c8df1bdc73113bc78ecf559c45
 +
 +  return RespondNow(
 +      ArgumentList(browser_os::ShowInfoBar::Results::Create(shown)));
++}
++
++// Bridges chrome.browserOS.openGlance to the per-window glance overlay.
++ExtensionFunction::ResponseAction BrowserOSOpenGlanceFunction::Run() {
++  std::optional<browser_os::OpenGlance::Params> params =
++      browser_os::OpenGlance::Params::Create(args());
++  EXTENSION_FUNCTION_VALIDATE(params);
++
++  const GURL url(params->url);
++  if (!url.is_valid() || !url.SchemeIsHTTPOrHTTPS()) {
++    return RespondNow(Error("Glance URL must be http or https"));
++  }
++
++  Profile* profile = Profile::FromBrowserContext(browser_context());
++  ProfileBrowserCollection* browser_collection =
++      ProfileBrowserCollection::GetForProfile(profile);
++  BrowserWindowInterface* browser =
++      browser_collection ? browser_collection->GetLastActiveBrowser() : nullptr;
++  if (!browser) {
++    return RespondNow(Error("No active browser window"));
++  }
++
++  const bool opened = browseros::OpenGlance(browser, url);
++  return RespondNow(
++      ArgumentList(browser_os::OpenGlance::Results::Create(opened)));
++}
++
++// Bridges chrome.browserOS.setWindowTint to the per-window tint controller.
++ExtensionFunction::ResponseAction BrowserOSSetWindowTintFunction::Run() {
++  std::optional<browser_os::SetWindowTint::Params> params =
++      browser_os::SetWindowTint::Params::Create(args());
++  EXTENSION_FUNCTION_VALIDATE(params);
++
++  Profile* profile = Profile::FromBrowserContext(browser_context());
++  ProfileBrowserCollection* browser_collection =
++      ProfileBrowserCollection::GetForProfile(profile);
++  BrowserWindowInterface* browser =
++      browser_collection ? browser_collection->GetLastActiveBrowser() : nullptr;
++  if (!browser) {
++    return RespondNow(Error("No active browser window"));
++  }
++
++  const bool applied = browseros::SetWindowTint(browser, params->color);
++  return RespondNow(
++      ArgumentList(browser_os::SetWindowTint::Results::Create(applied)));
 +}
 +
 +}  // namespace api
