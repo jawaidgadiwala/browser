@@ -36,7 +36,7 @@ Storage and identity rules: persist by URL and our own ids, never Chromium tab o
 ## Running it
 
 - Daily driver: `cd packages/browseros-agent && bun run personal:build && bun run personal:start` (or `tools/personal/Browser.app` / `Browser.command`). Profile `~/Library/Application Support/Browser`. Ports: CDP 9005, chat server 9105, ext 9305, agent server 9205. Logs `~/Library/Logs/Browser/`. Docs: `docs/personal/daily-driver.md`.
-- Binary: prefers `/Applications/Browser.app` (re-signed copy from `tools/personal/make-branded-app.sh`) until the native build ships; then the built app.
+- Binary: prefers the built app under `~/chromium/src/out/Default_browseros_arm64/Browser.app`, then `/Applications/Browser.app` (see `docs/personal/daily-driver.md`).
 - Dev loop for extension work: `bun run dev:watch:full:new`, then `BROWSEROS_CDP_PORT=<port> bun scripts/dev/inspect-ui.ts targets|snapshot|click|fill|eval|screenshot <target>`. `fill` does not clear react-hook-form inputs; use eval with the native value setter. Never `chrome.runtime.reload()` in the dev loop (it disables the unpacked extension). Background state: `eval background.js "(async()=>JSON.stringify(await chrome.storage.local.get(null)))()"`. Debug a stuck service worker via chrome://extensions `chrome.developerPrivate.getExtensionsInfo` over CDP.
 - Native build: `cd packages/browseros && uv run browseros build --preset release --product browseros --arch arm64 --provision none --no-sign --no-upload --resource-mode published --chromium-src ~/chromium/src` (first build used `--provision shallow`). Needs ~100 GB free; 16 GB RAM works but links slowly. Logs `~/Library/Logs/Browser/chromium-build-*.log`. Patches go through `browseros extract` / `browseros dev doctor`.
 
@@ -69,11 +69,12 @@ Storage and identity rules: persist by URL and our own ids, never Chromium tab o
 - 2026-09-12: Daily-driver launcher; repo public; proprietary notes moved to `docs/private/`; product renamed to Browser; logo applied to extensions, launcher app, and staged Chromium branding; `/Applications/Browser.app` re-signed copy.
 - 2026-09-12: Sidebar shipped, 6 slices: core model + storage v2, host adapter + reconciler, panel skeleton with chat mode, essentials/folders/pinned/dnd, carousel/swipe/theme, archive/undo/settings. 620+ app tests.
 - 2026-09-13: Disk freed to ~100 GB; first local Chromium build started (`chromium-build-1.log`). Native patch plan written; batch 1 patches (branding, left panel, no header, hidden strip, toolbar cleanup, blue accent, B vector icon, all strings) and extension rebrand (blue accent, verbiage, logo remnants) in progress.
+- 2026-09-13 (evening): Build 15 shipped: `~/chromium/src/out/Default_browseros_arm64/Browser.app` and `output/releases/Browser_v0.50.4_arm64.dmg` (bundle id, icon, left panel, no header, hidden strip, toolbar prefs verified over CDP). Whitelabel audit (`docs/personal/whitelabel-audit.md`) closed for telemetry, feeds, links, names, icons; open: C3/C6/C10 renames, CLI, OAuth apps, Features media. Fallow gate green with a baseline. Packaging after a compile: `uv run browseros build --build --package ...` (phase mode; `--from` resume is tied to the source commit).
 - 2026-09-13: Batch 1 patches and extension rebrand landed. Review handoff R1–R6 fixed (archive restore, capture guards, migration retry, pin space resolution, Bun stamp). Clean step now protects every DEPS-declared gclient path (build 13 died at configure after `git clean` wiped CIPD deps; fixed by `gclient sync` + `clean.py` change). Build 14 running from worktree `~/chromium/browser-src` (source mode needs a clean tracked checkout; resume checkpoints are tied to the source commit, so moving the worktree forces a full run).
 
 ## Next
 
-1. Finish build 14, install via launcher, verify native shell (name, icon, blue, left panel, no header, hidden strip, toolbar).
+1. Rebuild with the native whitelabel patches (needs an incremental path: keep out/ across clean). Launcher already prefers the built app.
 1b. Whitelabel audit (upstream endpoints, keys, feeds, ids) → fix list; then performance and security passes (user goal 2026-09-13: run end to end → whitelabel → optimize → secure).
 2. Batch 2 native: window tint, glance, compact mode. Then spaces in the macOS menu bar.
 3. Sidebar polish from daily use; command palette; split-view shortcuts.
