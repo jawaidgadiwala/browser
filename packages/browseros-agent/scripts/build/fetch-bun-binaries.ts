@@ -36,7 +36,7 @@ export interface BunPlatform {
   file: string
 }
 
-export const BUN_PLATFORMS: BunPlatform[] = [
+const BUN_PLATFORMS: BunPlatform[] = [
   {
     id: 'darwin-arm64',
     asset: 'bun-darwin-aarch64',
@@ -56,7 +56,7 @@ export const BUN_PLATFORMS: BunPlatform[] = [
   },
 ]
 
-export function repoRoot(): string {
+function repoRoot(): string {
   return resolve(import.meta.dir, '../..')
 }
 
@@ -88,7 +88,7 @@ export function resolvePlatforms(only: string[]): BunPlatform[] {
   })
 }
 
-export async function readPinnedBunVersion(root = repoRoot()): Promise<string> {
+async function readPinnedBunVersion(root = repoRoot()): Promise<string> {
   const raw = await readFile(join(root, 'package.json'), 'utf-8')
   const pkg = JSON.parse(raw) as {
     packageManager?: string

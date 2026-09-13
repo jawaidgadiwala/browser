@@ -64,7 +64,7 @@ export interface UpdateSpaceData {
   pinnedCollapsed?: boolean
 }
 
-export interface MoveItemData {
+interface MoveItemData {
   itemId: ItemId
   parentId: ItemId
   index: number

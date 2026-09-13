@@ -24,7 +24,7 @@ import {
 
 const EMPTY_STATE = createInitialState({ now: 0, newId: () => 'essentials' })
 
-export const schemaVersionStorage = storage.defineItem<number>(
+const schemaVersionStorage = storage.defineItem<number>(
   'local:sidebar:schemaVersion',
   { fallback: 0 },
 )
@@ -120,7 +120,7 @@ export async function writeSidebarState(state: SidebarState): Promise<void> {
  * Runs before any surface reads the store. Idempotent: a second run finds the
  * version already current and writes nothing.
  */
-export async function runMigrations(): Promise<void> {
+async function runMigrations(): Promise<void> {
   const version = await schemaVersionStorage.getValue()
   if (version >= SCHEMA_VERSION) return
 

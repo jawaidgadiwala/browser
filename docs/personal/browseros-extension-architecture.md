@@ -99,7 +99,7 @@ State/styling:
 - Contexts, not stores: `modules/chat/chat-session-context`, `modules/conversations/active-conversation-context`,
   `lib/rpc/RpcClientProvider`.
 - Styling: **Tailwind v4** via `@tailwindcss/vite`, shadcn-style primitives in `components/ui/` (+ `components.json`,
-  `components/ai-elements/`); both are treated as generated (`.fallowrc.json` skips them) — don't hand-edit.
+  `components/ai-elements/`); both are treated as generated (`.fallowrc.jsonc` skips them) — don't hand-edit.
   Icons: `lucide-react`. Class merge helper `lib/utils.ts` (`cn`).
 
 ### Storage abstraction
@@ -315,9 +315,11 @@ Related scripts: `dev:stop` (`pkill -f 'browseros-dev watch'`), `dev:setup`, `de
   `.test.tsx` (e.g. `ConfiguredTargetsList.test.tsx`), but most tests target extracted `*.helpers.ts`.
 - `bun run check` = `bun run lint && bun run typecheck && bun run fallow`
   — Biome 2.5.11 (`bunx @biomejs/biome check`; `noUnusedImports`/`noUnusedVariables` = error, `useSortedClasses`
-  = error), `bun run --filter '*' typecheck` (per app: `wxt prepare && tsc --noEmit`), and `fallow check`
-  (unused files/exports, cycles, private-type leaks; `.fallowrc.json` exempts `components/ui/**` and
-  `components/ai-elements/**`). Fix formatting with `bun run lint:fix`.
+  = error), `bun run --filter '*' typecheck` (per app: `wxt prepare && tsc --noEmit`), and `fallow check
+  --baseline .fallow-baseline.json` (unused files/exports, cycles; `.fallowrc.jsonc` exempts `components/ui/**`
+  and `components/ai-elements/**`, and the baseline grandfathers the upstream dead code we keep for rebase
+  cheapness — regenerate it with `fallow check --save-baseline .fallow-baseline.json` after upstream work).
+  Fix formatting with `bun run lint:fix`.
 
 ---
 

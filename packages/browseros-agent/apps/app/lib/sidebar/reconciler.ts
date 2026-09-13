@@ -150,7 +150,7 @@ function groupKey(windowId: number, spaceId: SpaceId): string {
 }
 
 /** The space a group stands for, matched by title then color. */
-export function spaceForGroup(
+function spaceForGroup(
   state: SidebarState,
   group: GroupInfo | undefined,
 ): Space | undefined {
@@ -222,7 +222,7 @@ function linkTargets(state: SidebarState): LinkTarget[] {
  * claims a tab inside its own space, so the same URL open in two spaces does
  * not cross-link.
  */
-export function linkTabsToItems(
+function linkTabsToItems(
   state: SidebarState,
   tabs: TabInfo[],
   groups: GroupInfo[] = [],

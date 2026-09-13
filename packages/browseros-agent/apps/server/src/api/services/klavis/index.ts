@@ -13,6 +13,5 @@ export { KlavisService } from './service'
 export type {
   // fallow-ignore-next-line unused-type
   ConnectorInventory,
-  ConnectorToolScope,
   KlavisProxyStatus,
 } from './types'

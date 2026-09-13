@@ -1,7 +1,7 @@
 import dayjs from 'dayjs'
 import { PRODUCT_NAME } from '@/lib/personal/product'
 
-export const CAPTURE_FOLDER = `${PRODUCT_NAME} Captures`
+const CAPTURE_FOLDER = `${PRODUCT_NAME} Captures`
 
 /** Only pages the extension can capture and script after an activeTab grant. */
 export function isCapturableUrl(url: string | undefined): boolean {

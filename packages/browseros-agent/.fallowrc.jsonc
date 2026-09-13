@@ -13,6 +13,12 @@
     "apps/app/entrypoints/auth.content/index.ts",
     "apps/app/entrypoints/glow.content/index.ts",
     "apps/app/entrypoints/selection.content.ts",
+    // The cockpit extension's WXT entrypoints. Without them nothing in
+    // apps/claw-app is reachable except from its tests, which reported the
+    // whole app as dead code.
+    "apps/claw-app/entrypoints/background.ts",
+    "apps/claw-app/entrypoints/newtab/main.tsx",
+    "apps/claw-app/entrypoints/recorder.content.ts",
     "scripts/run-bun-test.ts",
     "scripts/dev/inspect-ui.ts",
     "scripts/patch-windows-exe.ts",
@@ -28,12 +34,25 @@
     "dotenv",
     "picocolors",
     "@browseros/cdp-protocol",
-    "@graphql-typed-document-node/core"
+    "@graphql-typed-document-node/core",
+    // Tool dependencies with no import site: `wxt dev`/`wxt zip` shell out to
+    // web-ext, and the onboarding video renders through the Remotion CLI.
+    "web-ext",
+    "@remotion/bundler",
+    "@remotion/renderer",
+    // Declared by apps/server so the bundled binary keeps resolving them, but
+    // only imported from the workspace packages the server depends on.
+    "jsonc-parser",
+    "@modelcontextprotocol/hono",
+    "zod-to-json-schema"
   ],
   "ignoreUnresolvedImports": [
     "@/assets/**",
     "@/generated/graphql/**",
-    "@/styles/global.css"
+    "@/styles/global.css",
+    // WXT's virtual auto-import module. It only exists inside the generated
+    // .wxt/ directory, which ignorePatterns excludes.
+    "#imports"
   ],
   "ignorePatterns": [
     "**/*.d.ts",
@@ -63,7 +82,12 @@
     "unused-dev-dependencies": "warn",
     "unused-optional-dependencies": "warn",
     "unused-enum-members": "warn",
-    "private-type-leaks": "warn",
+    // Opt-in API-hygiene rule (`fallow dead-code --private-type-leaks` to see
+    // them). Every app surface here keeps component `Props` and other
+    // single-file shapes module-private, so the rule only ever fires on ~90
+    // upstream files, and satisfying it by exporting those types just trades
+    // the finding for an unused-type one. Off until the convention changes.
+    "private-type-leaks": "off",
     "unresolved-imports": "warn",
     "unlisted-dependencies": "warn",
     "circular-dependencies": "warn",
@@ -90,7 +114,12 @@
       "files": [
         "apps/app/components/ui/**",
         "apps/app/components/ai-elements/**",
-        "apps/app-onboard/src/components/ui/**"
+        "apps/app-onboard/src/components/ui/**",
+        // Vendored component libraries (shadcn primitives, ai-elements). They
+        // ship whole, so unexercised pieces are expected, not dead code.
+        "apps/claw-app/components/ui/**",
+        "apps/claw-app/components/ai-elements/**",
+        "apps/claw-onboard/src/components/ui/**"
       ],
       "rules": {
         "unused-exports": "off",

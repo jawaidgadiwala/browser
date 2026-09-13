@@ -26,10 +26,7 @@ export interface TabLike {
   active: boolean
 }
 
-/** Chromium's sentinel for "not in a group". */
-export const NO_GROUP = -1
-
-export const MAX_SPACES = 20
+const MAX_SPACES = 20
 
 /** Space names double as group titles, so they must be unique and non-empty. */
 export function normalizeSpaceName(name: string): string {
@@ -152,10 +149,6 @@ export function adjacentSpaceId(
     next = (next + spaces.length) % spaces.length
   }
   return spaces[next].id
-}
-
-export function spaceIdAtIndex(spaces: Space[], index: number): string | null {
-  return spaces[index]?.id ?? null
 }
 
 /** The group in `windowId` that represents `space`, matched by title. */

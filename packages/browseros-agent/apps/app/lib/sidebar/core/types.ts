@@ -154,9 +154,6 @@ export const DEFAULTS: SidebarSettings = {
 /** Folders nest at most two levels below a container. */
 export const MAX_FOLDER_DEPTH = 2
 
-/** Item tree cap; the panel warns above 80 % of it. */
-export const MAX_ITEMS = 5000
-
 /** Archive cap; oldest entries are pruned first. */
 export const MAX_ARCHIVE = 2000
 

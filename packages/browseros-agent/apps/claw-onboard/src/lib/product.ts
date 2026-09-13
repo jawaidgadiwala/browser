@@ -11,7 +11,7 @@
  */
 
 /** Single switch for the personal fork. */
-export const PERSONAL_BUILD = true
+const PERSONAL_BUILD = true
 
 const UPSTREAM_PRODUCT_NAME = 'BrowserOS neo'
 
@@ -25,9 +25,7 @@ export const PRODUCT_NAME = PERSONAL_BUILD
  * the browser itself (importing a profile, the Keychain prompt) names this, not
  * the cockpit.
  */
-export const BROWSER_PRODUCT_NAME = PERSONAL_BUILD
-  ? 'Browser'
-  : UPSTREAM_PRODUCT_NAME
+const BROWSER_PRODUCT_NAME = PERSONAL_BUILD ? 'Browser' : UPSTREAM_PRODUCT_NAME
 
 /**
  * Name of the macOS helper process the Keychain prompt actually names, so the

@@ -10,7 +10,7 @@ import type { ArchivedItem, ArchiveReason } from '@/lib/sidebar/core/types'
 export const ARCHIVE_ROW_HEIGHT = 44
 export const ARCHIVE_HEADER_HEIGHT = 32
 /** Shorter lists render whole; past this the list is windowed. */
-export const VIRTUALISE_ABOVE = 60
+const VIRTUALISE_ABOVE = 60
 
 export const REASON_LABEL: Record<ArchiveReason, string> = {
   auto: 'auto',
@@ -50,7 +50,7 @@ export function entryKey(entry: ArchivedItem): string {
 }
 
 /** One Tidy or Clear run: same wall-clock second and same closing action. */
-export function batchKey(entry: ArchivedItem): string {
+function batchKey(entry: ArchivedItem): string {
   return `${Math.floor(entry.archivedAt / 1000)}:${entry.source}`
 }
 
@@ -80,7 +80,7 @@ export function sortedArchive(entries: ArchivedItem[]): ArchivedItem[] {
   return [...entries].sort((a, b) => b.archivedAt - a.archivedAt)
 }
 
-export function matchesQuery(entry: ArchivedItem, query: string): boolean {
+function matchesQuery(entry: ArchivedItem, query: string): boolean {
   const needle = query.trim().toLowerCase()
   if (!needle) return true
   return (
@@ -220,7 +220,7 @@ export function toastBatches(entries: ArchivedItem[]): ArchivedItem[][] {
   return [...batches.values()]
 }
 
-export function countSince(entries: ArchivedItem[], since: number): number {
+function countSince(entries: ArchivedItem[], since: number): number {
   return entries.filter((entry) => entry.archivedAt >= since).length
 }
 

@@ -14,7 +14,7 @@
  * Single switch for the personal fork, mirroring
  * `apps/app/lib/personal/personal-build.ts`.
  */
-export const PERSONAL_BUILD = true
+const PERSONAL_BUILD = true
 
 const UPSTREAM_PRODUCT_NAME = 'BrowserOS'
 

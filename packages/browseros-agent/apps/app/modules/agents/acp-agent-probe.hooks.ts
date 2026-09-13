@@ -3,7 +3,7 @@ import { PRODUCT_NAME } from '@/lib/personal/product'
 import { useAgentServerUrl } from '@/modules/browseros/agent-server-url.hooks'
 import type { AcpAgentType, AcpProbeResult } from './acp-agent-types'
 
-export interface ProbeCustomAgentInput {
+interface ProbeCustomAgentInput {
   command: string
   env?: Record<string, string>
   cwd?: string

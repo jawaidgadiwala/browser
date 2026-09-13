@@ -14,11 +14,11 @@ const RUBBER_BAND_LIMIT = 4.5
 export const COMMIT_PROGRESS = 0.35
 
 /** …or when it was flicked faster than this, in px/ms. */
-export const COMMIT_VELOCITY = 0.5
+const COMMIT_VELOCITY = 0.5
 
 export const WHEEL_COOLDOWN_MS = 200
-export const WHEEL_MIN_DELTA = 1
-export const WHEEL_THRESHOLD = 30
+const WHEEL_MIN_DELTA = 1
+const WHEEL_THRESHOLD = 30
 
 /**
  * @public

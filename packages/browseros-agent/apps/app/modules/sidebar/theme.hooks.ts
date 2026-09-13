@@ -13,7 +13,7 @@ import type { ThemeSpec } from '@/lib/sidebar/core/types'
  * switch animates it to 1, a swipe drives it from the drag offset.
  */
 
-export const THEME_FADE_MS = SWIPE_ANIMATION_MS
+const THEME_FADE_MS = SWIPE_ANIMATION_MS
 
 /**
  * @public

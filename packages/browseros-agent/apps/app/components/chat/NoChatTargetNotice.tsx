@@ -3,7 +3,7 @@ import type { FC } from 'react'
 import { cn } from '@/lib/utils'
 
 /** Settings → AI & Agents, reachable from every extension surface. */
-export const AI_SETTINGS_URL = '/app.html#/settings/ai'
+const AI_SETTINGS_URL = '/app.html#/settings/ai'
 
 export interface NoChatTargetNoticeProps {
   className?: string

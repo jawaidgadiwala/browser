@@ -2,7 +2,7 @@ import { z } from 'zod/v3'
 import type { SidebarSettings } from '@/lib/sidebar/core/types'
 
 /** The editable slice of `SidebarSettings`, with the spec's bounds. */
-export const sidebarSettingsSchema = z.object({
+const sidebarSettingsSchema = z.object({
   autoArchiveAfter: z.enum(['1h', '6h', '12h', '24h', '7d', '30d', 'never']),
   discardInactiveSpacesAfterMin: z.coerce.number().int().min(1).max(1440),
   essentialsMax: z.coerce.number().int().min(3).max(24),
