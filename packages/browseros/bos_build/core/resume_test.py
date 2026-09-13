@@ -85,6 +85,7 @@ class ResumeCheckpointTest(unittest.TestCase):
         self,
         resume_from: str = "sign_macos",
         plan: tuple[tuple[str, tuple[str, ...]], ...] | None = None,
+        lenient: bool = False,
     ) -> Context:
         ctx = Context(
             root_dir=self.browseros.root,
@@ -98,6 +99,7 @@ class ResumeCheckpointTest(unittest.TestCase):
             plan or self.plan,
             resume_from=resume_from,
             strict=True,
+            lenient=lenient,
         )
         return ctx
 
@@ -164,6 +166,35 @@ class ResumeCheckpointTest(unittest.TestCase):
         resumed = self._context()
 
         with self.assertRaisesRegex(ResumeValidationError, "BrowserOS source"):
+            validate_resume_before_execution([(resumed, ("sign_macos",))])
+
+    def test_lenient_resume_accepts_source_identity_change(self):
+        _ctx, app = self._write_compile_checkpoint()
+        version = self.browseros.root / "resources" / "BROWSEROS_VERSION"
+        version.write_text(version.read_text() + "\n")
+        resumed = self._context(lenient=True)
+
+        validate_resume_before_execution([(resumed, ("sign_macos",))])
+
+        self.assertEqual(resumed.artifact_registry.get("built_app"), app)
+
+    def test_lenient_resume_still_validates_artifacts(self):
+        _ctx, app = self._write_compile_checkpoint()
+        app.write_bytes(b"stale")
+        resumed = self._context(lenient=True)
+
+        with self.assertRaisesRegex(ResumeValidationError, "checksum mismatch"):
+            validate_resume_before_execution([(resumed, ("sign_macos",))])
+
+    def test_lenient_resume_still_rejects_contract_change(self):
+        ctx, _app = self._write_compile_checkpoint()
+        path = checkpoint_path(ctx, "compile")
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["candidate"]["product"] = "browserclaw"
+        path.write_text(json.dumps(document), encoding="utf-8")
+        resumed = self._context(lenient=True)
+
+        with self.assertRaisesRegex(ResumeValidationError, "product mismatch"):
             validate_resume_before_execution([(resumed, ("sign_macos",))])
 
     def test_unpinned_published_resources_make_strict_resume_unprovable(self):

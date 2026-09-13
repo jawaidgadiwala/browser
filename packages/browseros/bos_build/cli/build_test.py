@@ -118,6 +118,38 @@ class ShowPlanPresetTest(_ProfileMixin):
         self.assertEqual(result.exit_code, 0, combined(result))
         self.assertEqual(plan_lines(result.output)[0], "configure")
 
+    def test_keep_out_reflected_and_plan_unchanged(self):
+        with scrubbed_env():
+            result = invoke(
+                "--preset", "release", "--arch", "x64", "--keep-out", "--show-plan"
+            )
+        self.assertEqual(result.exit_code, 0, combined(result))
+        self.assertIn("Keep out", plain_output(result))
+        # --keep-out changes how clean behaves, never the composed pipeline.
+        self.assertEqual(
+            plan_lines(result.output),
+            plan(Switches(preset="release"), "x64", get_platform()),
+        )
+
+    def test_lenient_resume_reflected_with_from(self):
+        with scrubbed_env():
+            result = invoke(
+                "--preset",
+                "release",
+                "--from",
+                "configure",
+                "--lenient-resume",
+                "--show-plan",
+            )
+        self.assertEqual(result.exit_code, 0, combined(result))
+        self.assertIn("lenient", plain_output(result).lower())
+
+    def test_lenient_resume_requires_from(self):
+        with scrubbed_env():
+            result = invoke("--preset", "release", "--lenient-resume", "--show-plan")
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("--from", combined(result))
+
     def test_multi_arch_profile_prints_block_per_arch(self):
         path = self._profile("preset: release\narch: [x64, arm64]\n")
         with scrubbed_env():

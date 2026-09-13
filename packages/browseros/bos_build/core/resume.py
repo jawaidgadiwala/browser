@@ -33,6 +33,13 @@ _CHROMIUM_MUTATION_STEPS = frozenset(
         "patches",
     }
 )
+# Dropped from the candidate contract comparison under --lenient-resume: the
+# BrowserOS checkout identity (HEAD + dirty-tree digest) changes on every
+# commit or edit in this repo, which would invalidate checkpoints describing a
+# Chromium tree that is provably untouched. Everything else — product, arch,
+# plan, versions, gn configuration, resource pins — still has to match, and so
+# do the Chromium checkout head, the mutation digest, and every attested path.
+_LENIENT_CANDIDATE_EXCLUDES = ("browseros_source",)
 
 
 class ResumeValidationError(ValueError):
@@ -46,6 +53,7 @@ class ResumeState:
     candidate: Mapping[str, Any]
     candidate_digest: str
     strict: bool = False
+    lenient: bool = False
     unresumable_reason: str = ""
 
     @property
@@ -59,18 +67,28 @@ def make_resume_state(
     *,
     resume_from: str | None,
     strict: bool,
+    lenient: bool = False,
 ) -> ResumeState:
     plans = tuple((arch, tuple(steps)) for arch, steps in full_arch_plans)
     try:
         candidate = _candidate_contract(ctx, plans)
     except _Unresumable as exc:
-        return ResumeState(plans, resume_from, {}, "", strict, str(exc))
+        return ResumeState(
+            plans,
+            resume_from,
+            {},
+            "",
+            strict,
+            lenient,
+            str(exc),
+        )
     return ResumeState(
         plans,
         resume_from,
         candidate,
         _json_digest(candidate),
         strict,
+        lenient,
     )
 
 
@@ -80,6 +98,7 @@ def attach_resume_state(
     *,
     resume_from: str | None,
     strict: bool,
+    lenient: bool = False,
 ) -> None:
     if not runs:
         return
@@ -88,6 +107,7 @@ def attach_resume_state(
         full_arch_plans,
         resume_from=resume_from,
         strict=strict,
+        lenient=lenient,
     )
     for ctx, _steps in runs:
         ctx.resume_state = base_state
@@ -503,7 +523,18 @@ def _validate_checkpoint_identity(
     state: ResumeState,
     document: Mapping[str, Any],
 ) -> None:
-    if document.get("candidate_digest") != state.candidate_digest:
+    if state.lenient:
+        # Compare the contract itself minus the BrowserOS source identity;
+        # the digest would differ for a docs commit alone.
+        recorded = _comparable_candidate(document.get("candidate"))
+        expected_candidate = _comparable_candidate(state.candidate)
+        if recorded != expected_candidate:
+            raise _mismatch(
+                ctx.architecture,
+                step_name,
+                _candidate_mismatch_detail(recorded, expected_candidate),
+            )
+    elif document.get("candidate_digest") != state.candidate_digest:
         detail = _candidate_mismatch_detail(document.get("candidate"), state.candidate)
         raise _mismatch(ctx.architecture, step_name, detail)
     expected = {
@@ -689,12 +720,28 @@ def _context_for_arch(ctx: Context, architecture: str) -> Context:
         gn_flags_file=ctx.gn_flags_file,
         extra_gn_args=ctx.extra_gn_args,
         resource_mode=ctx.resource_mode,
+        keep_out=ctx.keep_out,
         prepared_resources=ctx.prepared_resources,
         prepared_resources_supplied=ctx.prepared_resources_supplied,
         source_sha=ctx.source_sha,
     )
     sibling.resume_state = ctx.resume_state
     return sibling
+
+
+def _comparable_candidate(candidate: Any) -> Any:
+    """Candidate contract without the keys --lenient-resume ignores.
+
+    Non-dict values pass through untouched so the caller still reports
+    "candidate contract is missing" for a malformed checkpoint.
+    """
+    if not isinstance(candidate, dict):
+        return candidate
+    return {
+        key: value
+        for key, value in candidate.items()
+        if key not in _LENIENT_CANDIDATE_EXCLUDES
+    }
 
 
 def _candidate_mismatch_detail(

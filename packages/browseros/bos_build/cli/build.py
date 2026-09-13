@@ -125,6 +125,21 @@ def main(
         "--clean/--no-clean",
         help="Preset mode: toggle the clean step",
     ),
+    keep_out: bool = typer.Option(
+        False,
+        "--keep-out",
+        help="Patch iteration: clean resets the Chromium tree but keeps "
+        "out/<product>_<arch> (and Sparkle), so the compile is incremental. "
+        "Never for release builds",
+    ),
+    lenient_resume: bool = typer.Option(
+        False,
+        "--lenient-resume",
+        help="With --from: accept checkpoints written before this repo's "
+        "commits/edits (skips the BrowserOS source identity check; the "
+        "Chromium checkout, mutation digest and artifact checksums are "
+        "still verified)",
+    ),
     provision: Optional[str] = typer.Option(
         None,
         "--provision",
@@ -231,6 +246,12 @@ def main(
       browseros build --preset release --from sign_macos
 
     \b
+    Patch Iteration (keeps the output dir; incremental compile):
+      browseros build --preset release --provision none --keep-out \\
+        --no-sign --no-upload --skip sparkle_setup
+      browseros build --preset release --from package_macos --lenient-resume
+
+    \b
     Phase Flags (Auto-Ordered):
       browseros build --setup --build --sign --package
       browseros build --build --sign           # Skip setup
@@ -280,6 +301,10 @@ def main(
         log_error("  browseros build --modules clean,compile")
         raise typer.Exit(1)
 
+    if lenient_resume and from_ is None:
+        log_error("--lenient-resume applies to --from resumes; drop it or add --from")
+        raise typer.Exit(1)
+
     if (skip is not None or from_ is not None) and not has_preset:
         log_error(
             "--skip/--from apply to preset/profile mode — they subtract from "
@@ -325,6 +350,8 @@ def main(
             from_=from_,
             chromium_src=chromium_src,
             extra_gn_args=extra_gn_args,
+            keep_out=keep_out,
+            lenient_resume=lenient_resume,
         )
         if show_plan:
             _print_plan(projection)
@@ -343,6 +370,7 @@ def main(
             "package": package,
             "upload": phase_upload,
             "extra_gn_args": extra_gn_args,
+            "keep_out": keep_out,
         }
         try:
             pipeline = resolve_pipeline(
@@ -566,6 +594,8 @@ def _resolve_preset(
     chromium_src: Optional[Path],
     source_sha: Optional[str] = None,
     extra_gn_args: Tuple[str, ...] = (),
+    keep_out: bool = False,
+    lenient_resume: bool = False,
 ) -> _PlanProjection:
     """Resolve preset/profile + CLI overrides into a plan projection.
 
@@ -599,6 +629,7 @@ def _resolve_preset(
                 from_=from_,
                 chromium_src=chromium_src,
                 extra_gn_args=extra_gn_args,
+                keep_out=keep_out,
             )
         if build_type is not None:
             raise ValueError(
@@ -655,10 +686,14 @@ def _resolve_preset(
             header.append(f"Prepared resources: {prepared_resources.resolve()}")
         if source_sha is not None:
             header.append(f"Source SHA: {source_sha}")
+        if keep_out:
+            header.append("Keep out: build output directories survive clean")
         if switches.skip:
             header.append(f"Skip: {', '.join(switches.skip)}")
         if from_ is not None:
             header.append(f"From: {from_}")
+        if lenient_resume:
+            header.append("Resume: lenient (BrowserOS source identity not checked)")
         if extra_gn_args:
             header.append(f"GN arg overrides: {', '.join(extra_gn_args)}")
 
@@ -684,10 +719,14 @@ def _resolve_preset(
                     f"sign={switches.sign} upload={switches.upload} "
                     f"resource_mode={switches.resource_mode}"
                 )
+                if keep_out:
+                    log_info("✓ PRESET MODE: keep-out=True (incremental rebuild)")
                 if switches.skip:
                     log_info(f"✓ PRESET MODE: skip={','.join(switches.skip)}")
                 if from_ is not None:
                     log_info(f"✓ PRESET MODE: from={from_}")
+                if lenient_resume:
+                    log_info("✓ PRESET MODE: lenient-resume=True")
                 if extra_gn_args:
                     log_info(
                         f"✓ PRESET MODE: gn-arg overrides={','.join(extra_gn_args)}"
@@ -720,6 +759,7 @@ def _resolve_preset(
                             product=get_product_descriptor(switches.product),
                             extra_gn_args=extra_gn_args,
                             resource_mode=switches.resource_mode,
+                            keep_out=keep_out,
                             prepared_resources=common_dir,
                             prepared_resources_supplied=prepared_resources is not None,
                             source_sha=resolved_source_sha,
@@ -733,6 +773,7 @@ def _resolve_preset(
                     full_arch_plans,
                     resume_from=from_,
                     strict=from_ is not None,
+                    lenient=lenient_resume,
                 )
                 return runs
             except ValueError as e:
@@ -763,6 +804,7 @@ def _resolve_modules_profile(
     from_: Optional[str],
     chromium_src: Optional[Path],
     extra_gn_args: Tuple[str, ...] = (),
+    keep_out: bool = False,
 ) -> _PlanProjection:
     """Project a modules: profile through the DIRECT-mode machinery.
 
@@ -827,6 +869,7 @@ def _resolve_modules_profile(
                     "build_type": eff_build_type,
                     "product": eff_product,
                     "extra_gn_args": extra_gn_args,
+                    "keep_out": keep_out,
                 }
             )
         except ValueError as e:

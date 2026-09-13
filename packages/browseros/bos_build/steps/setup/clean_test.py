@@ -88,6 +88,53 @@ class CleanExecuteTest(unittest.TestCase):
             self.assertFalse(x64_out.exists())
             self.assertTrue(arm64_out.exists())
 
+    def test_keep_out_preserves_output_and_sparkle_but_still_resets_git(self):
+        with (
+            tempfile.TemporaryDirectory() as chromium_tmp,
+            tempfile.TemporaryDirectory() as root_tmp,
+        ):
+            chromium = MockChromium(Path(chromium_tmp))
+            ctx = make_context(
+                chromium, MockBrowserOSRoot(Path(root_tmp)), architecture="x64"
+            )
+            ctx.keep_out = True
+            out_dir = chromium.with_out_dir("x64", args_gn="is_debug = false\n")
+            ninja_log = out_dir / ".ninja_log"
+            ninja_log.write_text("log\n")
+            sparkle = chromium.with_sparkle()
+
+            with mock.patch.object(clean, "run_command") as run_cmd:
+                clean.CleanModule().execute(ctx)
+
+            self.assertTrue(out_dir.exists())
+            self.assertTrue(ninja_log.exists())
+            self.assertTrue(sparkle.exists())
+            git_commands = [call.args[0] for call in run_cmd.call_args_list]
+            self.assertEqual(git_commands[0], ["git", "reset", "--hard", "HEAD"])
+            self.assertTrue(
+                any(cmd[:3] == ["git", "clean", "-fdx"] for cmd in git_commands),
+                f"expected a git clean, got: {git_commands}",
+            )
+
+    def test_keep_out_still_removes_resume_checkpoints(self):
+        with (
+            tempfile.TemporaryDirectory() as chromium_tmp,
+            tempfile.TemporaryDirectory() as root_tmp,
+        ):
+            chromium = MockChromium(Path(chromium_tmp))
+            ctx = make_context(
+                chromium, MockBrowserOSRoot(Path(root_tmp)), architecture="x64"
+            )
+            ctx.keep_out = True
+            chromium.with_out_dir("x64")
+            x64_checkpoint = checkpoint_dir(ctx, "x64")
+            x64_checkpoint.mkdir(parents=True)
+
+            with mock.patch.object(clean, "run_command"):
+                clean.CleanModule().execute(ctx)
+
+            self.assertFalse(x64_checkpoint.exists())
+
     def test_single_arch_clean_removes_matching_checkpoint_dir_only(self):
         with (
             tempfile.TemporaryDirectory() as chromium_tmp,

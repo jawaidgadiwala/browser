@@ -200,6 +200,107 @@ uv run browseros build --preset release --product browseros --arch arm64 \
 Tests: `cd packages/browseros && uv run python -m unittest discover -s bos_build
 -t . -p "*_test.py"` (there is no pytest in this environment).
 
+## Iterating on Chromium patches (`--keep-out`)
+
+### The ~10 h reality
+
+A from-scratch `--preset release` build of the official Chromium config on this
+M2 Pro / 16 GB machine is an all-day job: build 15's compile ran from ~04:18 to
+~20:09 wall clock. That is the price of `clean` doing its two jobs:
+
+1. `git reset --hard` + `git clean -fdx chrome/ components/ third_party/`, so
+   the patch series applies to a pristine tree, and
+2. `rm -rf out/Default_<product>_<arch>`, which throws away every object file.
+
+Only (1) is needed to re-apply patches. `--keep-out` keeps (1) and drops (2).
+
+### The iterate command
+
+```bash
+cd packages/browseros
+uv run browseros build --preset release --product browseros --arch arm64 \
+  --provision none --no-sign --no-upload --resource-mode published \
+  --keep-out --skip sparkle_setup --chromium-src ~/chromium/src
+```
+
+`--keep-out` changes nothing about the composed plan (`--show-plan` is
+identical); it changes what `clean` deletes:
+
+| | default | `--keep-out` |
+|---|---|---|
+| `out/Default_<product>_<arch>` (incl. `.ninja_log`, `.siso_deps`, `.siso_fs_state`) | deleted | kept |
+| `third_party/sparkle`, `third_party/winsparkle` | deleted | kept |
+| `git reset --hard` + `git clean -fdx` of the Chromium tree | yes | yes |
+| `out/.browseros_resume` checkpoints | deleted | deleted |
+
+Sparkle survives because it is an unchanging third-party input, which is what
+makes `--skip sparkle_setup` (a ~10 MB download on every run otherwise) safe in
+this mode. Checkpoints still go: they attest a tree state the reset destroys,
+and the run writes fresh ones as it goes.
+
+Everything downstream is incremental-safe: `configure` re-runs `gn gen` in the
+existing directory (`--fail-on-unused-args` still applies), `chromium_replace` /
+`string_replaces` / `series_patches` / `patches` re-write their files into the
+reset tree, and `package_macos` deletes an existing DMG before writing a new
+one. **Never use `--keep-out` for a release build** — a shipped artifact should
+come out of a from-scratch output directory.
+
+### Why a reset + re-apply does not recompile the world
+
+The build engine here is **siso** (Chromium 151 defaults to it; the output dir
+carries `.siso_deps`, `.siso_fs_state`, `.siso_explain`), running locally with
+no RBE. Siso uses mtimes only as a first-pass staleness trigger and then
+compares content digests, so files that `git reset` rewrote byte-for-identically
+do not drag their dependents into a rebuild — no mtime-preserving reset
+machinery is needed.
+
+Measured on this machine, from `out/…/siso_explain` of the last incremental run:
+1321 edges were re-run, and all but a handful were triggered by one input —
+`chrome/VERSION`, which the `compile` step rewrites (`shutil.copy2` of a fresh
+temp file) on *every* run. That fan-out is version headers, the mojom/WebUI
+generators, the framework relink and `chromedriver`. The matching
+`--build --package` run finished in **4 m 2 s** end to end.
+
+Expected rebuild sizes with a kept `out/`:
+
+| change | rebuilt |
+|---|---|
+| nothing (re-run the same patch set) | ~1.3 k edges, ~4 min (the `chrome/VERSION` fan-out) |
+| one patched `.cc`/`.mm` | that TU + relink, ~5 min |
+| one patched widely-included header (e.g. `browser.h`) | its fan-out, tens of minutes to ~1 h |
+| a patch adding/removing GN targets or files | above plus a full `gn gen`, still far short of 10 h |
+| `args.gn`/GN flag change | everything — a full build; drop `--keep-out` |
+
+### Package-only and resume without a full run
+
+The output dir survives, so the compile/package tail can be re-run directly in
+phase mode — no planner, no resume checkpoints, no `clean`:
+
+```bash
+uv run browseros build --build --package --build-type release --arch arm64 \
+  --chromium-src ~/chromium/src           # compile + package_macos
+```
+
+This is the workaround of record when a preset run dies after the compile: it is
+what produced `chromium-build-15-package.log` (4 m 2 s to a DMG).
+
+`--from <step>` also exists, but its checkpoint validation binds the candidate
+contract to the BrowserOS **source identity** — this repo's HEAD plus a digest
+of its dirty files — so any commit or edit here (a docs commit included)
+invalidates every checkpoint. For that case:
+
+```bash
+uv run browseros build --preset release --arch arm64 --no-sign --no-upload \
+  --from package_macos --lenient-resume --chromium-src ~/chromium/src
+```
+
+`--lenient-resume` drops **only** the `browseros_source` key from the contract
+comparison. Product, architecture, build type, platform, resolved plan,
+versions, GN configuration and resource pins must still match, and the Chromium
+checkout head, the Chromium mutation digest (proving the patched tree is the one
+the checkpoint described) and every attested artifact checksum are still
+verified. It is rejected without `--from`.
+
 ## Bundled Bun runtime (no R2)
 
 The server artifact ships a Bun runtime next to `browseros_server`

@@ -95,22 +95,45 @@ class CleanModule(Step):
             raise ValidationError(f"Chromium source not found: {ctx.chromium_src}")
 
     def execute(self, ctx: Context) -> None:
-        log_info("🧹 Cleaning build artifacts...")
-
-        for out_path in self._output_dirs(ctx):
-            if not out_path.exists():
-                continue
-            safe_rmtree(out_path)
-            log_success(
-                f"Cleaned build directory: {out_path.relative_to(ctx.chromium_src)}"
+        if ctx.keep_out:
+            # Patch-iteration mode: the git reset/clean below still returns the
+            # tree to pristine so patches re-apply, but the output directory
+            # (and its ninja/siso state) survives, so the build after it
+            # recompiles only what the new patch set actually changed.
+            log_warning(
+                "⏭️  --keep-out: leaving build output directories in place "
+                "(incremental rebuild; never use for a release build)"
             )
+            for out_path in self._output_dirs(ctx):
+                if out_path.exists():
+                    log_info(
+                        "   Kept build directory: "
+                        f"{out_path.relative_to(ctx.chromium_src)}"
+                    )
+        else:
+            log_info("🧹 Cleaning build artifacts...")
+
+            for out_path in self._output_dirs(ctx):
+                if not out_path.exists():
+                    continue
+                safe_rmtree(out_path)
+                log_success(
+                    f"Cleaned build directory: {out_path.relative_to(ctx.chromium_src)}"
+                )
+        # Checkpoints attest a tree state the reset below is about to destroy,
+        # so they go even in --keep-out mode; this run writes fresh ones.
         remove_checkpoint_dirs(ctx, self._checkpoint_architectures(ctx))
 
         log_info("\n🔀 Resetting git branch and removing tracked files...")
         self._git_reset(ctx)
 
-        log_info("\n🧹 Cleaning Sparkle build artifacts...")
-        self._clean_sparkle(ctx)
+        if ctx.keep_out:
+            # Vendored third-party input, identical on every iteration: keeping
+            # it lets an iterate run add `--skip sparkle_setup` and stay offline.
+            log_info("\n⏭️  --keep-out: keeping Sparkle/WinSparkle directories")
+        else:
+            log_info("\n🧹 Cleaning Sparkle build artifacts...")
+            self._clean_sparkle(ctx)
 
         log_info("\n🧹 Pruning orphaned resource binaries...")
         self._prune_orphan_binary_families(ctx)

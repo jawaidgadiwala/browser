@@ -74,12 +74,16 @@ def resolve_config(cli_args: Dict[str, Any]) -> List[Context]:
 
     extra_gn_args = tuple(cli_args.get("extra_gn_args") or ())
 
+    keep_out = bool(cli_args.get("keep_out"))
+
     log_info(f"✓ DIRECT MODE: chromium_src={chromium_src} (cli/env)")
     log_info(f"✓ DIRECT MODE: architecture={architecture} (cli/env/default)")
     log_info(f"✓ DIRECT MODE: build_type={build_type} (cli/default)")
     log_info(f"✓ DIRECT MODE: product={product.id} (cli/default)")
     if extra_gn_args:
         log_info(f"✓ DIRECT MODE: gn-arg overrides={','.join(extra_gn_args)} (cli)")
+    if keep_out:
+        log_info("✓ DIRECT MODE: keep-out=True (clean keeps build output) (cli)")
 
     return [
         Context(
@@ -89,6 +93,7 @@ def resolve_config(cli_args: Dict[str, Any]) -> List[Context]:
             build_type=build_type,
             product=product,
             extra_gn_args=extra_gn_args,
+            keep_out=keep_out,
         )
     ]
 

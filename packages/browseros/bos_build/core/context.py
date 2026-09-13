@@ -87,6 +87,11 @@ class Context:
     # args.gn (GN last-write-wins). Never persisted to profiles.
     extra_gn_args: tuple[str, ...] = ()
     resource_mode: str = "published"
+    # Iteration escape hatch (--keep-out): the clean step still resets the
+    # Chromium tree so patches re-apply, but leaves out/<product>_<arch>
+    # standing so the compiler only redoes what actually changed. Never set
+    # in CI — a release build owns a from-scratch output directory.
+    keep_out: bool = False
     prepared_resources: Optional[Path] = None
     prepared_resources_supplied: bool = False
     source_sha: str = ""
