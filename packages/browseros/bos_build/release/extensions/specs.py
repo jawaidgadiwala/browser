@@ -16,8 +16,6 @@ from typing import Optional, Tuple, Union
 
 from ...core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-    BROWSEROS_CONTROLLER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
 )
 
@@ -91,31 +89,6 @@ EXTENSION_SPECS: Tuple[ExtensionSpec, ...] = (
             "NODE_ENV",
         ),
         env_dir="apps/app",
-    ),
-    ExtensionSpec(
-        name="controller",
-        source=ExternalRepoSource(repo="browseros-ai/BrowserOS-agent", branch="main"),
-        pre_build="bun install",
-        build="bun run build:ext",
-        dist_path="apps/controller-ext/dist",
-        manifest_path="apps/controller-ext/manifest.json",
-        extension_id=BROWSEROS_CONTROLLER_EXTENSION_ID,
-        signing_key_env="BROWSEROS_CONTROLLER_KEY",
-        env=("NODE_ENV", "POSTHOG_API_KEY"),
-    ),
-    ExtensionSpec(
-        name="bugreporter",
-        source=ExternalRepoSource(
-            repo="browseros-ai/BrowserOS-feedback-extension", branch="main"
-        ),
-        # --production=false so devDependencies (rimraf et al.) install too.
-        pre_build="yarn install --production=false",
-        build="yarn run build",
-        dist_path="dist",
-        manifest_path="manifest.json",
-        extension_id=BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-        signing_key_env="BUGREPORTER_KEY",
-        env=("NODE_ENV",),
     ),
     ExtensionSpec(
         name="browserclaw",

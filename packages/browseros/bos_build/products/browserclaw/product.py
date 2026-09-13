@@ -4,7 +4,6 @@
 from pathlib import Path
 
 from ...core.products import (
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
     MacProductIdentity,
     ProductDescriptor,
@@ -18,10 +17,7 @@ BROWSERCLAW_PRODUCT = ProductDescriptor.define(
     windows_installer_guid="{FA2AFFF8-647B-477C-A5D2-905BA8DB9B82}",
     summary="The open source browser for web agents",
     description="BrowserOS neo is a Chromium-based browser for agent workflows.",
-    required_extensions=(
-        (BROWSERCLAW_EXTENSION_ID, "BrowserOS neo app"),
-        (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "BrowserOS bug reporter"),
-    ),
+    required_extensions=((BROWSERCLAW_EXTENSION_ID, "BrowserOS neo app"),),
     server_bundle_ids=("browserclaw-server",),
     artifact_prefix="BrowserOS_neo",
     mac=MacProductIdentity(

@@ -92,8 +92,6 @@ class CommandRedactionTest(unittest.TestCase):
     def test_redacts_credentials_configured_outside_envconfig_properties(self):
         credentials = {
             "BROWSEROS_AGENT_V2_KEY": "FAKE_AGENT_PRIVATE_KEY_FOR_REDACTION_TEST",
-            "BROWSEROS_CONTROLLER_KEY": "FAKE_CONTROLLER_KEY_FOR_REDACTION_TEST",
-            "BUGREPORTER_KEY": "FAKE_BUGREPORTER_KEY_FOR_REDACTION_TEST",
             "BROWSERCLAW_KEY": "FAKE_BROWSERCLAW_KEY_FOR_REDACTION_TEST",
             "CLOUDFLARE_API_TOKEN": "FAKE_CLOUDFLARE_TOKEN_FOR_REDACTION_TEST",
             "GH_TOKEN": "FAKE_GITHUB_TOKEN_FOR_REDACTION_TEST",
@@ -107,7 +105,7 @@ class CommandRedactionTest(unittest.TestCase):
 
         for credential in credentials.values():
             self.assertNotIn(credential, displayed)
-        self.assertEqual(displayed, "credentials: " + " ".join(["***"] * 8))
+        self.assertEqual(displayed, "credentials: " + " ".join(["***"] * 6))
 
     def test_redacts_common_escaped_and_quoted_secret_representations(self):
         secret = "FAKE_SECRET_WITH_\"DOUBLE\"_AND_'SINGLE'_FOR_REDACTION_TEST"

@@ -203,17 +203,15 @@ Lane-by-lane detail, required secrets, runner cost, and troubleshooting:
 
 ## Release extensions
 
-Four extensions ship as signed CRXs: `agent`, `controller`, `bugreporter`,
-`browserclaw`. `agent` and `browserclaw` build from this repo; the other two are
-cloned from external repos. All four version independently of the browser.
+Two extensions ship as signed CRXs: `agent` and `browserclaw`. Both build from
+this repo — nothing is cloned from an upstream repository — and both version
+independently of the browser.
 
 The standalone workflow owns the default alpha lifecycle: for the in-repo
 `agent` and `browserclaw` extensions it allocates the next version when
 `version` is omitted, builds and verifies the immutable CRX, publishes the
 GitHub release, merges the coherent tracked alpha snapshots through a
-short-lived pull request, and uploads those exact feed files to R2. External
-`controller` and `bugreporter` releases require an explicit version because
-their source commit is not the monorepo release SHA.
+short-lived pull request, and uploads those exact feed files to R2.
 
 ```bash
 gh workflow run release-extensions.yml \
@@ -225,10 +223,8 @@ gh workflow run release-extensions.yml \
 ```
 
 The tracked commit updates `update-manifest.alpha.xml`,
-`extensions.alpha.json`, and `bundled-manifest.xml` together. `controller` still
-releases a CRX but has no alpha entry because it is not registered in the client
-update feed. Selecting `all` requires one explicit version shared by all four
-extensions. A deferred build leaves its draft private; its later `finalize`
+`extensions.alpha.json`, and `bundled-manifest.xml` together. Selecting `all`
+requires one explicit version shared by both extensions. A deferred build leaves its draft private; its later `finalize`
 dispatch performs the alpha update.
 
 Use the feed workflow for previews, repairs, or explicit production promotion:

@@ -5,15 +5,12 @@ import unittest
 
 from ...core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-    BROWSEROS_CONTROLLER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
 )
 from ...lib.paths import get_package_root
 from ..feeds.spec import EXTENSIONS as FEED_EXTENSIONS
 from .specs import (
     EXTENSION_SPECS,
-    ExternalRepoSource,
     InRepoSource,
     select_specs,
     spec_by_name,
@@ -21,17 +18,16 @@ from .specs import (
 
 PRODUCT_IDS = {
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-    BROWSEROS_CONTROLLER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
 }
 
 
 class SpecTableTest(unittest.TestCase):
-    def test_table_holds_exactly_the_four_extensions(self):
+    def test_table_holds_exactly_the_in_repo_extensions(self):
+        # Nothing built from an upstream repository ships in this product.
         self.assertEqual(
             {spec.name for spec in EXTENSION_SPECS},
-            {"agent", "controller", "bugreporter", "browserclaw"},
+            {"agent", "browserclaw"},
         )
 
     def test_names_ids_and_signing_envs_are_unique(self):
@@ -46,16 +42,6 @@ class SpecTableTest(unittest.TestCase):
         for spec in EXTENSION_SPECS:
             self.assertIn(spec.extension_id, PRODUCT_IDS, spec.name)
 
-    def test_controller_id_constant_value(self):
-        self.assertEqual(
-            BROWSEROS_CONTROLLER_EXTENSION_ID,
-            "nlnihljpboknmfagkikhkdblbedophja",
-        )
-        self.assertEqual(
-            spec_by_name("controller").extension_id,
-            BROWSEROS_CONTROLLER_EXTENSION_ID,
-        )
-
     def test_monorepo_extensions_are_in_repo_sources(self):
         monorepo_root = get_package_root().parent.parent
         for name in ("agent", "browserclaw"):
@@ -64,19 +50,9 @@ class SpecTableTest(unittest.TestCase):
             self.assertEqual(source.path, "packages/browseros-agent")
             self.assertTrue((monorepo_root / source.path).is_dir())
 
-    def test_external_extensions_keep_their_repos(self):
-        controller = spec_by_name("controller").source
-        bugreporter = spec_by_name("bugreporter").source
-        self.assertEqual(
-            controller,
-            ExternalRepoSource(repo="browseros-ai/BrowserOS-agent", branch="main"),
-        )
-        self.assertEqual(
-            bugreporter,
-            ExternalRepoSource(
-                repo="browseros-ai/BrowserOS-feedback-extension", branch="main"
-            ),
-        )
+    def test_every_extension_is_built_from_this_repository(self):
+        for spec in EXTENSION_SPECS:
+            self.assertIsInstance(spec.source, InRepoSource, spec.name)
 
     def test_crx_key_matches_feeds_spec_formula(self):
         feed_by_name = {ext.name: ext for ext in FEED_EXTENSIONS}
@@ -89,10 +65,9 @@ class SpecTableTest(unittest.TestCase):
                 self.assertEqual(spec.crx_key("9.9.9"), feed_ext.crx_key("9.9.9"))
                 self.assertEqual(spec.extension_id, feed_ext.extension_id)
 
-    def test_controller_is_not_a_feed_extension(self):
-        self.assertNotIn(
-            "controller", {ext.name for ext in FEED_EXTENSIONS}
-        )
+    def test_feed_extensions_are_all_packaged_extensions(self):
+        packaged = {spec.name for spec in EXTENSION_SPECS}
+        self.assertTrue({ext.name for ext in FEED_EXTENSIONS} <= packaged)
 
     def test_paths_are_relative_and_point_at_build_outputs(self):
         for spec in EXTENSION_SPECS:
@@ -118,8 +93,7 @@ class SpecTableTest(unittest.TestCase):
         self.assertEqual(browserclaw.env_dir, "apps/claw-app")
 
     def test_non_claw_extensions_have_no_required_build_env(self):
-        for name in ("agent", "controller", "bugreporter"):
-            self.assertEqual(spec_by_name(name).required_env, (), name)
+        self.assertEqual(spec_by_name("agent").required_env, ())
 
     def test_in_repo_manifest_paths_exist_in_working_tree(self):
         monorepo_root = get_package_root().parent.parent

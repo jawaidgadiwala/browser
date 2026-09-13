@@ -14,7 +14,6 @@ class SourceResourceCatalogTest(unittest.TestCase):
         self.assertEqual(source.extension_component, "agent")
         self.assertEqual(source.extension_name, "agent")
         self.assertEqual(source.onboarding_component, "app-onboard")
-        self.assertEqual(source.external_extension_names, ("bugreporter",))
 
     def test_browserclaw_source_resources(self) -> None:
         source = source_resources_for_product("browserclaw")
@@ -23,7 +22,6 @@ class SourceResourceCatalogTest(unittest.TestCase):
         self.assertEqual(source.extension_component, "browserclaw")
         self.assertEqual(source.extension_name, "browserclaw")
         self.assertEqual(source.onboarding_component, "claw-onboard")
-        self.assertEqual(source.external_extension_names, ("bugreporter",))
 
     def test_unknown_product_fails(self) -> None:
         with self.assertRaisesRegex(ValueError, "Unknown product"):

@@ -92,7 +92,6 @@ class ProductPayloadManifestPatchTest(unittest.TestCase):
 
         manifest = "bundled_extensions.json"
         agent = "lmihdclmhdopaeappmadgmglglcabodf.crx"
-        bug_reporter = "adlpneommgkgeanpaekgoaolcpncohkf.crx"
         browserclaw = "jllpmhghjcbaccmpindcmpkddjekbnmm.crx"
         base_sources = _source_literals(assignment.group("body"))
         browseros_sources = _conditional_sources(
@@ -105,20 +104,20 @@ class ProductPayloadManifestPatchTest(unittest.TestCase):
         )
 
         self.assertIn('import("//chrome/browser/browseros/buildflags.gni")', build)
-        self.assertEqual(base_sources, {manifest, bug_reporter})
+        self.assertEqual(base_sources, {manifest})
         self.assertEqual(browseros_sources, {agent})
         self.assertEqual(browserclaw_sources, {browserclaw})
         self.assertEqual(
             base_sources | browseros_sources,
-            {manifest, agent, bug_reporter},
+            {manifest, agent},
         )
         self.assertEqual(
             base_sources | browserclaw_sources,
-            {manifest, browserclaw, bug_reporter},
+            {manifest, browserclaw},
         )
         self.assertEqual(
             base_sources | browseros_sources | browserclaw_sources,
-            {manifest, agent, browserclaw, bug_reporter},
+            {manifest, agent, browserclaw},
         )
 
 

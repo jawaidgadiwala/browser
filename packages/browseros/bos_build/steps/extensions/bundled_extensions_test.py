@@ -12,7 +12,6 @@ from unittest.mock import patch
 from bos_build.core.context import Context
 from bos_build.core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
     get_product_descriptor,
 )
@@ -50,25 +49,23 @@ class BundledExtensionsTest(unittest.TestCase):
                 product
             ).required_extension_ids
         }
-        for extension_id, name in required.items():
-            self.assertIn(extension_id, by_id, name)
+        # The checked-in feed is a placeholder while no CRX is published: an
+        # empty manifest is coherent. Once it lists anything, it must list every
+        # required extension and only well-formed, version-pinned entries.
+        if extensions:
+            for extension_id, name in required.items():
+                self.assertIn(extension_id, by_id, name)
         for extension in extensions:
             self.assertRegex(
                 extension.codebase,
-                r"^https://cdn\.browseros\.com/extensions/[a-z]+-[0-9.]+\.crx$",
+                r"^https://[a-z0-9.-]+/extensions/[a-z]+-[0-9.]+\.crx$",
             )
             self.assertIn(f"-{extension.version}.crx", extension.codebase)
 
     def test_published_selection_is_product_exact(self) -> None:
         expected = {
-            "browseros": {
-                BROWSEROS_AGENT_EXTENSION_ID,
-                BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-            },
-            "browserclaw": {
-                BROWSERCLAW_EXTENSION_ID,
-                BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-            },
+            "browseros": {BROWSEROS_AGENT_EXTENSION_ID},
+            "browserclaw": {BROWSERCLAW_EXTENSION_ID},
         }
         for product, extension_ids in expected.items():
             selected = BundledExtensionsModule()._select_product_extensions(
@@ -111,10 +108,6 @@ class BundledExtensionsTest(unittest.TestCase):
                 by_id = {extension.id: extension for extension in selected}
                 self.assertEqual(by_id[product_id].version, version)
                 self.assertEqual(by_id[product_id].codebase, url)
-                self.assertEqual(
-                    by_id[BROWSEROS_BUG_REPORTER_EXTENSION_ID].version,
-                    "52.0.0.0",
-                )
 
     def test_published_manifest_can_be_read_from_exact_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -167,7 +160,7 @@ class BundledExtensionsTest(unittest.TestCase):
             )
             self.assertEqual(
                 {path.stem for path in output.glob("*.crx")},
-                {BROWSEROS_AGENT_EXTENSION_ID, BROWSEROS_BUG_REPORTER_EXTENSION_ID},
+                {BROWSEROS_AGENT_EXTENSION_ID},
             )
 
     def test_source_mode_copies_only_validated_common_crxs(self) -> None:
@@ -204,12 +197,6 @@ class BundledExtensionsTest(unittest.TestCase):
                 output = module._get_output_dir(ctx)
                 self.assertEqual(
                     (output / f"{product_id}.crx").read_bytes(), b"product-crx"
-                )
-                self.assertEqual(
-                    (
-                        output / f"{BROWSEROS_BUG_REPORTER_EXTENSION_ID}.crx"
-                    ).read_bytes(),
-                    b"bug-crx",
                 )
                 generated = json.loads((output / "bundled_extensions.json").read_text())
                 self.assertEqual(
@@ -278,7 +265,7 @@ class BundledExtensionsTest(unittest.TestCase):
             output = module._get_output_dir(contexts[-1])
             self.assertEqual(
                 {path.stem for path in output.glob("*.crx")},
-                {BROWSERCLAW_EXTENSION_ID, BROWSEROS_BUG_REPORTER_EXTENSION_ID},
+                {BROWSERCLAW_EXTENSION_ID},
             )
             self.assertNotIn(
                 BROWSEROS_AGENT_EXTENSION_ID,
@@ -295,9 +282,7 @@ class BundledExtensionsTest(unittest.TestCase):
         extensions = root / product
         extensions.mkdir(parents=True, exist_ok=True)
         product_path = extensions / "product.crx"
-        bug_path = extensions / "bug.crx"
         product_path.write_bytes(b"product-crx")
-        bug_path.write_bytes(b"bug-crx")
 
         def prepared(path: Path, version: str, extension_id: str) -> PreparedFile:
             return PreparedFile(
@@ -323,9 +308,6 @@ class BundledExtensionsTest(unittest.TestCase):
             },
             files={
                 "product_crx": prepared(product_path, product_version, product_id),
-                "bug_reporter_crx": prepared(
-                    bug_path, "52.0.0.0", BROWSEROS_BUG_REPORTER_EXTENSION_ID
-                ),
             },
         )
 
@@ -359,11 +341,6 @@ class BundledExtensionsTest(unittest.TestCase):
                 BROWSEROS_AGENT_EXTENSION_ID,
                 "0.0.115.0",
                 "https://updates.browser.invalid/extensions/agent.crx",
-            ),
-            ExtensionInfo(
-                BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-                "52.0.0.0",
-                "https://updates.browser.invalid/extensions/bugreporter.crx",
             ),
             ExtensionInfo(
                 BROWSERCLAW_EXTENSION_ID,

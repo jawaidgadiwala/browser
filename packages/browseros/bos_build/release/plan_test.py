@@ -65,14 +65,13 @@ class ConflictR2Client(FakeR2Client):
 def bundled_manifest(versions: dict[str, str] | None = None) -> str:
     selected = versions or {
         "agent": "0.0.123.0",
-        "bugreporter": "54.0.0.0",
         "browserclaw": "0.1.7.0",
     }
     lines = [
         "<?xml version='1.0' encoding='UTF-8'?>",
         '<gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">',
     ]
-    for name in ("bugreporter", "agent", "browserclaw"):
+    for name in ("agent", "browserclaw"):
         spec = extension_by_name(name)
         version = selected[name]
         lines.extend(
@@ -188,7 +187,6 @@ class ReleasePlanTest(unittest.TestCase):
                 versions,
                 {
                     extension_by_name("agent").extension_id: "0.0.124.0",
-                    extension_by_name("bugreporter").extension_id: "54.0.0.0",
                     extension_by_name("browserclaw").extension_id: "0.1.7.0",
                 },
             )
@@ -630,7 +628,7 @@ class ReleasePlanTest(unittest.TestCase):
     def test_complete_manifest_has_exactly_the_known_extensions(self) -> None:
         self.assertEqual(
             {extension.name for extension in EXTENSIONS},
-            {"agent", "browserclaw", "bugreporter"},
+            {"agent", "browserclaw"},
         )
 
 

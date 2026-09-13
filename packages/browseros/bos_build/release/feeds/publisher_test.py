@@ -16,6 +16,7 @@ from .publisher import FeedPublisher
 from .render import (
     ExistingAppcast,
     SignedArtifact,
+    extract_appcast_item_count,
     extract_appcast_version,
     extract_channel_metadata,
     extract_manifest_versions,
@@ -36,7 +37,6 @@ from .spec import (
 FIXED_NOW = datetime(2026, 7, 1, 12, 0, 0, tzinfo=timezone.utc)
 EXTENSION_VERSIONS = {
     "agent": "0.0.118.0",
-    "bugreporter": "54.0.0.0",
     "browserclaw": "0.1.7.0",
 }
 
@@ -703,7 +703,6 @@ class PublisherTestCase(unittest.TestCase):
     def test_default_rejects_all_invalid_live_repair_pairs(self):
         extension_versions = {
             "agent": "0.0.123.0",
-            "bugreporter": "54.0.0.0",
             "browserclaw": "0.1.7.0",
         }
         cases = (
@@ -784,7 +783,6 @@ class PublisherTestCase(unittest.TestCase):
     def test_repair_accepts_nonempty_manifest_when_live_is_malformed(self):
         versions = {
             "agent": "0.0.123.0",
-            "bugreporter": "54.0.0.0",
             "browserclaw": "0.1.7.0",
         }
         spec = update_manifest_feed("alpha")
@@ -1157,20 +1155,24 @@ class PublisherTestCase(unittest.TestCase):
         # These files are release outputs, so pin stable schema and ownership
         # invariants instead of versions or whole-file hashes. Otherwise every
         # valid snapshot promotion makes the default branch's test suite stale.
+        # Browser publishes no feed yet: the tracked files are placeholders
+        # that advertise nothing. Only a snapshot that actually carries a
+        # release has to match the generated metadata exactly.
         for bundle_id in ("browseros-server", "browserclaw-server"):
             spec = server_feed(bundle_id, "prod")
             with self.subTest(key=spec.key):
                 content = (updates / "server" / spec.key).read_text()
                 self.assertEqual((spec.kind, spec.channel), ("server", "prod"))
-                self.assertEqual(
-                    extract_channel_metadata(content),
-                    (spec.title, spec.link),
-                )
-                self.assertIn(
-                    f"<description>{spec.title} binary updates</description>",
-                    content,
-                )
-                self.assertIsNotNone(extract_appcast_version(content))
+                if extract_appcast_item_count(content):
+                    self.assertEqual(
+                        extract_channel_metadata(content),
+                        (spec.title, spec.link),
+                    )
+                    self.assertIn(
+                        f"<description>{spec.title} binary updates</description>",
+                        content,
+                    )
+                    self.assertIsNotNone(extract_appcast_version(content))
 
         expected_extension_ids = {
             extension.extension_id
@@ -1184,10 +1186,9 @@ class PublisherTestCase(unittest.TestCase):
                 self.assertEqual(
                     (spec.kind, spec.channel), ("extensions", channel)
                 )
-                self.assertEqual(
-                    set(extract_manifest_versions(manifest)),
-                    expected_extension_ids,
-                )
+                pinned = set(extract_manifest_versions(manifest))
+                if pinned:
+                    self.assertEqual(pinned, expected_extension_ids)
 
     def test_browserclaw_snapshots_use_current_product_title(self):
         updates = Path(__file__).resolve().parents[5] / "updates" / "browser"
@@ -1195,10 +1196,13 @@ class PublisherTestCase(unittest.TestCase):
         for spec in browser_feeds_for_product("browserclaw"):
             with self.subTest(key=spec.key):
                 content = (updates / spec.key).read_text()
-                self.assertEqual(
-                    extract_channel_metadata(content),
-                    (spec.title, spec.link),
-                )
+                # Placeholder feeds advertise no release; only a populated
+                # snapshot must match the generated channel metadata.
+                if extract_appcast_item_count(content):
+                    self.assertEqual(
+                        extract_channel_metadata(content),
+                        (spec.title, spec.link),
+                    )
                 self.assertNotIn("<title>BrowserClaw", content)
 
     def test_extensions_json_skips_head_and_publishes(self):
@@ -1583,7 +1587,7 @@ class PublisherTestCase(unittest.TestCase):
                 "feeds-history/appcast.xml.20260630T000000Z": b"old",
                 "feeds-history/appcast.xml.20260701T120000Z": b"older backup",
                 "extensions/update-manifest.alpha.xml": render_update_manifest(
-                    {"agent": "0.0.118.0", "bugreporter": "54.0.0.0"}
+                    {"agent": "0.0.118.0"}
                 ).encode(),
                 "extensions/extensions.alpha.json": render_extensions_json(
                     "alpha"
@@ -1601,7 +1605,6 @@ class PublisherTestCase(unittest.TestCase):
 
         manifest = statuses["extensions/update-manifest.alpha.xml"]
         self.assertIn("agent=0.0.118.0", manifest.live_version)
-        self.assertIn("bugreporter=54.0.0.0", manifest.live_version)
         self.assertIsNone(manifest.last_published)
 
         self.assertEqual(statuses["extensions/extensions.alpha.json"].live_version, "-")

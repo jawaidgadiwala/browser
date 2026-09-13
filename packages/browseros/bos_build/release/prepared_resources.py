@@ -16,7 +16,6 @@ from typing import Mapping, Protocol, cast
 
 import requests
 
-from ..core.products import BROWSEROS_BUG_REPORTER_EXTENSION_ID
 from ..products.resource_sources import source_resources_for_product
 from ..steps.storage.download import extract_artifact_zip
 from .extensions.build import build_extension_crx
@@ -269,7 +268,7 @@ def validate_prepared_resources(
             raise ValueError(f"Prepared-resource {field} does not match")
     if dict(manifest.component_versions) != dict(expected.component_versions):
         raise ValueError("Prepared-resource component versions do not match")
-    required_roles = {"product_crx", "bug_reporter_crx", "onboarding"}
+    required_roles = {"product_crx", "onboarding"}
     if set(manifest.files) != required_roles:
         raise ValueError("Prepared-resource managed file set is incomplete")
 
@@ -300,9 +299,6 @@ def validate_prepared_resources(
         != expected.component_versions[source.extension_component]
     ):
         raise ValueError("Prepared product extension identity does not match")
-    bug_reporter = manifest.files["bug_reporter_crx"]
-    if bug_reporter.extension_id != BROWSEROS_BUG_REPORTER_EXTENSION_ID:
-        raise ValueError("Prepared bug reporter identity does not match")
     onboarding = manifest.files["onboarding"]
     _validate_onboarding_archive(
         root / onboarding.path,
@@ -356,15 +352,6 @@ def prepare_common_resources(
         if read_crx_extension_id(product_crx.read_bytes()) != product_spec.extension_id:
             raise ValueError("Built product CRX identity does not match its product")
 
-        manifest_xml = operations.fetch_manifest(request.manifest_url)
-        bug_version, bug_url = _resolve_manifest_extension(
-            manifest_xml, BROWSEROS_BUG_REPORTER_EXTENSION_ID
-        )
-        bug_crx = extension_dir / f"{BROWSEROS_BUG_REPORTER_EXTENSION_ID}.crx"
-        bug_crx.write_bytes(operations.download(bug_url))
-        if read_crx_extension_id(bug_crx.read_bytes()) != BROWSEROS_BUG_REPORTER_EXTENSION_ID:
-            raise ValueError("Downloaded bug reporter CRX identity does not match")
-
         onboarding_dir = staging / "onboarding"
         onboarding_dir.mkdir()
         onboarding = onboarding_dir / _onboarding_archive_name(
@@ -385,12 +372,6 @@ def prepare_common_resources(
                     product_crx,
                     product_version,
                     product_spec.extension_id,
-                ),
-                "bug_reporter_crx": _prepared_file(
-                    staging,
-                    bug_crx,
-                    bug_version,
-                    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
                 ),
                 "onboarding": _prepared_file(
                     staging,

@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000..e7b9a3a608cde
 --- /dev/null
 +++ b/chrome/browser/browseros/core/browseros_constants.h
-@@ -0,0 +1,247 @@
+@@ -0,0 +1,243 @@
 +// Copyright 2024 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -38,9 +38,6 @@ index 0000000000000..e7b9a3a608cde
 +
 +inline constexpr char kAgentExtensionId[] = "lmihdclmhdopaeappmadgmglglcabodf";
 +
-+inline constexpr char kBugReporterExtensionId[] =
-+    "adlpneommgkgeanpaekgoaolcpncohkf";
-+
 +inline constexpr char kBrowserClawExtensionId[] =
 +    "jllpmhghjcbaccmpindcmpkddjekbnmm";
 +
@@ -74,7 +71,6 @@ index 0000000000000..e7b9a3a608cde
 +
 +inline constexpr BrowserOSExtensionInfo kBrowserOSExtensions[] = {
 +    {kAgentExtensionId, false, false, BrowserOSExtensionProduct::kBrowserOS},
-+    {kBugReporterExtensionId, true, false, BrowserOSExtensionProduct::kAll},
 +    {kBrowserClawExtensionId, false, false,
 +     BrowserOSExtensionProduct::kBrowserClaw},
 +};

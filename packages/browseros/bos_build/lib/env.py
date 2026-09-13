@@ -13,8 +13,6 @@ SENSITIVE_ENV_VARS: frozenset[str] = frozenset(
     {
         "BROWSERCLAW_KEY",
         "BROWSEROS_AGENT_V2_KEY",
-        "BROWSEROS_CONTROLLER_KEY",
-        "BUGREPORTER_KEY",
         "CLOUDFLARE_API_TOKEN",
         "ESIGNER_PASSWORD",
         "ESIGNER_TOTP_SECRET",

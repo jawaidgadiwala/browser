@@ -13,14 +13,13 @@ from ..feeds.render import extract_manifest_versions, render_update_manifest
 from .manifests import ExtensionsFeedModule, parse_set_options
 
 AGENT_ID = "lmihdclmhdopaeappmadgmglglcabodf"
-BUGREPORTER_ID = "adlpneommgkgeanpaekgoaolcpncohkf"
 BROWSERCLAW_ID = "jllpmhghjcbaccmpindcmpkddjekbnmm"
 
 LIVE_ALPHA_MANIFEST = render_update_manifest(
-    {"agent": "0.0.117.0", "bugreporter": "54.0.0.0"}
+    {"agent": "0.0.117.0"}
 )
 LIVE_BUNDLED_MANIFEST = render_update_manifest(
-    {"agent": "0.0.115.0", "bugreporter": "52.0.0.0", "browserclaw": "0.0.0.2"}
+    {"agent": "0.0.115.0", "browserclaw": "0.0.0.2"}
 )
 
 
@@ -104,7 +103,6 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
             extract_manifest_versions(manifest),
             {
                 AGENT_ID: "0.0.118.0",
-                BUGREPORTER_ID: "54.0.0.0",
                 BROWSERCLAW_ID: "0.0.0.2",
             },
         )
@@ -114,14 +112,12 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
             json_content,
         )
         self.assertIn(AGENT_ID, json_content)
-        self.assertIn(BUGREPORTER_ID, json_content)
         self.assertIn(BROWSERCLAW_ID, json_content)
         # Bundled retains all resolved extension versions.
         self.assertEqual(
             extract_manifest_versions(bundled),
             {
                 AGENT_ID: "0.0.118.0",
-                BUGREPORTER_ID: "54.0.0.0",
                 BROWSERCLAW_ID: "0.0.0.2",
             },
         )
@@ -134,7 +130,6 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
             extract_manifest_versions(manifest),
             {
                 AGENT_ID: "0.0.117.0",
-                BUGREPORTER_ID: "54.0.0.0",
                 BROWSERCLAW_ID: "0.0.0.2",
             },
         )
@@ -142,7 +137,6 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
     def test_independent_product_pin_preserves_newer_live_sibling(self):
         live_versions = {
             "agent": "0.0.120.0",
-            "bugreporter": "54.0.0.0",
             "browserclaw": "0.0.0.4",
         }
         for name, version, sibling in (
@@ -168,7 +162,6 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         # Product B must publish those committed pins along with its own bump.
         committed = render_update_manifest({
             "agent": "0.0.120.0",
-            "bugreporter": "54.0.0.0",
             "browserclaw": "0.0.0.4",
         })
         with TemporaryDirectory() as directory:
@@ -197,14 +190,12 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
             (baseline / "extensions/update-manifest.xml").write_text(
                 render_update_manifest({
                     "agent": "0.0.116.0",
-                    "bugreporter": "53.0.0.0",
                     "browserclaw": "0.0.0.2",
                 })
             )
             (baseline / "extensions/bundled-manifest.xml").write_text(
                 render_update_manifest({
                     "agent": "0.0.119.0",
-                    "bugreporter": "54.0.0.0",
                     "browserclaw": "0.0.0.3",
                 })
             )
@@ -230,7 +221,6 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         # even when the next publisher explicitly selects this same extension.
         committed = render_update_manifest({
             "agent": "0.0.120.0",
-            "bugreporter": "54.0.0.0",
             "browserclaw": "0.0.0.2",
         })
         with TemporaryDirectory() as directory:
@@ -257,7 +247,6 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
     def test_allow_downgrade_explicitly_overrides_committed_channel_pin(self):
         committed = render_update_manifest({
             "agent": "0.0.120.0",
-            "bugreporter": "54.0.0.0",
             "browserclaw": "0.0.0.2",
         })
         with TemporaryDirectory() as directory:
@@ -293,12 +282,11 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         publisher = FakePublisher(
             live={
                 "extensions/update-manifest.xml": render_update_manifest(
-                    {"agent": "0.0.118.0", "bugreporter": "54.0.0.0"}
+                    {"agent": "0.0.118.0"}
                 ),
                 "extensions/bundled-manifest.xml": render_update_manifest(
                     {
                         "agent": "0.0.119.0",
-                        "bugreporter": "54.0.0.0",
                         "browserclaw": "0.0.0.2",
                     }
                 ),
@@ -330,12 +318,11 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         publisher = FakePublisher(
             live={
                 "extensions/update-manifest.xml": render_update_manifest(
-                    {"agent": "0.0.118.0", "bugreporter": "54.0.0.0"}
+                    {"agent": "0.0.118.0"}
                 ),
                 "extensions/bundled-manifest.xml": render_update_manifest(
                     {
                         "agent": "0.0.119.0",
-                        "bugreporter": "54.0.0.0",
                         "browserclaw": "0.0.0.2",
                     }
                 ),
@@ -351,7 +338,7 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         publisher = FakePublisher(live={})
 
         with self.assertRaisesRegex(RuntimeError, "agent"):
-            self._run(publisher=publisher, set_versions={"bugreporter": "54.0.0.0"})
+            self._run(publisher=publisher, set_versions={"browserclaw": "0.0.0.2"})
 
         self.assertEqual(publisher.calls, [])
 
@@ -370,7 +357,6 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
 
         expected = {
             "https://updates.browser.invalid/extensions/agent-0.0.118.0.crx",
-            "https://updates.browser.invalid/extensions/bugreporter-54.0.0.0.crx",
             "https://updates.browser.invalid/extensions/browserclaw-0.0.0.2.crx",
         }
         self.assertEqual(set(self.publisher.head_calls), expected)
@@ -466,8 +452,8 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
 class ParseSetOptionsTest(unittest.TestCase):
     def test_parses_name_version_pairs(self):
         self.assertEqual(
-            parse_set_options(["agent=0.0.118.0", "bugreporter=54.0.0.0"]),
-            {"agent": "0.0.118.0", "bugreporter": "54.0.0.0"},
+            parse_set_options(["agent=0.0.118.0"]),
+            {"agent": "0.0.118.0"},
         )
 
     def test_malformed_entry_raises(self):

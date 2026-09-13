@@ -88,7 +88,7 @@ class PrepareCommonResourcesModule(Step):
     """Build or validate platform-independent source resources."""
 
     produces = ["prepared_resources"]
-    description = "Prepare product CRX, bug reporter CRX, and onboarding"
+    description = "Prepare product CRX and onboarding"
 
     def preflight(self, ctx: Context) -> None:
         _require_source_context(ctx)

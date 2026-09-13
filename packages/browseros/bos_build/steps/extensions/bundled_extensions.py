@@ -74,7 +74,7 @@ class BundledExtensionsModule(Step):
     def _prepared_extensions(
         self, ctx: Context, manifest: PreparedResourcesManifest
     ) -> List[ExtensionInfo]:
-        files = [manifest.files[role] for role in ("product_crx", "bug_reporter_crx")]
+        files = [manifest.files["product_crx"]]
         required_ids = {extension_id for extension_id, _ in ctx.required_extension_ids}
         actual_ids = {prepared.extension_id for prepared in files}
         if actual_ids != required_ids:

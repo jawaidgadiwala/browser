@@ -13,7 +13,6 @@ class SourceResources:
     extension_component: str
     extension_name: str
     onboarding_component: str
-    external_extension_names: tuple[str, ...] = ("bugreporter",)
 
 
 SOURCE_RESOURCES = {

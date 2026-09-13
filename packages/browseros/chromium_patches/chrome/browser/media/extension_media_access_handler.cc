@@ -14,7 +14,7 @@ index c3b79e679637fd8b4a7ffa6caabe18a31afdc12b..09835e2648a7e141bacd9e35ac30d61f
  // 7. M17n/T13n/CJK input method component extension.
  // 8. Accessibility Common extension (used for Dictation)
  // 9. Dictation Connector component extension.
-+// 10. BrowserOS extensions (AI Side Panel and Bug Reporter)
++// 10. BrowserOS catalog extensions (AI side panel, cockpit)
  // Once http://crbug.com/40333126 is fixed, remove this allowlist.
  // Note that if an extension is included here, then the permission request is
  // evaluated based on whether the extension has audioCapture or videoCapture

@@ -12,7 +12,6 @@ from typing import Tuple
 
 from ...core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
     get_product_descriptor,
 )
@@ -41,7 +40,6 @@ class ExtensionSpec:
 
 EXTENSIONS: Tuple[ExtensionSpec, ...] = (
     ExtensionSpec("agent", BROWSEROS_AGENT_EXTENSION_ID, True),
-    ExtensionSpec("bugreporter", BROWSEROS_BUG_REPORTER_EXTENSION_ID, True),
     ExtensionSpec("browserclaw", BROWSERCLAW_EXTENSION_ID, True),
 )
 

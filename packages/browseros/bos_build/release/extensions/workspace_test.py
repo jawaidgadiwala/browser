@@ -19,6 +19,15 @@ from .workspace import (
 )
 
 
+# No shipped extension is built from an outside repository any more, but the
+# workspace helpers still support one. Exercise that path with a fixture spec.
+EXTERNAL_SPEC = dataclasses.replace(
+    spec_by_name("agent"),
+    name="external-fixture",
+    source=ExternalRepoSource(repo="example-org/example-extension", branch="main"),
+)
+
+
 class RecordingGit:
     def __init__(self):
         self.calls = []
@@ -63,13 +72,13 @@ class ResolveSourceTest(unittest.TestCase):
     def test_external_fresh_clone_command(self):
         git = RecordingGit()
         path = resolve_source(
-            spec_by_name("bugreporter"),
+            EXTERNAL_SPEC,
             monorepo_root=self.monorepo,
             work_root=self.work_root,
             branch_override=None,
             run_git=git,
         )
-        dest = self.work_root / "repos" / "BrowserOS-feedback-extension"
+        dest = self.work_root / "repos" / "example-extension"
         self.assertEqual(path, dest)
         self.assertEqual(
             git.calls,
@@ -79,7 +88,7 @@ class ResolveSourceTest(unittest.TestCase):
                         "clone",
                         "--branch",
                         "main",
-                        "https://github.com/browseros-ai/BrowserOS-feedback-extension.git",
+                        "https://github.com/example-org/example-extension.git",
                         str(dest),
                     ),
                     None,
@@ -89,10 +98,10 @@ class ResolveSourceTest(unittest.TestCase):
 
     def test_external_existing_updates_and_branch_override(self):
         git = RecordingGit()
-        dest = self.work_root / "repos" / "BrowserOS-agent"
+        dest = self.work_root / "repos" / "example-extension"
         dest.mkdir(parents=True)
         path = resolve_source(
-            spec_by_name("controller"),
+            EXTERNAL_SPEC,
             monorepo_root=self.monorepo,
             work_root=self.work_root,
             branch_override="canary",
@@ -126,7 +135,7 @@ class ResolveSourceTest(unittest.TestCase):
     def test_branch_override_applies_to_fresh_clone(self):
         git = RecordingGit()
         resolve_source(
-            spec_by_name("bugreporter"),
+            EXTERNAL_SPEC,
             monorepo_root=self.monorepo,
             work_root=self.work_root,
             branch_override="release-candidate",
@@ -243,9 +252,9 @@ class RunCommandTest(unittest.TestCase):
 
 class SpecSourceTypesTest(unittest.TestCase):
     def test_external_specs_expose_repo_names_for_work_dirs(self):
-        source = spec_by_name("controller").source
+        source = EXTERNAL_SPEC.source
         self.assertIsInstance(source, ExternalRepoSource)
-        self.assertEqual(source.repo.split("/")[-1], "BrowserOS-agent")
+        self.assertEqual(source.repo.split("/")[-1], "example-extension")
 
 
 if __name__ == "__main__":

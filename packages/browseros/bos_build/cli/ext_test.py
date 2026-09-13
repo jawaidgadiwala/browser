@@ -69,7 +69,7 @@ class ExtensionReleaseHelpTest(unittest.TestCase):
                 },
             )
 
-    def test_resolve_version_refuses_external_automatic_release(self):
+    def test_resolve_version_refuses_multi_extension_automatic_release(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             records = Path(temp_dir) / "records.json"
             records.write_text(json.dumps([]))
@@ -80,7 +80,7 @@ class ExtensionReleaseHelpTest(unittest.TestCase):
                     "ext",
                     "resolve-version",
                     "--name",
-                    "controller",
+                    "all",
                     "--source-sha",
                     "abc123",
                     "--release-records",

@@ -5,7 +5,6 @@ from pathlib import Path
 
 from ...core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
     MacProductIdentity,
     ProductDescriptor,
     WindowsProductIdentity,
@@ -36,10 +35,9 @@ BROWSEROS_PRODUCT = ProductDescriptor.define(
     homepage_url="https://github.com/jawaidgadiwala/browser",
     support_url="https://github.com/jawaidgadiwala/browser",
     bugtracker_url="https://github.com/jawaidgadiwala/browser/issues",
-    required_extensions=(
-        (BROWSEROS_AGENT_EXTENSION_ID, "BrowserOS agent"),
-        (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "BrowserOS bug reporter"),
-    ),
+    # Upstream's bug reporter extension is not shipped: its reports go to
+    # upstream's inbox and it is built from a repository we do not control.
+    required_extensions=((BROWSEROS_AGENT_EXTENSION_ID, "Browser agent"),),
     # Every Chromium string that says "Chromium"/"Chrome" becomes "Browser",
     # not the (bundle-derived) display name.
     string_replacements=_replacements("Browser"),

@@ -5,7 +5,6 @@ import unittest
 
 from ...core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
 )
 from .spec import (
@@ -154,17 +153,12 @@ class ExtensionRegistryTest(unittest.TestCase):
             by_name["agent"].extension_id, BROWSEROS_AGENT_EXTENSION_ID
         )
         self.assertEqual(
-            by_name["bugreporter"].extension_id,
-            BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-        )
-        self.assertEqual(
             by_name["browserclaw"].extension_id, BROWSERCLAW_EXTENSION_ID
         )
 
     def test_update_feed_membership_mirrors_live(self):
         by_name = {ext.name: ext for ext in EXTENSIONS}
         self.assertTrue(by_name["agent"].in_update_feed)
-        self.assertTrue(by_name["bugreporter"].in_update_feed)
         self.assertTrue(by_name["browserclaw"].in_update_feed)
 
     def test_crx_url_scheme(self):
@@ -176,7 +170,7 @@ class ExtensionRegistryTest(unittest.TestCase):
         self.assertEqual(agent.crx_key("0.0.118.0"), "extensions/agent-0.0.118.0.crx")
 
     def test_unknown_extension_name_raises_listing_valid_names(self):
-        with self.assertRaisesRegex(ValueError, "agent.*browserclaw.*bugreporter"):
+        with self.assertRaisesRegex(ValueError, "agent.*browserclaw"):
             extension_by_name("nope")
 
 

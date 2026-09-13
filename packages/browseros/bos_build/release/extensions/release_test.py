@@ -30,8 +30,6 @@ MODULE = "bos_build.release.extensions.release"
 
 ALL_KEYS = {
     "BROWSEROS_AGENT_V2_KEY": "agent-pem",
-    "BROWSEROS_CONTROLLER_KEY": "controller-pem",
-    "BUGREPORTER_KEY": "bugreporter-pem",
     "BROWSERCLAW_KEY": "claw-pem",
     "VITE_CLAW_POSTHOG_KEY": "phc-claw-app",
 }
@@ -278,7 +276,7 @@ class ExtensionVersionResolutionTest(unittest.TestCase):
     def test_explicit_version_is_validated_and_normalized(self) -> None:
         self.assertEqual(
             resolve_extension_version(
-                extension="controller",
+                extension="browserclaw",
                 requested_version="2.3.4",
                 release_sha="source",
                 release_records=[],
@@ -294,7 +292,7 @@ class ExtensionVersionResolutionTest(unittest.TestCase):
                 normalize_extension_version(version)
 
     def test_all_and_external_extensions_refuse_automatic_versions(self) -> None:
-        for extension in ("all", "controller", "bugreporter"):
+        for extension in ("all",):
             with (
                 self.subTest(extension=extension),
                 self.assertRaisesRegex(ValueError, "explicit version"),
@@ -514,7 +512,7 @@ def _ctx(has_r2=True, bucket="browseros"):
 
 class BuildPipelineTest(unittest.TestCase):
     def test_unknown_name_raises_with_valid_names(self):
-        with self.assertRaisesRegex(ValueError, "bugreporter"):
+        with self.assertRaisesRegex(ValueError, "browserclaw"):
             build_pipeline(
                 version="1.0.0",
                 name="agent-v2",
@@ -548,14 +546,14 @@ class BuildPipelineTest(unittest.TestCase):
         release = steps[0]
         self.assertIsInstance(release, ExtensionReleaseModule)
         self.assertEqual(
-            release.names, ("agent", "controller", "bugreporter", "browserclaw")
+            release.names, ("agent", "browserclaw")
         )
 
     def test_dash_prefixed_branch_rejected_at_assembly(self):
         with self.assertRaisesRegex(ValueError, "branch"):
             build_pipeline(
                 version="1.0.0",
-                name="controller",
+                name="browserclaw",
                 branch="--upload-pack=/bin/sh",
                 chrome_binary=None,
                 source_sha=SOURCE_SHA,
@@ -656,11 +654,6 @@ class ManifestUpdateUrlTest(unittest.TestCase):
             self.dist_path,
         )
 
-    def test_controller_without_update_url_passes(self):
-        _validate_manifest_update_url(
-            spec_by_name("controller"), {}, Path("apps/controller-ext/dist")
-        )
-
 
 class ExecuteTest(unittest.TestCase):
     def setUp(self):
@@ -733,17 +726,17 @@ class ExecuteTest(unittest.TestCase):
             self.work / "dist" / "agent-1.0.0.crx",
         )
 
-    def test_external_extension_uses_shared_builder(self):
-        self._module(("bugreporter",)).execute(_ctx())
+    def test_second_extension_uses_shared_builder(self):
+        self._module(("browserclaw",)).execute(_ctx())
         build_kwargs = self.mocks["build_extension_crx"].call_args.kwargs
-        self.assertEqual(build_kwargs["spec"], spec_by_name("bugreporter"))
+        self.assertEqual(build_kwargs["spec"], spec_by_name("browserclaw"))
 
     def test_upload_failure_stops_later_extensions(self):
         self.mocks["upload_bound_extension_crx"].side_effect = RuntimeError(
             "binding mismatch for extensions/agent-1.0.0.crx"
         )
         with self.assertRaisesRegex(RuntimeError, "extensions/agent-1.0.0.crx"):
-            self._module(("agent", "bugreporter")).execute(_ctx())
+            self._module(("agent", "browserclaw")).execute(_ctx())
 
         built = [
             call.kwargs["spec"].name
@@ -752,7 +745,7 @@ class ExecuteTest(unittest.TestCase):
         self.assertEqual(built, ["agent"])
 
     def test_branch_override_reaches_resolver(self):
-        self._module(("bugreporter",), branch_override="canary").execute(_ctx())
+        self._module(("browserclaw",), branch_override="canary").execute(_ctx())
         self.assertEqual(
             self.mocks["build_extension_crx"].call_args.kwargs["branch_override"],
             "canary",

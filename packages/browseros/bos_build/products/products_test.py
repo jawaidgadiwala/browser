@@ -14,7 +14,6 @@ from bos_build.core.products import (
 from bos_build.products import DEFAULT_PRODUCT_ID, PRODUCTS
 
 BROWSEROS_AGENT_EXTENSION_ID = "lmihdclmhdopaeappmadgmglglcabodf"
-BROWSEROS_BUG_REPORTER_EXTENSION_ID = "adlpneommgkgeanpaekgoaolcpncohkf"
 BROWSERCLAW_EXTENSION_ID = "jllpmhghjcbaccmpindcmpkddjekbnmm"
 
 EXPECTED_BROWSEROS = ProductDescriptor(
@@ -35,10 +34,7 @@ EXPECTED_BROWSEROS = ProductDescriptor(
     summary="A personal agentic browser",
     description="Browser is a privacy-focused web browser built on Chromium.",
     string_replacements=_replacements("Browser"),
-    required_extension_ids=(
-        (BROWSEROS_AGENT_EXTENSION_ID, "BrowserOS agent"),
-        (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "BrowserOS bug reporter"),
-    ),
+    required_extension_ids=((BROWSEROS_AGENT_EXTENSION_ID, "Browser agent"),),
     server_bundle_ids=("browseros-server",),
     mac=MacProductIdentity(
         bundle_id="com.jawaidgadiwala.browser",
@@ -83,10 +79,7 @@ EXPECTED_BROWSERCLAW = ProductDescriptor(
     summary="The open source browser for web agents",
     description="BrowserOS neo is a Chromium-based browser for agent workflows.",
     string_replacements=_replacements("BrowserOS neo"),
-    required_extension_ids=(
-        (BROWSERCLAW_EXTENSION_ID, "BrowserOS neo app"),
-        (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "BrowserOS bug reporter"),
-    ),
+    required_extension_ids=((BROWSERCLAW_EXTENSION_ID, "BrowserOS neo app"),),
     server_bundle_ids=("browserclaw-server",),
     mac=MacProductIdentity(
         bundle_id="com.browseros.BrowserClaw",

@@ -11,7 +11,6 @@ from . import context as context_mod
 from .context import Context
 from .products import (
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
     ProductDescriptor,
     get_product_descriptor,
@@ -179,14 +178,8 @@ class GetAppPathTest(unittest.TestCase):
 
     def test_release_required_extensions_follow_active_product(self):
         expected = {
-            "browseros": (
-                (BROWSEROS_AGENT_EXTENSION_ID, "BrowserOS agent"),
-                (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "BrowserOS bug reporter"),
-            ),
-            "browserclaw": (
-                (BROWSERCLAW_EXTENSION_ID, "BrowserOS neo app"),
-                (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "BrowserOS bug reporter"),
-            ),
+            "browseros": ((BROWSEROS_AGENT_EXTENSION_ID, "Browser agent"),),
+            "browserclaw": ((BROWSERCLAW_EXTENSION_ID, "BrowserOS neo app"),),
         }
 
         for product, required in expected.items():
@@ -202,8 +195,7 @@ class GetAppPathTest(unittest.TestCase):
 
     def test_debug_required_extensions_are_registered_product_union(self):
         expected = (
-            (BROWSEROS_AGENT_EXTENSION_ID, "BrowserOS agent"),
-            (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "BrowserOS bug reporter"),
+            (BROWSEROS_AGENT_EXTENSION_ID, "Browser agent"),
             (BROWSERCLAW_EXTENSION_ID, "BrowserOS neo app"),
         )
 

@@ -126,9 +126,6 @@ GOLDEN_CLAW_SERVER_APPCAST = """\
 GOLDEN_UPDATE_MANIFEST = """\
 <?xml version='1.0' encoding='UTF-8'?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
-  <app appid="adlpneommgkgeanpaekgoaolcpncohkf">
-    <updatecheck codebase="https://updates.browser.invalid/extensions/bugreporter-54.0.0.0.crx" version="54.0.0.0" />
-  </app>
   <app appid="lmihdclmhdopaeappmadgmglglcabodf">
     <updatecheck codebase="https://updates.browser.invalid/extensions/agent-0.0.118.0.crx" version="0.0.118.0" />
   </app>
@@ -138,9 +135,6 @@ GOLDEN_UPDATE_MANIFEST = """\
 GOLDEN_EXTENSIONS_JSON = """\
 {
   "extensions": {
-    "adlpneommgkgeanpaekgoaolcpncohkf": {
-      "external_update_url": "https://updates.browser.invalid/extensions/update-manifest.alpha.xml"
-    },
     "jllpmhghjcbaccmpindcmpkddjekbnmm": {
       "external_update_url": "https://updates.browser.invalid/extensions/update-manifest.alpha.xml"
     },
@@ -284,7 +278,7 @@ class ServerAppcastRenderTest(unittest.TestCase):
 class ExtensionsRenderTest(unittest.TestCase):
     def test_golden_update_manifest(self):
         content = render_update_manifest(
-            {"agent": "0.0.118.0", "bugreporter": "54.0.0.0"}
+            {"agent": "0.0.118.0"}
         )
         self.assertEqual(content, GOLDEN_UPDATE_MANIFEST)
 
@@ -338,7 +332,6 @@ class ExtensionsRenderTest(unittest.TestCase):
     def test_strict_extension_manifest_binds_exact_ids_versions_and_crx_urls(self):
         versions = {
             "agent": "0.0.118.0",
-            "bugreporter": "54.0.0.0",
             "browserclaw": "0.1.7.0",
         }
         canonical = render_update_manifest(versions)
@@ -350,7 +343,6 @@ class ExtensionsRenderTest(unittest.TestCase):
                 )
             ),
             {
-                "adlpneommgkgeanpaekgoaolcpncohkf",
                 "lmihdclmhdopaeappmadgmglglcabodf",
                 "jllpmhghjcbaccmpindcmpkddjekbnmm",
             },
@@ -430,10 +422,7 @@ class VersionHelpersTest(unittest.TestCase):
     def test_extract_manifest_versions(self):
         self.assertEqual(
             extract_manifest_versions(GOLDEN_UPDATE_MANIFEST),
-            {
-                "adlpneommgkgeanpaekgoaolcpncohkf": "54.0.0.0",
-                "lmihdclmhdopaeappmadgmglglcabodf": "0.0.118.0",
-            },
+            {"lmihdclmhdopaeappmadgmglglcabodf": "0.0.118.0"},
         )
 
     def test_extract_enclosure_urls_covers_appcasts_and_manifests(self):
@@ -445,10 +434,7 @@ class VersionHelpersTest(unittest.TestCase):
         )
         self.assertEqual(
             extract_enclosure_urls(GOLDEN_UPDATE_MANIFEST),
-            [
-                "https://updates.browser.invalid/extensions/bugreporter-54.0.0.0.crx",
-                "https://updates.browser.invalid/extensions/agent-0.0.118.0.crx",
-            ],
+            ["https://updates.browser.invalid/extensions/agent-0.0.118.0.crx"],
         )
 
     def test_extract_channel_metadata(self):

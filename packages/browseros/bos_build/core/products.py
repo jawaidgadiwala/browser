@@ -12,10 +12,7 @@ from dataclasses import dataclass, fields
 from typing import Any, Dict, Optional, Tuple
 
 BROWSEROS_AGENT_EXTENSION_ID = "lmihdclmhdopaeappmadgmglglcabodf"
-BROWSEROS_BUG_REPORTER_EXTENSION_ID = "adlpneommgkgeanpaekgoaolcpncohkf"
 BROWSERCLAW_EXTENSION_ID = "jllpmhghjcbaccmpindcmpkddjekbnmm"
-# Packaged to the CDN but neither bundled nor in the update feeds.
-BROWSEROS_CONTROLLER_EXTENSION_ID = "nlnihljpboknmfagkikhkdblbedophja"
 
 
 @dataclass(frozen=True)

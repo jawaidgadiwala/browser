@@ -11,7 +11,6 @@ from pathlib import Path
 
 from bos_build.core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
 )
 from bos_build.release.prepared_resources import (
     PreparationRequest,
@@ -81,16 +80,11 @@ class FakeOperations:
 
     def fetch_manifest(self, url: str) -> str:
         self.manifest_fetches += 1
-        return (
-            '<gupdate xmlns="http://www.google.com/update2/response">'
-            f'<app appid="{BROWSEROS_BUG_REPORTER_EXTENSION_ID}">'
-            '<updatecheck codebase="https://updates.browser.invalid/bug.crx" '
-            'version="54.0.0.0"/></app></gupdate>'
-        )
+        return '<gupdate xmlns="http://www.google.com/update2/response"/>'
 
     def download(self, url: str) -> bytes:
         self.downloads.append(url)
-        return _crx(BROWSEROS_BUG_REPORTER_EXTENSION_ID, b"bug")
+        return b""
 
     def build_onboarding(self, destination: Path, component: str) -> None:
         self.onboarding_builds += 1
@@ -123,20 +117,18 @@ class PreparedResourcesTest(unittest.TestCase):
         manifest = prepare_common_resources(self.request, operations)
 
         self.assertEqual(len(operations.extension_builds), 1)
-        self.assertEqual(operations.manifest_fetches, 1)
-        self.assertEqual(len(operations.downloads), 1)
+        # Nothing is fetched from a remote feed: the product CRX and the
+        # onboarding archive are both built from this repository.
+        self.assertEqual(operations.manifest_fetches, 0)
+        self.assertEqual(operations.downloads, [])
         self.assertEqual(operations.onboarding_builds, 1)
         self.assertEqual(manifest.product, "browseros")
         self.assertEqual(manifest.parent_sha, PARENT_SHA)
         self.assertEqual(manifest.source_sha, SOURCE_SHA)
-        self.assertEqual(set(manifest.files), {"product_crx", "bug_reporter_crx", "onboarding"})
+        self.assertEqual(set(manifest.files), {"product_crx", "onboarding"})
         self.assertEqual(
             manifest.files["product_crx"].extension_id,
             BROWSEROS_AGENT_EXTENSION_ID,
-        )
-        self.assertEqual(
-            manifest.files["bug_reporter_crx"].version,
-            "54.0.0.0",
         )
 
     def test_valid_reuse_performs_no_build_network_or_signing(self) -> None:

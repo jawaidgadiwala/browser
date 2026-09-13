@@ -1362,9 +1362,18 @@ class ProductSuiteGitTest(unittest.TestCase):
             from bos_build.release.feeds.render import extract_appcast_version
 
             committed_version = extract_appcast_version(original_snapshot)
-            server_path.write_text(
-                original_snapshot.replace(committed_version, "9.0.0")
-            )
+            if committed_version is None:
+                # The tracked feed is still an empty placeholder; give it an
+                # item so this case exercises a snapshot ahead of the manifest.
+                ahead_snapshot = original_snapshot.replace(
+                    "  </channel>",
+                    "    <item><sparkle:version>9.0.0</sparkle:version></item>\n"
+                    "  </channel>",
+                )
+                self.assertNotEqual(ahead_snapshot, original_snapshot)
+            else:
+                ahead_snapshot = original_snapshot.replace(committed_version, "9.0.0")
+            server_path.write_text(ahead_snapshot)
             self._git(repo, "add", ".")
             self._git(repo, "commit", "-m", "standalone snapshot ahead of manifest")
             self._git(repo, "push", "origin", "main")
