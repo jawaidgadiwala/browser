@@ -27,22 +27,25 @@ index 57648956faf5058fada6b02abd3301deebb5a295..c0e4f6aa2bf4f14ef2df49c692e3601b
        switch (update_state.error_code) {
          case updater::GOOPDATE_E_APP_UPDATE_DISABLED_BY_POLICY:
            status = VersionUpdater::Status::DISABLED_BY_ADMIN;
-@@ -133,5 +144,18 @@ void CheckForUpdate(StatusCallback status_callback,
+@@ -133,5 +144,21 @@ void CheckForUpdate(StatusCallback status_callback,
  
  std::unique_ptr<VersionUpdater> VersionUpdater::Create(
      content::WebContents* /* web_contents */) {
 +#if BUILDFLAG(ENABLE_SPARKLE)
-+  // Use Sparkle updater if it's enabled
-+  if (sparkle_glue::SparkleEnabled()) {
-+    LOG(INFO) << "VersionUpdater: Using Sparkle updater";
++  // Sparkle owns updates on macOS for this product, so the About page gets a
++  // SparkleVersionUpdater even when SparkleGlue never came up (no appcast
++  // configured, --disable-updates, read-only mount). It reports DISABLED in
++  // that case and settings/about hides the update row entirely. Keying this
++  // on sparkle_glue::SparkleEnabled() instead would fall through to
++  // VersionUpdaterMac, i.e. Chromium's own (Omaha) updater, which this
++  // product never installs: it answers kUpdateError with error_code 0, which
++  // the About page renders as "An error occurred while checking for updates:
++  // 0 (error code 0)".
++  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
++          "browseros-use-chromium-updater")) {
 +    return base::WrapUnique(new SparkleVersionUpdater());
-+  }
-+  else {
-+    LOG(INFO) << "VersionUpdater: Sparkle updater not available, using default updater";
 +  }
 +#endif
 +
-+  LOG(INFO) << "VersionUpdater: Using default Chromium updater";
-+  // Otherwise use the default Chromium updater
    return base::WrapUnique(new VersionUpdaterMac());
  }

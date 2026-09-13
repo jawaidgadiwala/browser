@@ -56,17 +56,27 @@ New prefs (all registered in `browseros::RegisterProfilePrefs`):
 | `chromium_files/products/browseros/chrome/updater/branding.gni` | updater/Keystone identity → Browser / `com.jawaidgadiwala.browser.*` |
 | `chromium_files/products/browseros/chrome/enterprise_companion/branding.gni` | same |
 | `bos_build/products/browseros/product.py` | `display_name="Browser"` (derives `Browser.app`, `Contents/MacOS/Browser`, `Browser Framework.framework`, `Browser_v<version>_<arch>.dmg`, the installer names and the string replacements), `company="Jawaid Gadiwala"`, explicit `mac=`/`linux=`/`windows=` identity |
-| `chromium_patches/chrome/browser/mac/sparkle_glue.mm` | appcast base URL is a constant that defaults to `""`; `+sharedSparkleGlue` now refuses to construct the updater at all when no feed is configured, so `SPUUpdater` is never started. Sparkle stays compiled in |
-| `chromium_patches/chrome/browser/ui/webui/help/sparkle_version_updater_mac.mm` | no updater ⇒ report `DISABLED` (settings/about hides the whole update row) instead of `FAILED` with an error the user cannot act on |
+| `chromium_patches/chrome/browser/mac/sparkle_glue.mm` (upstream feature `mac-sparkle-updater`) | appcast base URL is a constant that defaults to `""`; `+sharedSparkleGlue` now refuses to construct the updater at all when no feed is configured, so `SPUUpdater` is never started. Sparkle stays compiled in. The three "updates are off" reasons (`--disable-updates`, read-only mount, no feed) each log one line at `LOG(ERROR)`, because a release build runs with `logging_dest == LOG_NONE` and `base::logging` only falls back to stderr at or above `kAlwaysPrintErrorLevel` — `LOG(INFO)`/`LOG(WARNING)`/`VLOG` never reach `browser.log` without `--enable-logging` |
+| `chromium_patches/chrome/browser/ui/webui/help/sparkle_version_updater_mac.mm` (same feature) | no updater ⇒ report `DISABLED` (settings/about hides the whole update row) instead of `FAILED` with an error the user cannot act on |
+| `chromium_patches/chrome/browser/ui/webui/help/version_updater_mac.mm` (same feature) | `VersionUpdater::Create` returns `SparkleVersionUpdater` unconditionally on macOS (escape hatch: `--browseros-use-chromium-updater`). Keying it on `sparkle_glue::SparkleEnabled()` meant a feed-less build fell through to `VersionUpdaterMac`, i.e. Chromium's own Omaha updater, which this product never installs — it answers `kUpdateError` with `error_code 0`, rendered as `An error occurred while checking for updates: 0 (error code 0).` |
 
 **Verify:** About page and the macOS menu bar read “Browser”; `Browser -
 <version>` on `chrome://settings/help`; `codesign -dv --verbose=4
 <app>` (or `defaults read <app>/Contents/Info CFBundleIdentifier`) shows
-`com.jawaidgadiwala.browser`; no update check fires and the log shows exactly
-`Sparkle: No update feed configured; updates are off.` and nothing else from
-Sparkle — in particular **not** `Sparkle: Aborted with error: You must specify
-the URL of the appcast as the SUFeedURL key…`, and `chrome://settings/help`
-shows the version with no update row rather than that error text.
+`com.jawaidgadiwala.browser`.
+
+Updates, with no feed configured:
+
+- `chrome://settings/help` shows **only** the version block — no update row,
+  no throbber, no “Check for updates” error. In particular **not**
+  `An error occurred while checking for updates: 0 (error code 0).`
+- `grep Sparkle: ~/Library/Logs/Browser/browser.log` prints exactly one line
+  per launch, `Sparkle: No update feed configured; updates are off.`, and
+  nothing else from Sparkle — in particular **not** `Sparkle: Aborted with
+  error: You must specify the URL of the appcast as the SUFeedURL key…`.
+  (`browser.log` is stderr from the daily-driver launcher, which passes no
+  `--enable-logging`; only `LOG(ERROR)` and above land there, which is why
+  that one line is logged at `ERROR`.)
 
 **Bundle-id change — consequences (the plan recommended keeping the old id; the
 user overrode it):**

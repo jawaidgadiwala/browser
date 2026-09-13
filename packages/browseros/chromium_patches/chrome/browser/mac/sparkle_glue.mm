@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000..3cc907f55b75f
 --- /dev/null
 +++ b/chrome/browser/mac/sparkle_glue.mm
-@@ -0,0 +1,706 @@
+@@ -0,0 +1,713 @@
 +// Copyright 2024 BrowserOS Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -363,21 +363,28 @@ index 0000000000000..3cc907f55b75f
 +  static SparkleGlue* instance = nil;
 +  static dispatch_once_t onceToken;
 +
++  // Exactly one of the lines below is emitted, once per process, the first
++  // time anything asks for the glue -- ChromeBrowserMainExtraPartsMac does
++  // that during startup. They are LOG(ERROR) rather than LOG(INFO)/VLOG on
++  // purpose: a release build runs with logging_dest == LOG_NONE, and
++  // base::logging only falls back to stderr for severities at or above
++  // kAlwaysPrintErrorLevel (LOGGING_ERROR), so anything quieter is invisible
++  // in ~/Library/Logs/Browser/browser.log without --enable-logging.
 +  dispatch_once(&onceToken, ^{
 +    auto* cmd = base::CommandLine::ForCurrentProcess();
 +    if (cmd && cmd->HasSwitch("disable-updates")) {
-+      VLOG(1) << "Sparkle: Updates disabled via command line";
++      LOG(ERROR) << "Sparkle: Disabled on the command line; updates are off.";
 +      return;
 +    }
 +
 +    NSString* appPath = base::apple::OuterBundle().bundlePath;
 +    if (IsOnReadOnlyFilesystem(appPath)) {
-+      VLOG(1) << "Sparkle: Running from read-only filesystem, updates disabled";
++      LOG(ERROR) << "Sparkle: Read-only filesystem; updates are off.";
 +      return;
 +    }
 +
 +    if (!IsUpdateFeedConfigured()) {
-+      LOG(WARNING) << "Sparkle: No update feed configured; updates are off.";
++      LOG(ERROR) << "Sparkle: No update feed configured; updates are off.";
 +      return;
 +    }
 +
