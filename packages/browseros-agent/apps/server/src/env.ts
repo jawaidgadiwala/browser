@@ -20,9 +20,33 @@ export const INLINED_ENV = {
   BROWSEROS_CONFIG_URL: process.env.BROWSEROS_CONFIG_URL,
 } as const
 
-// Telemetry is opt-in for the Browser product: an empty SENTRY_DSN or
-// POSTHOG_API_KEY disables the client at its feature boundary, so only the
-// config URL is mandatory for a production build.
-export const REQUIRED_FOR_PRODUCTION = [
-  'BROWSEROS_CONFIG_URL',
-] as const satisfies readonly (keyof typeof INLINED_ENV)[]
+// Every inlined value is opt-in for the Browser product. Telemetry is disabled
+// at its feature boundary by an empty SENTRY_DSN / POSTHOG_API_KEY, and an empty
+// or unreachable BROWSEROS_CONFIG_URL simply means this build has no hosted
+// model gateway: the server boots and never fetches remote config.
+export const REQUIRED_FOR_PRODUCTION =
+  [] as const satisfies readonly (keyof typeof INLINED_ENV)[]
+
+/**
+ * Host suffix used by the placeholder config URL. `.invalid` is reserved and
+ * never resolves, so a build carrying the sentinel must not attempt the fetch.
+ */
+const UNREACHABLE_HOST_SUFFIX = '.invalid'
+
+/**
+ * Base URL of the hosted model gateway, or `undefined` when this build has
+ * none. Callers must treat `undefined` as "hosted gateway features are off"
+ * rather than falling back to any default endpoint.
+ */
+export function hostedGatewayConfigUrl(): string | undefined {
+  const configured = INLINED_ENV.BROWSEROS_CONFIG_URL?.trim()
+  if (!configured) return undefined
+
+  try {
+    const url = new URL(configured)
+    if (url.hostname.endsWith(UNREACHABLE_HOST_SUFFIX)) return undefined
+    return configured
+  } catch {
+    return undefined
+  }
+}

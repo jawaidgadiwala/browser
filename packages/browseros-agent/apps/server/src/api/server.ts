@@ -8,7 +8,7 @@ import { websocket } from 'hono/bun'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { toChatError } from '../agent/chat-error'
 import { HttpAgentError } from '../agent/errors'
-import { INLINED_ENV } from '../env'
+import { hostedGatewayConfigUrl } from '../env'
 import { initializeOAuth, shutdownOAuth } from '../lib/clients/oauth'
 import { getDb } from '../lib/db'
 import { logger } from '../lib/logger'
@@ -42,6 +42,16 @@ async function assertPortAvailable(port: number): Promise<void> {
   })
 }
 
+/**
+ * Origin of the hosted model gateway, or undefined when this build has none;
+ * the credits route stays disabled in that case. CORS is unrelated: allowed
+ * origins come only from the extension ids and BROWSEROS_TRUSTED_ORIGINS.
+ */
+function gatewayOrigin(): string | undefined {
+  const configUrl = hostedGatewayConfigUrl()
+  return configUrl ? new URL(configUrl).origin : undefined
+}
+
 /** Creates the Hono app and Bun server after wiring process-level dependencies. */
 export async function createHttpServer(config: HttpServerConfig) {
   const { port, host = '0.0.0.0', browserosId } = config
@@ -59,9 +69,7 @@ export async function createHttpServer(config: HttpServerConfig) {
 
   const app = createApiRoutes({
     config: { ...config, activity },
-    gatewayBaseUrl: INLINED_ENV.BROWSEROS_CONFIG_URL
-      ? new URL(INLINED_ENV.BROWSEROS_CONFIG_URL).origin
-      : undefined,
+    gatewayBaseUrl: gatewayOrigin(),
     klavis,
     tokenManager,
     onShutdown: () => {

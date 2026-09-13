@@ -32,7 +32,7 @@ func TestWriteProductionEnvFile(t *testing.T) {
 	assertMode(t, path, 0600)
 	assertMissing(t, filepath.Join(root, "apps", "server", ".env.production"))
 	assertMissing(t, filepath.Join(root, "apps", "cli", ".env.production"))
-	assertContains(t, path, "BROWSEROS_CONFIG_URL=https://llm.browseros.com/api/browseros-server/config\n")
+	assertContains(t, path, "BROWSEROS_CONFIG_URL=https://browseros.invalid/api/browseros-server/config\n")
 	assertContains(t, path, "LOG_LEVEL=debug\n")
 	assertContains(t, path, "NODE_ENV=production\n")
 	assertContains(t, path, "POSTHOG_API_KEY=\n")

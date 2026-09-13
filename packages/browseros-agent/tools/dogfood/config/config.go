@@ -407,7 +407,10 @@ func ExpandTilde(path string, home string) string {
 func DefaultProductionEnv() ProductionEnv {
 	return ProductionEnv{
 		Server: map[string]string{
-			"BROWSEROS_CONFIG_URL": "https://llm.browseros.com/api/browseros-server/config",
+			// Never-resolving placeholder: this product ships no hosted model
+			// gateway, and the server treats an empty or ".invalid" value as
+			// "hosted model features are off".
+			"BROWSEROS_CONFIG_URL": "https://browseros.invalid/api/browseros-server/config",
 			"POSTHOG_API_KEY":      "",
 			"SENTRY_DSN":           "",
 			"R2_ACCOUNT_ID":        "",

@@ -7,7 +7,7 @@
  */
 
 import { LLM_PROVIDERS, type LLMConfig } from '@browseros/shared/schemas/llm'
-import { INLINED_ENV } from '../../../env'
+import { hostedGatewayConfigUrl } from '../../../env'
 import { logger } from '../../logger'
 import { fetchBrowserOSConfig, getLLMConfigFromProvider } from '../gateway'
 import { getOAuthTokenManager } from '../oauth'
@@ -126,10 +126,10 @@ async function resolveBrowserOSConfig(
   config: LLMConfig,
   browserosId?: string,
 ): Promise<ResolvedLLMConfig> {
-  const configUrl = INLINED_ENV.BROWSEROS_CONFIG_URL
+  const configUrl = hostedGatewayConfigUrl()
   if (!configUrl) {
     throw new Error(
-      'BROWSEROS_CONFIG_URL environment variable is required for BrowserOS provider',
+      'This build has no hosted model gateway. Add your own provider API key, or set BROWSEROS_CONFIG_URL to a reachable config endpoint.',
     )
   }
 

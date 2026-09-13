@@ -26,7 +26,15 @@ export interface EnvKeySpec {
 }
 
 const stringSchema = z.string()
-const urlSchema = z.string().url()
+/** A URL, or empty to mean "this endpoint is not configured". */
+const optionalUrlSchema = z.union([z.literal(''), z.string().url()])
+
+/**
+ * Placeholder config URL for the hosted model gateway. `.invalid` is reserved
+ * and never resolves, so a build carrying it cannot phone anyone home.
+ */
+const SERVER_CONFIG_URL_PLACEHOLDER =
+  'https://browseros.invalid/api/browseros-server/config'
 const portSchema = z.string().refine((value) => {
   if (!/^\d+$/.test(value)) {
     return false
@@ -128,10 +136,11 @@ export const ENV_REGISTRY: readonly EnvKeySpec[] = [
   {
     key: 'VITE_PUBLIC_BROWSEROS_API',
     section: 'app',
-    description: 'Public BrowserOS API URL exposed to the browser bundle.',
+    description:
+      'Hosted account/API URL exposed to the browser bundle. Empty by default:\nthis product ships no hosted service, so the manifest grants no host\npermissions and nothing seeds a hosted LLM provider.',
     secret: false,
-    schema: urlSchema,
-    modes: { development: { value: 'https://api.browseros.com' } },
+    schema: optionalUrlSchema,
+    modes: { development: { value: '' } },
   },
   {
     key: 'VITE_ALPHA_FEATURES',
@@ -377,15 +386,16 @@ export const ENV_REGISTRY: readonly EnvKeySpec[] = [
   {
     key: 'BROWSEROS_CONFIG_URL',
     section: 'server',
-    description: 'BrowserOS server config URL required by production builds.',
+    description:
+      'Hosted model gateway config URL. Defaults to a never-resolving\nplaceholder: this product ships no hosted gateway, and the server treats an\nempty or `.invalid` value as "hosted model features are off".',
     secret: false,
-    schema: urlSchema,
+    schema: optionalUrlSchema,
     modes: {
       development: {
-        value: 'https://llm.browseros.com/api/browseros-server/config',
+        value: SERVER_CONFIG_URL_PLACEHOLDER,
       },
       production: {
-        value: 'https://llm.browseros.com/api/browseros-server/config',
+        value: SERVER_CONFIG_URL_PLACEHOLDER,
       },
     },
   },
