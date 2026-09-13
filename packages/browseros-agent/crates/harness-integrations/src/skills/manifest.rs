@@ -11,7 +11,18 @@ use tempfile::NamedTempFile;
 use crate::{catalog::AgentId, error::Error};
 
 pub(crate) const MANIFEST_FILE: &str = "skills.json";
-pub(crate) const MARKER_FILE: &str = ".browserclaw-managed.json";
+pub(crate) const MARKER_FILE: &str = ".browser-managed.json";
+/// Marker file written by builds before the product rename. Read, never written:
+/// an existing install is adopted on the next reconcile, which replaces the
+/// directory wholesale and leaves only the current marker behind.
+pub(crate) const LEGACY_MARKER_FILE: &str = ".browserclaw-managed.json";
+
+/// `managedBy` value this build stamps into every marker it writes.
+const MANAGED_BY: &str = "browser";
+/// `managedBy` value written before the product rename, still accepted as proof
+/// of our own ownership so a pre-rename directory is adopted rather than
+/// treated as a foreign directory and left in place forever.
+const LEGACY_MANAGED_BY: &str = "browserclaw";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct SkillManifest {
@@ -50,14 +61,16 @@ impl OwnershipMarker {
     pub(crate) fn new(skill_name: &str, content_hash: &str) -> Self {
         Self {
             version: 1,
-            managed_by: "browserclaw".to_string(),
+            managed_by: MANAGED_BY.to_string(),
             skill_name: skill_name.to_string(),
             content_hash: content_hash.to_string(),
         }
     }
 
     pub(crate) fn controls(&self, skill_name: &str) -> bool {
-        self.version == 1 && self.managed_by == "browserclaw" && self.skill_name == skill_name
+        self.version == 1
+            && matches!(self.managed_by.as_str(), MANAGED_BY | LEGACY_MANAGED_BY)
+            && self.skill_name == skill_name
     }
 }
 
@@ -106,14 +119,18 @@ pub(crate) fn write_manifest(workspace_dir: &Path, manifest: &SkillManifest) -> 
     atomic_write_file(&path, content.as_bytes())
 }
 
+/// Read the ownership marker from a planted skill directory, falling back to the
+/// pre-rename file name so an existing install is still recognised as ours.
 pub(crate) fn read_marker(target: &Path) -> Result<Option<OwnershipMarker>, Error> {
-    let path = target.join(MARKER_FILE);
-    let raw = match fs::read_to_string(&path) {
-        Ok(raw) => raw,
-        Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
-        Err(error) => return Err(Error::io("read", path, error)),
-    };
-    Ok(serde_json::from_str(&raw).ok())
+    for file in [MARKER_FILE, LEGACY_MARKER_FILE] {
+        let path = target.join(file);
+        match fs::read_to_string(&path) {
+            Ok(raw) => return Ok(serde_json::from_str(&raw).ok()),
+            Err(error) if error.kind() == ErrorKind::NotFound => continue,
+            Err(error) => return Err(Error::io("read", path, error)),
+        }
+    }
+    Ok(None)
 }
 
 pub(crate) fn marker_content(marker: &OwnershipMarker) -> Result<String, Error> {

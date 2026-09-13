@@ -70,10 +70,9 @@ fn installs_updates_repairs_and_preserves_true_no_ops() -> Result<(), Box<dyn st
     assert_eq!(installed.installed, 1);
     assert!(installed.warnings.is_empty());
     assert_eq!(fs::read_to_string(target.join("SKILL.md"))?, "first\n");
-    let marker: Value = serde_json::from_str(&fs::read_to_string(
-        target.join(".browserclaw-managed.json"),
-    )?)?;
-    assert_eq!(marker["managedBy"], "browserclaw");
+    let marker: Value =
+        serde_json::from_str(&fs::read_to_string(target.join(".browser-managed.json"))?)?;
+    assert_eq!(marker["managedBy"], "browser");
     assert_eq!(marker["skillName"], "browserclaw");
 
     let before = fs::metadata(target.join("SKILL.md"))?.modified()?;
@@ -142,10 +141,10 @@ fn either_manifest_or_marker_recovers_ownership() -> Result<(), Box<dyn std::err
     let desired = agents(&[AgentId::ClaudeCode]);
     reconciler.reconcile(&spec("managed\n")?, &desired, &environment)?;
 
-    fs::remove_file(target.join(".browserclaw-managed.json"))?;
+    fs::remove_file(target.join(".browser-managed.json"))?;
     let from_manifest = reconciler.reconcile(&spec("managed\n")?, &desired, &environment)?;
     assert_eq!(from_manifest.updated, 1);
-    assert!(target.join(".browserclaw-managed.json").exists());
+    assert!(target.join(".browser-managed.json").exists());
 
     fs::remove_file(state.join("skills.json"))?;
     let content_before = fs::metadata(target.join("SKILL.md"))?.modified()?;

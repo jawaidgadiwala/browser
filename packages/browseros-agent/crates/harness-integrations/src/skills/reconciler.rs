@@ -562,7 +562,7 @@ fn replace_managed_directory_with(
         .ok_or_else(|| std::io::Error::new(ErrorKind::InvalidInput, "target has no parent"))?;
     fs::create_dir_all(parent)?;
     let temporary = Builder::new()
-        .prefix(".browserclaw-skill-")
+        .prefix(".browser-skill-")
         .tempdir_in(parent)?;
     fs::write(temporary.path().join("SKILL.md"), &spec.content)?;
     let marker = OwnershipMarker::new(&spec.name, desired_hash);
@@ -629,7 +629,7 @@ fn sibling_backup_path(target: &Path) -> PathBuf {
         .and_then(|value| value.to_str())
         .unwrap_or("skill");
     target.with_file_name(format!(
-        ".{file_name}.browserclaw-backup-{}-{}",
+        ".{file_name}.browser-backup-{}-{}",
         std::process::id(),
         monotonic_nonce()
     ))
@@ -1048,7 +1048,7 @@ mod tests {
         let legacy_dir =
             resolve_agent_skill_target(AgentId::ClaudeCode, "browserclaw", &environment)?;
         fs::write(
-            legacy_dir.join(".browserclaw-managed.json"),
+            legacy_dir.join(".browser-managed.json"),
             r#"{"version":1,"managedBy":"other-tool","skillName":"browserclaw","contentHash":"x"}"#,
         )?;
         let manifest_path = state.join("skills.json");
@@ -1061,6 +1061,38 @@ mod tests {
         assert!(removed.is_empty());
         assert!(legacy_dir.join("SKILL.md").exists());
         assert!(fs::read_to_string(&manifest_path)?.contains("browserclaw"));
+        Ok(())
+    }
+
+    #[test]
+    fn a_pre_rename_marker_still_proves_our_ownership() -> Result<(), Box<dyn std::error::Error>> {
+        let root = tempdir()?;
+        let home = root.path().join("home");
+        let state = root.path().join("state");
+        let environment = SkillEnvironment::new(&home, TargetPlatform::Linux);
+        let reconciler = SkillReconciler::new(&state);
+
+        let legacy_spec = SkillSpec::new("browserclaw", "---\nname: browser\n---\nlegacy\n")?;
+        reconciler.reconcile(
+            &legacy_spec,
+            &BTreeSet::from([AgentId::ClaudeCode]),
+            &environment,
+        )?;
+        let legacy_dir =
+            resolve_agent_skill_target(AgentId::ClaudeCode, "browserclaw", &environment)?;
+
+        // Stand in for an install planted before the rename: only the old marker
+        // file exists, and it carries the old `managedBy` value.
+        fs::remove_file(legacy_dir.join(".browser-managed.json"))?;
+        fs::write(
+            legacy_dir.join(".browserclaw-managed.json"),
+            r#"{"version":1,"managedBy":"browserclaw","skillName":"browserclaw","contentHash":"x"}"#,
+        )?;
+
+        // Adopted, not treated as foreign: the sweep removes it.
+        let removed = reconciler.remove_legacy_directories("browserclaw", &environment)?;
+        assert_eq!(removed, BTreeSet::from([AgentId::ClaudeCode]));
+        assert!(!legacy_dir.exists());
         Ok(())
     }
 }
