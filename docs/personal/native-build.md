@@ -235,7 +235,15 @@ identical); it changes what `clean` deletes:
 
 Sparkle survives because it is an unchanging third-party input, which is what
 makes `--skip sparkle_setup` (a ~10 MB download on every run otherwise) safe in
-this mode. Checkpoints still go: they attest a tree state the reset destroys,
+this mode. Keeping it takes two things, and the second is easy to miss: the
+step must skip its own `rm -rf`, *and* `--keep-out` must add
+`--exclude=third_party/sparkle/` / `--exclude=third_party/winsparkle/` to
+`git clean -fdx third_party/` — those dirs are untracked in the Chromium tree,
+so without the excludes the clean sweeps them away and the compile dies with
+`../../third_party/sparkle/Sparkle.framework ... missing and no known rule to
+make it`. (First iterate run after a normal build: Sparkle is already on disk
+from that build's `sparkle_setup`, so skipping the step is safe. On a tree that
+has never had it, run once without `--skip sparkle_setup`.) Checkpoints still go: they attest a tree state the reset destroys,
 and the run writes fresh ones as it goes.
 
 Everything downstream is incremental-safe: `configure` re-runs `gn gen` in the

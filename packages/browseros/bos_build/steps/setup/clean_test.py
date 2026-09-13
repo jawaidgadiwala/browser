@@ -398,8 +398,9 @@ class GclientManagedPathsTest(unittest.TestCase):
 class CleanExcludesTest(unittest.TestCase):
     """The exclude list handed to `git clean`."""
 
-    def _git_clean_command(self, chromium):
+    def _git_clean_command(self, chromium, keep_out: bool = False):
         ctx = make_context(chromium, MockBrowserOSRoot(chromium.root / "bos"))
+        ctx.keep_out = keep_out
         with mock.patch.object(clean, "run_command") as run_cmd:
             clean.CleanModule().execute(ctx)
         commands = [call.args[0] for call in run_cmd.call_args_list]
@@ -424,6 +425,30 @@ class CleanExcludesTest(unittest.TestCase):
             ):
                 self.assertIn(pattern, excludes)
             self.assertEqual(len(excludes), len(set(excludes)))
+
+    def test_keep_out_excludes_sparkle_dirs_from_git_clean(self):
+        """`git clean -fdx third_party/` would otherwise delete the untracked
+        Sparkle dirs --keep-out deliberately preserves."""
+        with tempfile.TemporaryDirectory() as tmp:
+            chromium = MockChromium(Path(tmp))
+            chromium.add_file("DEPS", SAMPLE_DEPS)
+
+            command = self._git_clean_command(chromium, keep_out=True)
+
+            excludes = [arg for arg in command if arg.startswith("--exclude=")]
+            self.assertIn("--exclude=third_party/sparkle/", excludes)
+            self.assertIn("--exclude=third_party/winsparkle/", excludes)
+            self.assertEqual(len(excludes), len(set(excludes)))
+
+    def test_default_clean_does_not_exclude_sparkle_dirs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            chromium = MockChromium(Path(tmp))
+            chromium.add_file("DEPS", SAMPLE_DEPS)
+
+            command = self._git_clean_command(chromium)
+
+            self.assertNotIn("--exclude=third_party/sparkle/", command)
+            self.assertNotIn("--exclude=third_party/winsparkle/", command)
 
     def test_missing_deps_falls_back_to_explicit_list_with_safety_net(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -38,6 +38,15 @@ FALLBACK_CLEAN_EXCLUDES = (
 # regression in DEPS parsing cannot reintroduce that failure.
 ALWAYS_CLEAN_EXCLUDES = ("components/variations/test_data/cipd/",)
 
+# --keep-out only: the Sparkle/WinSparkle vendor dirs are untracked in the
+# Chromium tree, so `git clean -fdx third_party/` sweeps them away even though
+# --keep-out deliberately skips deleting them. Without these excludes,
+# `--keep-out --skip sparkle_setup` fails at compile with
+# "third_party/sparkle/Sparkle.framework ... missing and no known rule to make
+# it". Not applied by default, where the clean step deletes them on purpose and
+# sparkle_setup re-downloads them.
+KEEP_OUT_CLEAN_EXCLUDES = ("third_party/sparkle/", "third_party/winsparkle/")
+
 
 def gclient_managed_paths(deps_path: Path) -> tuple[str, ...]:
     """Return src-relative paths DEPS declares as gclient-managed dependencies.
@@ -247,6 +256,7 @@ class CleanModule(Step):
             *FALLBACK_CLEAN_EXCLUDES,
             *(f"{path}/" for path in managed),
             *ALWAYS_CLEAN_EXCLUDES,
+            *(KEEP_OUT_CLEAN_EXCLUDES if ctx.keep_out else ()),
         ):
             if pattern in seen:
                 continue
