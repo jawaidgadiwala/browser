@@ -45,7 +45,37 @@ ALWAYS_CLEAN_EXCLUDES = ("components/variations/test_data/cipd/",)
 # "third_party/sparkle/Sparkle.framework ... missing and no known rule to make
 # it". Not applied by default, where the clean step deletes them on purpose and
 # sparkle_setup re-downloads them.
-KEEP_OUT_CLEAN_EXCLUDES = ("third_party/sparkle/", "third_party/winsparkle/")
+#
+# These dirs hold two different kinds of file: the downloaded SDK payload
+# (Sparkle.framework, bin/, include/, x64/Release/, ...) which is what we want
+# to keep, and files our own patch series CREATES (BUILD.gn, README.browseros).
+# Keeping the latter makes the next run's `patches` step fail — "Failed to
+# apply 2 patches: third_party/winsparkle/BUILD.gn,
+# third_party/winsparkle/README.browseros" — so the step deletes exactly those
+# again after the git clean. The set is derived from chromium_patches/, never
+# hand-listed, so adding or dropping a vendor patch needs no change here.
+KEEP_OUT_VENDOR_DIRS = ("third_party/sparkle", "third_party/winsparkle")
+KEEP_OUT_CLEAN_EXCLUDES = tuple(f"{path}/" for path in KEEP_OUT_VENDOR_DIRS)
+
+
+def _patch_creates_file(patch_path: Path) -> bool:
+    """True when the patch is a git diff that adds a new file.
+
+    Read as the applier does — the header is at the top, so only the first
+    few lines are inspected; an unreadable patch is treated as "not a new
+    file" and left alone rather than deleting its target.
+    """
+    try:
+        with open(patch_path, "r", encoding="utf-8", errors="replace") as stream:
+            for _ in range(5):
+                line = stream.readline()
+                if not line:
+                    break
+                if line.startswith("new file mode"):
+                    return True
+    except OSError as error:
+        log_warning(f"Could not read patch {patch_path}: {error}")
+    return False
 
 
 def gclient_managed_paths(deps_path: Path) -> tuple[str, ...]:
@@ -138,8 +168,13 @@ class CleanModule(Step):
 
         if ctx.keep_out:
             # Vendored third-party input, identical on every iteration: keeping
-            # it lets an iterate run add `--skip sparkle_setup` and stay offline.
-            log_info("\n⏭️  --keep-out: keeping Sparkle/WinSparkle directories")
+            # the downloaded SDK lets an iterate run add `--skip sparkle_setup`
+            # and stay offline. The patch-created files in those dirs still go,
+            # or `patches` cannot re-create them.
+            log_info(
+                "\n⏭️  --keep-out: keeping downloaded Sparkle/WinSparkle SDKs"
+            )
+            self._remove_patch_created_vendor_files(ctx)
         else:
             log_info("\n🧹 Cleaning Sparkle build artifacts...")
             self._clean_sparkle(ctx)
@@ -202,6 +237,29 @@ class CleanModule(Step):
             if entry.is_dir() and entry.name not in families:
                 safe_rmtree(entry)
                 log_success(f"Removed orphaned resource family: {entry.name}")
+
+    def _remove_patch_created_vendor_files(self, ctx: Context) -> None:
+        """Delete the files our patch series CREATES inside the kept vendor dirs.
+
+        `git clean` skips those dirs under --keep-out (see
+        KEEP_OUT_CLEAN_EXCLUDES), which would otherwise leave last run's
+        BUILD.gn / README.browseros in place and make the next `patches` step
+        fail with "Failed to apply". Only new-file patches are removed: a patch
+        that MODIFIES a downloaded SDK file needs that file to still be there.
+        """
+        patches_root = ctx.get_patches_dir()
+        for vendor in KEEP_OUT_VENDOR_DIRS:
+            patch_dir = patches_root / vendor
+            if not patch_dir.is_dir():
+                continue
+            for patch_file in sorted(patch_dir.rglob("*")):
+                if not patch_file.is_file() or not _patch_creates_file(patch_file):
+                    continue
+                relative = patch_file.relative_to(patches_root)
+                target = ctx.chromium_src / relative
+                if target.is_file():
+                    target.unlink()
+                    log_success(f"Removed patch-created file: {relative.as_posix()}")
 
     def _clean_sparkle(self, ctx: Context) -> None:
         sparkle_dir = ctx.get_sparkle_dir()

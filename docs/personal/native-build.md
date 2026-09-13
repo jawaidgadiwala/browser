@@ -235,15 +235,31 @@ identical); it changes what `clean` deletes:
 
 Sparkle survives because it is an unchanging third-party input, which is what
 makes `--skip sparkle_setup` (a ~10 MB download on every run otherwise) safe in
-this mode. Keeping it takes two things, and the second is easy to miss: the
-step must skip its own `rm -rf`, *and* `--keep-out` must add
-`--exclude=third_party/sparkle/` / `--exclude=third_party/winsparkle/` to
-`git clean -fdx third_party/` — those dirs are untracked in the Chromium tree,
-so without the excludes the clean sweeps them away and the compile dies with
-`../../third_party/sparkle/Sparkle.framework ... missing and no known rule to
-make it`. (First iterate run after a normal build: Sparkle is already on disk
-from that build's `sparkle_setup`, so skipping the step is safe. On a tree that
-has never had it, run once without `--skip sparkle_setup`.) Checkpoints still go: they attest a tree state the reset destroys,
+this mode. Keeping it takes three things, and the last two are easy to miss:
+
+1. the step skips its own `rm -rf` of `third_party/{sparkle,winsparkle}`;
+2. `--keep-out` adds `--exclude=third_party/sparkle/` and
+   `--exclude=third_party/winsparkle/` to `git clean -fdx third_party/` —
+   those dirs are untracked in the Chromium tree, so without the excludes the
+   clean sweeps them away and the compile dies with
+   `../../third_party/sparkle/Sparkle.framework ... missing and no known rule
+   to make it`;
+3. the step then deletes, from inside those kept dirs, the files **our patch
+   series creates** (today `third_party/sparkle/BUILD.gn`,
+   `third_party/winsparkle/BUILD.gn`, `third_party/winsparkle/README.browseros`).
+   The excludes in (2) preserve those too, and a new-file patch cannot apply
+   over an existing file: the next run dies at `patches` with `Failed to apply
+   2 patches: third_party/winsparkle/BUILD.gn,
+   third_party/winsparkle/README.browseros`.
+
+The (3) set is derived from `chromium_patches/`, not hand-listed, and only
+new-file patches (`new file mode` in the diff header) are removed — a patch
+that merely modifies a downloaded SDK file needs that file to stay. Adding or
+dropping a vendor patch therefore needs no change in `bos_build`.
+
+(First iterate run after a normal build: Sparkle is already on disk from that
+build's `sparkle_setup`, so skipping the step is safe. On a tree that has never
+had it, run once without `--skip sparkle_setup`.) Checkpoints still go: they attest a tree state the reset destroys,
 and the run writes fresh ones as it goes.
 
 Everything downstream is incremental-safe: `configure` re-runs `gn gen` in the

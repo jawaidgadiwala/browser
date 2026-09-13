@@ -116,6 +116,67 @@ class CleanExecuteTest(unittest.TestCase):
                 f"expected a git clean, got: {git_commands}",
             )
 
+    def test_keep_out_drops_patch_created_vendor_files_keeping_the_sdk(self):
+        """`git clean` skips the vendor dirs under --keep-out, so last run's
+        patch-created BUILD.gn must go or `patches` fails to apply it."""
+        with (
+            tempfile.TemporaryDirectory() as chromium_tmp,
+            tempfile.TemporaryDirectory() as root_tmp,
+        ):
+            chromium = MockChromium(Path(chromium_tmp))
+            root = MockBrowserOSRoot(Path(root_tmp))
+            root.add_patch(
+                "third_party/sparkle/BUILD.gn",
+                "diff --git a/third_party/sparkle/BUILD.gn "
+                "b/third_party/sparkle/BUILD.gn\nnew file mode 100644\n",
+            )
+            root.add_patch(
+                "third_party/winsparkle/README.browseros",
+                "diff --git a/third_party/winsparkle/README.browseros "
+                "b/third_party/winsparkle/README.browseros\nnew file mode 100644\n",
+            )
+            ctx = make_context(chromium, root, architecture="x64")
+            ctx.keep_out = True
+            sparkle = chromium.with_sparkle()
+            winsparkle = chromium.with_winsparkle()
+            sparkle_build_gn = sparkle / "BUILD.gn"
+            sparkle_build_gn.write_text("stale\n")
+            winsparkle_readme = winsparkle / "README.browseros"
+            winsparkle_readme.write_text("stale\n")
+            downloaded = sparkle / "Sparkle.framework"
+            downloaded.mkdir()
+            (downloaded / "Sparkle").write_text("payload\n")
+
+            with mock.patch.object(clean, "run_command"):
+                clean.CleanModule().execute(ctx)
+
+            self.assertFalse(sparkle_build_gn.exists())
+            self.assertFalse(winsparkle_readme.exists())
+            self.assertTrue((downloaded / "Sparkle").exists())
+
+    def test_keep_out_keeps_vendor_files_a_patch_only_modifies(self):
+        with (
+            tempfile.TemporaryDirectory() as chromium_tmp,
+            tempfile.TemporaryDirectory() as root_tmp,
+        ):
+            chromium = MockChromium(Path(chromium_tmp))
+            root = MockBrowserOSRoot(Path(root_tmp))
+            root.add_patch(
+                "third_party/sparkle/Info.plist",
+                "diff --git a/third_party/sparkle/Info.plist "
+                "b/third_party/sparkle/Info.plist\n--- a/third_party/sparkle/"
+                "Info.plist\n+++ b/third_party/sparkle/Info.plist\n",
+            )
+            ctx = make_context(chromium, root, architecture="x64")
+            ctx.keep_out = True
+            info_plist = chromium.with_sparkle() / "Info.plist"
+            info_plist.write_text("downloaded\n")
+
+            with mock.patch.object(clean, "run_command"):
+                clean.CleanModule().execute(ctx)
+
+            self.assertTrue(info_plist.exists())
+
     def test_keep_out_still_removes_resume_checkpoints(self):
         with (
             tempfile.TemporaryDirectory() as chromium_tmp,
