@@ -1,9 +1,9 @@
 diff --git a/chrome/browser/mac/sparkle_glue.mm b/chrome/browser/mac/sparkle_glue.mm
 new file mode 100644
-index 0000000000000..7a5da195279c1
+index 0000000000000..3cc907f55b75f
 --- /dev/null
 +++ b/chrome/browser/mac/sparkle_glue.mm
-@@ -0,0 +1,688 @@
+@@ -0,0 +1,706 @@
 +// Copyright 2024 BrowserOS Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -42,6 +42,21 @@ index 0000000000000..7a5da195279c1
 +
 +// Returns nil when no feed is configured. Sparkle treats a nil feed URL as
 +// "nothing to check", so updates are inert rather than failing noisily.
++// True when this run has an appcast to check: either the build was pointed at
++// one (kDefaultFeedBaseURL) or this run was, with --browseros-sparkle-url.
++// Browser ships with neither, so the updater must never be constructed: an
++// SPUUpdater started without a feed aborts with Sparkle's "You must specify
++// the URL of the appcast as the SUFeedURL key" error, which then surfaces on
++// chrome://settings/help as a failed update check.
++bool IsUpdateFeedConfigured() {
++  auto* cmd = base::CommandLine::ForCurrentProcess();
++  if (cmd && cmd->HasSwitch(browseros::kSparkleUrl) &&
++      !cmd->GetSwitchValueASCII(browseros::kSparkleUrl).empty()) {
++    return true;
++  }
++  return kDefaultFeedBaseURL[0] != '\0';
++}
++
 +NSString* GetArchitectureSpecificFeedURL() {
 +  // Feed keys are owned by release/feeds/spec.py (_BROWSER_FEED_SLUGS) in
 +  // the BrowserOS repo; keep the two in lockstep.
@@ -361,6 +376,11 @@ index 0000000000000..7a5da195279c1
 +      return;
 +    }
 +
++    if (!IsUpdateFeedConfigured()) {
++      LOG(WARNING) << "Sparkle: No update feed configured; updates are off.";
++      return;
++    }
++
 +    instance = [[SparkleGlue alloc] init];
 +  });
 +
@@ -562,11 +582,9 @@ index 0000000000000..7a5da195279c1
 +    return base::SysUTF8ToNSString(url);
 +  }
 +
-+  NSString* feed = GetArchitectureSpecificFeedURL();
-+  if (!feed) {
-+    LOG(WARNING) << "Sparkle: No update feed configured; updates are off.";
-+  }
-+  return feed;
++  // Unreachable in a feed-less build: sharedSparkleGlue refuses to construct
++  // the updater at all, so this delegate is never installed.
++  return GetArchitectureSpecificFeedURL();
 +}
 +
 +- (void)updater:(SPUUpdater*)updater

@@ -2,7 +2,7 @@
 
 Remaining upstream (BrowserOS / browserclaw) remnants that would leak in a shipped build. Paths are repo-relative. "Overridden" says whether an env var or flag already neutralises the default. Status column tracks fixes.
 
-Order of work: B1, B2, B4, B5, B12 (silent phone-home in native builds) → B3, B7, B8, B9, B11 → A1–A5, A8, A9 (first-run visible) → C3, C4, C5, C7 (state/identity, migrations) → C1/C6 (bundle + binary rename, one coordinated change) → A6, A13, A14 (links/docs).
+Order of work: B1, B2, B4, B5, B12 (silent phone-home in native builds) → B3, B7, B8, B9, B11 → A1–A5, A8, A9 (first-run visible) → C3, C4, C5, C7 (state/identity, migrations) → C1 (done) / C6 (sidecar + server binary rename) → A6, A13, A14 (links/docs).
 
 ## B. Network endpoints, keys, feeds that phone upstream
 
@@ -47,7 +47,7 @@ Order of work: B1, B2, B4, B5, B12 (silent phone-home in native builds) → B3, 
 
 | # | Where | Finding | Fix | Overridden |
 |---|---|---|---|---|
-| C1 | `bos_build/products/browseros/product.py:28,43,50-52` | `display_name="BrowserOS"` ⇒ `BrowserOS.app`, `Contents/MacOS/BrowserOS`, `BrowserOS Framework.framework`, dmg prefix, Linux dir | Flip `display_name` / `artifact_prefix` / `framework_name` to `Browser` together with `tools/personal/config.ts` and `apps/claw-app/web-ext.config.ts:89` | Bundle id, company, volume name already ours |
+| C1 | `bos_build/products/browseros/product.py` | ~~`display_name="BrowserOS"` ⇒ `BrowserOS.app`, `Contents/MacOS/BrowserOS`, `BrowserOS Framework.framework`, dmg prefix, Linux dir~~ | **done** — see the closed table below | n/a |
 | C2 | `bos_build/products/browseros/product.py:34` | Required-extension labels "BrowserOS agent/bug reporter" | Rename; see B12 | No |
 | C3 | `packages/shared/src/constants/paths.ts:10-18`, `apps/claw-server-rust/src/config.rs:18-19`, `crates/browseros-mcp/src/output_file.rs:31-33` | State dirs `~/.browseros`, `~/.browserclaw`, db `browseros.sqlite` | `~/.browser` with one-time migration | Env overrides only |
 | C4 | `crates/harness-integrations/src/skills/manifest.rs:14,53,60`, `skills/reconciler.rs:565,632` | Marker `.browserclaw-managed.json`, `managedBy: "browserclaw"` written into users' agent config dirs | `.browser-managed.json` / `"browser"` with legacy migration | No |
@@ -69,7 +69,7 @@ macOS Sparkle feed empty by default; hosted LLM provider gated off; classic-app 
 
 ## Deferred (needs user decision or migration)
 
-B14/C8 (CLI: ship or drop), B15 (register own OAuth apps), C1/C6 (coordinated bundle + binary rename after native build verified), C3/C4/C10 (state migrations).
+B14/C8 (CLI: ship or drop), B15 (register own OAuth apps), C6 (sidecar resource dir + server binary rename), C3/C4/C10 (state migrations).
 
 ## Status: closed (repo-root lane, 2026-09-13)
 
@@ -77,4 +77,5 @@ B14/C8 (CLI: ship or drop), B15 (register own OAuth apps), C1/C6 (coordinated bu
 |---|---|---|
 | A13 | done | `README.md` replaced with the product README (what Browser is, status, build/run, privacy, license + attribution linking `README.BrowserOS.md` / `NOTICE` / `LICENSE`); `README.personal.md` folded in and deleted. |
 | A14 | done (`skills/`) | `skills/browser/SKILL.md`: manual-MCP and download links repointed to this repo's docs; trigger reworded to "use Browser", with neo/browserclaw/browseros kept only as recognition aliases. The second half of A14, `packages/browseros-agent/resources/skills/browserclaw/SKILL.md`, belongs to the packages lane. |
+| C1 | done | `bos_build/products/browseros/product.py`: `display_name="Browser"`, matching `PRODUCT_FULLNAME` in `BRANDING.release`. That derives `app_base_name`/`artifact_prefix` (`Browser.app`, `Contents/MacOS/Browser`, `Browser_v<v>_<arch>.dmg`), the installer names and `string_replacements`; `mac.framework_name` is spelled out as `Browser Framework.framework` and a `linux=` override names the package, launcher, `.desktop`, AppArmor profile, `/usr/lib` and `/opt` dirs `browser` instead of deriving `browseros` from `id`. `id` stays `browseros` (registry key, GN `browseros_product`, `chromium_files/products/<id>` overlay, R2 release prefix — none user-visible). The only non-derived expectations left in `bos_build` were the `ctx is None` fallback lists in `steps/sign/macos.py` (framework + main-executable names), now `Browser`/`Browser Dev`. `release/feeds/spec.py` gained a `BrowserOS` legacy feed title so a previously published appcast is still recognised as ours. Launcher side: `tools/personal/config.ts` and `apps/claw-app/web-ext.config.ts` now try the built app first, then `/Applications/Browser.app` (new and legacy inner names), then the stock cask. C6 (the `BrowserOSServer` sidecar resource dir and the Rust server binary names) is still open and deliberately untouched. |
 | B13 | done | `updates/**`: every appcast, extension config and update manifest replaced with an empty-but-valid feed of the same format, plus `updates/README.md` explaining these are placeholders until we have our own feed. `updates/upload.sh` left as is (plumbing only; no upstream URLs of its own). |

@@ -162,8 +162,8 @@ class _FakeLinuxToolchain:
         storage.mkdir(parents=True, exist_ok=True)
         self._appimage_tree = storage / f"fake-appimage-tree-{self._appimage_builds}"
         shutil.copytree(appdir, self._appimage_tree)
-        runtime = self._appimage_tree / "opt/browseros"
-        self.appimage_runtime = (runtime / "browseros").read_bytes()
+        runtime = self._appimage_tree / "opt/browser"
+        self.appimage_runtime = (runtime / "browser").read_bytes()
         self.appimage_sandbox_mode = (
             runtime / "chrome_sandbox"
         ).stat().st_mode & 0o7777
@@ -178,7 +178,7 @@ class _FakeLinuxToolchain:
         assert self._appimage_tree is not None
         shutil.copytree(self._appimage_tree, destination)
         if self.corrupt_next_appimage_extract_with_symlink:
-            browser = destination / "opt/browseros/browseros"
+            browser = destination / "opt/browser/browser"
             browser.unlink()
             browser.symlink_to("chrome_crashpad_handler")
             self.corrupt_next_appimage_extract_with_symlink = False
@@ -191,8 +191,8 @@ class _FakeLinuxToolchain:
         storage.mkdir(parents=True, exist_ok=True)
         self._deb_tree = storage / f"fake-deb-tree-{self._deb_builds}"
         shutil.copytree(root, self._deb_tree)
-        runtime = self._deb_tree / "usr/lib/browseros"
-        self.deb_runtime = (runtime / "browseros").read_bytes()
+        runtime = self._deb_tree / "usr/lib/browser"
+        self.deb_runtime = (runtime / "browser").read_bytes()
         self.deb_sandbox_mode = (runtime / "chrome_sandbox").stat().st_mode & 0o7777
         self.debian_control = (self._deb_tree / "DEBIAN/control").read_text()
         output.write_bytes(b"!<arch>\nfake-deb")
@@ -217,7 +217,7 @@ class _FakeLinuxToolchain:
             else:
                 shutil.copy2(source, target)
         if self.omit_extracted_desktop:
-            (destination / "usr/share/applications/browseros.desktop").unlink(
+            (destination / "usr/share/applications/browser.desktop").unlink(
                 missing_ok=True
             )
 
@@ -292,7 +292,7 @@ class LinuxToolchainAdapterTest(unittest.TestCase):
             ) as run,
         ):
             unresolved = SubprocessLinuxToolchain().unresolved_libraries(
-                Path("/runtime/browseros"),
+                Path("/runtime/browser"),
                 Path("/runtime"),
             )
 
@@ -489,11 +489,11 @@ class LinuxArtifactBuildTest(unittest.TestCase):
             self.assertEqual(second_pair, pair)
             self.assertEqual(downloader.urls, [pin.url])
             self.assertEqual(cached_tool.read_bytes(), tool_bytes)
-            self.assertEqual(toolchain.appimage_runtime, b"contents:browseros")
-            self.assertEqual(toolchain.deb_runtime, b"contents:browseros")
+            self.assertEqual(toolchain.appimage_runtime, b"contents:browser")
+            self.assertEqual(toolchain.deb_runtime, b"contents:browser")
             self.assertEqual(toolchain.appimage_sandbox_mode, 0o4755)
             self.assertEqual(toolchain.deb_sandbox_mode, 0o755)
-            self.assertIn("Package: browseros", toolchain.debian_control)
+            self.assertIn("Package: browser", toolchain.debian_control)
             self.assertIn("Architecture: amd64", toolchain.debian_control)
             self.assertTrue(pair.appimage.stat().st_mode & 0o111)
             self.assertFalse(pair.deb.stat().st_mode & 0o111)
@@ -950,13 +950,13 @@ class LinuxArtifactBuildTest(unittest.TestCase):
             extracted = root / "real-deb-inspection"
             toolchain._real.extract_deb_data(pair.deb, extracted)
             metainfo = (
-                extracted / "usr/share/metainfo/browseros.metainfo.xml"
+                extracted / "usr/share/metainfo/browser.metainfo.xml"
             ).read_text(encoding="utf-8")
 
         self.assertEqual(
             fields,
             {
-                "Package": "browseros",
+                "Package": "browser",
                 "Version": "136.0.0.0.1",
                 "Architecture": "amd64",
             },

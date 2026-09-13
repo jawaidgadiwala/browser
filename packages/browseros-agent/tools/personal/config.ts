@@ -14,13 +14,28 @@ import { dirname, join, resolve } from 'node:path'
 
 export const AGENT_ROOT = resolve(import.meta.dir, '..', '..')
 
-// Prefer the rebranded, ad-hoc re-signed copy when it exists (see
-// docs/personal/daily-driver.md, "App icon"); fall back to the stock bundle.
-const BRANDED_BINARY = '/Applications/Browser.app/Contents/MacOS/BrowserOS'
-const STOCK_BINARY = '/Applications/BrowserOS.app/Contents/MacOS/BrowserOS'
+// Binary preference, first match wins (see docs/personal/daily-driver.md):
+//   1. the app we built ourselves, straight out of the Chromium out dir;
+//   2. an installed Browser.app (the built app copied to /Applications);
+//   3. the re-signed copy of the upstream cask, whose inner executable is
+//      still named BrowserOS because only the bundle was renamed;
+//   4. the stock upstream cask.
+// BROWSEROS_PERSONAL_BINARY overrides all of them.
+const BINARY_CANDIDATES = [
+  join(
+    process.env.BROWSEROS_CHROMIUM_SRC || join(homedir(), 'chromium', 'src'),
+    'out',
+    `Default_browseros_${process.arch === 'x64' ? 'x64' : 'arm64'}`,
+    'Browser.app/Contents/MacOS/Browser',
+  ),
+  '/Applications/Browser.app/Contents/MacOS/Browser',
+  '/Applications/Browser.app/Contents/MacOS/BrowserOS',
+  '/Applications/BrowserOS.app/Contents/MacOS/BrowserOS',
+]
 export const BROWSEROS_BINARY =
   process.env.BROWSEROS_PERSONAL_BINARY ||
-  (existsSync(BRANDED_BINARY) ? BRANDED_BINARY : STOCK_BINARY)
+  BINARY_CANDIDATES.find(existsSync) ||
+  BINARY_CANDIDATES[BINARY_CANDIDATES.length - 1]
 
 // Product name of the personal build; mirrors apps/app/lib/personal/product.ts.
 const PRODUCT_NAME = 'Browser'

@@ -55,14 +55,18 @@ New prefs (all registered in `browseros::RegisterProfilePrefs`):
 | `…/BRANDING.debug` | `Browser Dev`, `com.jawaidgadiwala.browser.dev` |
 | `chromium_files/products/browseros/chrome/updater/branding.gni` | updater/Keystone identity → Browser / `com.jawaidgadiwala.browser.*` |
 | `chromium_files/products/browseros/chrome/enterprise_companion/branding.gni` | same |
-| `bos_build/products/browseros/product.py` | `company="Jawaid Gadiwala"`, explicit `mac=`/`windows=` identity, `string_replacements=_replacements("Browser")` |
-| `chromium_patches/chrome/browser/mac/sparkle_glue.mm` | appcast base URL is now a constant that defaults to `""` → `feedURLStringForUpdater:` returns `nil` and updates are inert; Sparkle stays compiled in |
+| `bos_build/products/browseros/product.py` | `display_name="Browser"` (derives `Browser.app`, `Contents/MacOS/Browser`, `Browser Framework.framework`, `Browser_v<version>_<arch>.dmg`, the installer names and the string replacements), `company="Jawaid Gadiwala"`, explicit `mac=`/`linux=`/`windows=` identity |
+| `chromium_patches/chrome/browser/mac/sparkle_glue.mm` | appcast base URL is a constant that defaults to `""`; `+sharedSparkleGlue` now refuses to construct the updater at all when no feed is configured, so `SPUUpdater` is never started. Sparkle stays compiled in |
+| `chromium_patches/chrome/browser/ui/webui/help/sparkle_version_updater_mac.mm` | no updater ⇒ report `DISABLED` (settings/about hides the whole update row) instead of `FAILED` with an error the user cannot act on |
 
 **Verify:** About page and the macOS menu bar read “Browser”; `Browser -
 <version>` on `chrome://settings/help`; `codesign -dv --verbose=4
 <app>` (or `defaults read <app>/Contents/Info CFBundleIdentifier`) shows
-`com.jawaidgadiwala.browser`; no update check fires and the log shows
-`Sparkle: No update feed configured; updates are off.`
+`com.jawaidgadiwala.browser`; no update check fires and the log shows exactly
+`Sparkle: No update feed configured; updates are off.` and nothing else from
+Sparkle — in particular **not** `Sparkle: Aborted with error: You must specify
+the URL of the appcast as the SUFeedURL key…`, and `chrome://settings/help`
+shows the version with no update row rather than that error text.
 
 **Bundle-id change — consequences (the plan recommended keeping the old id; the
 user overrode it):**
@@ -91,13 +95,27 @@ user overrode it):**
    but a release signing run needs a **new provisioning profile** for
    `com.jawaidgadiwala.browser` (`PROD_MACOS_BROWSEROS_PASSKEY_PROFILE_PATH`).
    Not exercised by `--no-sign`.
-7. **The `.app` is still named `BrowserOS.app`** with the inner executable
-   `Contents/MacOS/BrowserOS`. `display_name` is intentionally unchanged because
-   it derives `app_base_name`, and
-   `packages/browseros-agent/tools/personal/config.ts` launches that exact path
-   (out of scope for this batch). The *visible* name comes from BRANDING and
-   from the string replacements. Renaming the bundle must land together with
-   that agent-side change.
+7. **The `.app` is named `Browser.app`** with the inner executable
+   `Contents/MacOS/Browser`, the framework `Browser Framework.framework` and
+   helpers `Browser Helper*.app` — all derived from `display_name="Browser"`
+   in `bos_build/products/browseros/product.py`, which matches
+   `PRODUCT_FULLNAME` in `BRANDING.release`. The launcher
+   (`packages/browseros-agent/tools/personal/config.ts`) and
+   `apps/claw-app/web-ext.config.ts` prefer the built app and fall back to the
+   older `/Applications/…/MacOS/BrowserOS` paths.
+8. **macOS-obsolete banner.** `chrome://settings/help` *contains* the string
+   "To get future Browser updates, you'll need macOS 13 or later. This
+   computer is using macOS 12." in its DOM on every macOS build. It is
+   `IDS_MACOS_OBSOLETE` from `chrome/app/chromium_strings.grd`, a **hardcoded
+   literal** — "macOS 12" is not detected, it is part of upstream's copy. The
+   element is `<span id="deprecationWarning" ?hidden="${!obsoleteSystemInfo_.obsolete}">`,
+   bound to `aboutObsoleteNowOrSoon` = `ObsoleteSystem::IsObsoleteNowOrSoon()`
+   (`chrome/browser/obsolete_system/obsolete_system_mac.cc`), which is
+   `base::mac::MacOSMajorVersion() <= 12`. On this machine
+   `kern.osproductversion` is `26.3.1` and the app is built against the macOS
+   26.4 SDK (no version-compatibility shim), so the flag is false and the
+   banner is hidden. Reading the page as text (CDP/`get_page_text`) includes
+   hidden nodes, which is how it surfaced. Nothing to fix.
 
 ### `browser-side-panel-no-header`
 
@@ -265,5 +283,20 @@ dropped on the user's instruction: keep the updater, ship an empty feed).
 `browseros_browser_product` is not a GN arg yet — the constant in
 `browseros_browser_product.h` is the switch.
 
-Output: `~/chromium/src/out/Default_browseros_arm64/BrowserOS.app`
-(`app_base_name` is still `BrowserOS`; see consequence 7 above).
+Output: `~/chromium/src/out/Default_browseros_arm64/Browser.app`
+(`app_base_name` is `Browser`; see consequence 7 above).
+
+To package an already-compiled out dir without a clean rebuild, use phase mode
+— it runs `compile` (a near-no-op for incremental ninja) then `package_macos`,
+and never schedules `clean`, which would delete `out/`:
+
+```bash
+cd packages/browseros
+uv run browseros build --build --package \
+  --product browseros --arch arm64 --build-type release \
+  --chromium-src ~/chromium/src
+```
+
+Avoid `--preset release … --from package_macos`: `--from` turns on strict
+resume validation, which re-derives the run contract from the repo's HEAD and
+working tree and refuses to resume once either has moved.

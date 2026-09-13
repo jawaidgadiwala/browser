@@ -75,7 +75,7 @@ class FakeR2Client:
 
 
 def _artifact(
-    url="https://updates.browser.invalid/releases/browseros/0.47.0.2/macos/BrowserOS_v0.47.0.2_arm64.dmg",
+    url="https://updates.browser.invalid/releases/browseros/0.47.0.2/macos/Browser_v0.47.0.2_arm64.dmg",
 ):
     return {
         "filename": url.rsplit("/", 1)[-1],
@@ -454,7 +454,7 @@ class PublisherTestCase(unittest.TestCase):
 
     def test_populated_wrong_channel_live_appcast_fails_closed(self):
         live = _mac_appcast("10000.0.46.0.0").replace(
-            "<title>BrowserOS</title>",
+            "<title>Browser</title>",
             "<title>BrowserClaw</title>",
         )
         publisher = self._publisher({"appcast.xml": live.encode()})

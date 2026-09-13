@@ -832,8 +832,8 @@ def find_components_to_sign(
         framework_names = [ctx.product.mac_framework_name(ctx.build_type)]
     else:
         framework_names = [
-            "BrowserOS Framework.framework",
-            "BrowserOS Dev Framework.framework",
+            "Browser Framework.framework",
+            "Browser Dev Framework.framework",
             "BrowserOS neo Framework.framework",
             "BrowserOS neo Dev Framework.framework",
         ]
@@ -1326,7 +1326,7 @@ def sign_all_components(
     main_exe_names = (
         [ctx.product.display_name, ctx.product.dev_display_name]
         if ctx
-        else ["BrowserOS", "BrowserOS Dev"]
+        else ["Browser", "Browser Dev"]
     )
     main_exe = None
     for exe_name in main_exe_names:

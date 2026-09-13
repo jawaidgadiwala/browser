@@ -19,7 +19,7 @@ from .common import (
 )
 
 ARTIFACT = {
-    "url": "https://updates.browser.invalid/releases/0.31.0/win/BrowserOS_v0.31.0_x64_installer.exe",
+    "url": "https://updates.browser.invalid/releases/0.31.0/win/Browser_v0.31.0_x64_installer.exe",
     "sparkle_signature": "c2lnbmF0dXJl",
     "sparkle_length": 12345,
 }
@@ -60,7 +60,7 @@ def _release_metadata(
     run_id: str = "123",
     run_attempt: str = "1",
 ) -> dict:
-    prefix = "BrowserOS_neo" if product == "browserclaw" else "BrowserOS"
+    prefix = "BrowserOS_neo" if product == "browserclaw" else "Browser"
     return {
         "product": product,
         "version": version,
@@ -184,18 +184,18 @@ class ReleaseContractTest(unittest.TestCase):
 # get_download_path_mapping(browseros) must stay byte-identical to it.
 BROWSEROS_DOWNLOAD_GOLDEN = {
     "macos": {
-        "arm64": "download/BrowserOS-arm64.dmg",
-        "x64": "download/BrowserOS-x86_64.dmg",
-        "universal": "download/BrowserOS.dmg",
+        "arm64": "download/Browser-arm64.dmg",
+        "x64": "download/Browser-x86_64.dmg",
+        "universal": "download/Browser.dmg",
     },
     "win": {
-        "x64_installer": "download/BrowserOS_installer.exe",
+        "x64_installer": "download/Browser_installer.exe",
     },
     "linux": {
-        "x64_appimage": "download/BrowserOS.AppImage",
-        "x64_deb": "download/BrowserOS.deb",
-        "arm64_appimage": "download/BrowserOS-arm64.AppImage",
-        "arm64_deb": "download/BrowserOS-arm64.deb",
+        "x64_appimage": "download/Browser.AppImage",
+        "x64_deb": "download/Browser.deb",
+        "arm64_appimage": "download/Browser-arm64.AppImage",
+        "arm64_deb": "download/Browser-arm64.deb",
     },
 }
 

@@ -75,7 +75,12 @@ class FeedSpec:
 
 # Browser feed key infix per product ("" keeps today's browseros keys).
 _BROWSER_FEED_SLUGS = {"browseros": "", "browserclaw": "claw"}
-_BROWSER_FEED_LEGACY_DISPLAY_NAMES = {"browserclaw": "BrowserClaw"}
+_BROWSER_FEED_LEGACY_DISPLAY_NAMES = {
+    "browserclaw": "BrowserClaw",
+    # Renamed from upstream's "BrowserOS" to "Browser"; an appcast still
+    # carrying the old channel title is ours, not a foreign feed.
+    "browseros": "BrowserOS",
+}
 
 # Products whose shipping updater selects this feed by browseros::GetProduct()
 # (sparkle_glue.mm / winsparkle_glue.cc). A product listed in

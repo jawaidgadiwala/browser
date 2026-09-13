@@ -5,26 +5,31 @@ from pathlib import Path
 
 from ...core.products import (
     BROWSEROS_AGENT_EXTENSION_ID,
+    LinuxProductIdentity,
     MacProductIdentity,
     ProductDescriptor,
     WindowsProductIdentity,
-    _replacements,
 )
 from ..server_binaries import ServerBundle, SignSpec
 
 # Ships as "Browser" by Jawaid Gadiwala.
 #
-# `display_name` stays "BrowserOS" on purpose: it derives app_base_name, which
-# names BrowserOS.app and its inner Contents/MacOS/BrowserOS executable, and
-# packages/browseros-agent/tools/personal/config.ts launches that exact path.
-# The user-visible name comes from the BRANDING overlay (PRODUCT_FULLNAME=
-# Browser -> CFBundleName / CFBundleDisplayName) and from `string_replacements`
-# below (IDS_PRODUCT_NAME -> menu bar, About page, first run, crash reporter).
-# Renaming the bundle itself is a follow-up that must land together with the
-# agent-side launcher path.
+# `display_name` is the single source of the bundle name: it derives
+# app_base_name (Browser.app and its inner Contents/MacOS/Browser),
+# artifact_prefix (Browser_v<version>_<arch>.dmg), the macOS framework name,
+# the installer names and the string replacements that rewrite every Chromium
+# string. It matches PRODUCT_FULLNAME in
+# chromium_files/products/browseros/chrome/app/theme/chromium/BRANDING.release,
+# which is what Chromium's own build names the app, the framework and the
+# helper apps. The two must stay equal or bos_build looks for an app that the
+# compile step never produced.
+#
+# `id` stays "browseros": it is the registry key (`--product browseros`), the
+# GN `browseros_product` value, the chromium_files/products/<id> overlay
+# directory and the R2 release prefix — none of which are user-visible.
 BROWSEROS_PRODUCT = ProductDescriptor.define(
     id="browseros",
-    display_name="BrowserOS",
+    display_name="Browser",
     company="Jawaid Gadiwala",
     windows_installer_guid="{5d8d08af-2df9-4da2-86c1-eac353a0ca32}",
     summary="A personal agentic browser",
@@ -38,9 +43,8 @@ BROWSEROS_PRODUCT = ProductDescriptor.define(
     # Upstream's bug reporter extension is not shipped: its reports go to
     # upstream's inbox and it is built from a repository we do not control.
     required_extensions=((BROWSEROS_AGENT_EXTENSION_ID, "Browser agent"),),
-    # Every Chromium string that says "Chromium"/"Chrome" becomes "Browser",
-    # not the (bundle-derived) display name.
-    string_replacements=_replacements("Browser"),
+    # string_replacements is derived from display_name ("Browser"), so every
+    # Chromium string that says "Chromium"/"Chrome"/"Google" becomes "Browser".
     # Bundle identity is the product's own, independent of the bundle *name*.
     # Keep in lockstep with MAC_BUNDLE_ID in
     # chromium_files/products/browseros/chrome/app/theme/chromium/BRANDING.*
@@ -50,9 +54,24 @@ BROWSEROS_PRODUCT = ProductDescriptor.define(
         dev_bundle_id="com.jawaidgadiwala.browser.dev",
         signing_identifier="com.jawaidgadiwala.browser",
         dev_signing_identifier="com.jawaidgadiwala.browser.dev",
-        framework_name="BrowserOS Framework.framework",
-        dev_framework_name="BrowserOS Dev Framework.framework",
+        # Derived from display_name by convention; spelled out because the
+        # compile step's output must match byte for byte.
+        framework_name="Browser Framework.framework",
+        dev_framework_name="Browser Dev Framework.framework",
         dmg_volume_name="Browser",
+    ),
+    # Linux identifiers derive from `id` by convention, which would ship a
+    # "browseros" package, launcher and /usr/lib dir. Name them after the
+    # product instead; the .desktop id and AppStream id follow the launcher.
+    linux=LinuxProductIdentity(
+        package_name="browser",
+        launcher_name="browser",
+        desktop_id="browser.desktop",
+        icon_name="browser",
+        lib_dir="/usr/lib/browser",
+        appimage_dir="/opt/browser",
+        apparmor_profile_name="browser",
+        metainfo_id="browser.desktop",
     ),
     windows=WindowsProductIdentity(
         app_user_model_id="JawaidGadiwala.Browser",

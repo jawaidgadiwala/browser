@@ -106,10 +106,27 @@ list only the classic worker. The neo extension is confirmed loaded by its
 cockpit page answering with `chrome.runtime.id ===
 "jllpmhghjcbaccmpindcmpkddjekbnmm"`.
 
+## Which binary it launches
+
+`tools/personal/config.ts` picks the first of these that exists, and
+`BROWSEROS_PERSONAL_BINARY` overrides all of them:
+
+1. `~/chromium/src/out/Default_browseros_<arch>/Browser.app/Contents/MacOS/Browser`
+   — the app we build ourselves (`BROWSEROS_CHROMIUM_SRC` moves the checkout
+   root; see `docs/personal/native-build.md`);
+2. `/Applications/Browser.app/Contents/MacOS/Browser` — that app installed;
+3. `/Applications/Browser.app/Contents/MacOS/BrowserOS` — the re-signed copy of
+   the upstream cask, whose *bundle* was renamed but whose inner executable
+   still carries the old name;
+4. `/Applications/BrowserOS.app/Contents/MacOS/BrowserOS` — the stock cask.
+
+`apps/claw-app/web-ext.config.ts` uses the same order for the WXT runner when
+`BROWSEROS_BINARY` is unset.
+
 ## App icon and name in the Dock
 
 The extension layer cannot change the app bundle's icon or name. Until the
-native build ships, `tools/personal/make-branded-app.sh` creates
+native build is what you launch, `tools/personal/make-branded-app.sh` creates
 `/Applications/Browser.app`: a copy of the stock bundle with `branding/Browser.icns`,
 `CFBundleName`/`CFBundleDisplayName` set to "Browser", and an ad-hoc signature
 (hardened runtime dropped so the nested frameworks load). `personal:start`

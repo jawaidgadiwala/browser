@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import { mkdirSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, mkdirSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineWebExtConfig } from 'wxt'
@@ -79,14 +79,33 @@ if (env.BROWSEROS_SERVER_PORT) {
   // port falls back to server port.
   chromiumArgs.push(`--browseros-proxy-port=${env.BROWSEROS_SERVER_PORT}`)
 }
+
+/**
+ * Binary preference, first match wins: the app we built ourselves, an
+ * installed Browser.app (new or legacy inner executable name), then the
+ * stock upstream cask. Mirrors tools/personal/config.ts.
+ */
+function defaultBrowserBinary(): string {
+  const candidates = [
+    join(
+      env.BROWSEROS_CHROMIUM_SRC || join(homedir(), 'chromium', 'src'),
+      'out',
+      `Default_browseros_${process.arch === 'x64' ? 'x64' : 'arm64'}`,
+      'Browser.app/Contents/MacOS/Browser',
+    ),
+    '/Applications/Browser.app/Contents/MacOS/Browser',
+    '/Applications/Browser.app/Contents/MacOS/BrowserOS',
+    '/Applications/BrowserOS.app/Contents/MacOS/BrowserOS',
+  ]
+  return candidates.find(existsSync) ?? candidates[candidates.length - 1]
+}
+
 export default defineWebExtConfig({
   // Embedded mode: the BrowserOS classic WXT runner owns the browser and
   // loads this extension's dist dir via BROWSEROS_EXTRA_EXTENSIONS.
   disabled: env.BROWSEROS_CLAW_EMBEDDED === '1',
   binaries: {
-    chrome:
-      env.BROWSEROS_BINARY ||
-      '/Applications/BrowserOS.app/Contents/MacOS/BrowserOS',
+    chrome: env.BROWSEROS_BINARY || defaultBrowserBinary(),
   },
   chromiumArgs,
   chromiumProfile: chromiumProfile(),

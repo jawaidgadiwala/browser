@@ -202,7 +202,7 @@ class SlackRunSubscriberTest(unittest.TestCase):
         self.assertEqual(len(fake.messages), 2)
         terminal = fake.messages[-1]
         self.assertIn("❌ Build FAILED at 'compile' (Build phase)", terminal["title"])
-        self.assertIn("BrowserOS v1.2.3", terminal["title"])
+        self.assertIn("Browser v1.2.3", terminal["title"])
         self.assertEqual(terminal["body"], "Terminated after 1m 24s")
         self.assertEqual(terminal["details"], {"Error": "ninja failed"})
         self.assertEqual(terminal["color"], COLOR_RED)

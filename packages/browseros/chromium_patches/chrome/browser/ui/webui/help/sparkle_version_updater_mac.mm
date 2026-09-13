@@ -1,9 +1,9 @@
 diff --git a/chrome/browser/ui/webui/help/sparkle_version_updater_mac.mm b/chrome/browser/ui/webui/help/sparkle_version_updater_mac.mm
 new file mode 100644
-index 0000000000000..47957c4108f40
+index 0000000000000..890d777fe80e7
 --- /dev/null
 +++ b/chrome/browser/ui/webui/help/sparkle_version_updater_mac.mm
-@@ -0,0 +1,166 @@
+@@ -0,0 +1,171 @@
 +// Copyright 2024 BrowserOS Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -81,10 +81,15 @@ index 0000000000000..47957c4108f40
 +
 +  SparkleGlue* sparkle = [SparkleGlue sharedSparkleGlue];
 +  if (!sparkle) {
-+    LOG(ERROR) << "SparkleVersionUpdater: Sparkle not available";
++    // No updater: this build has no appcast configured, was started with
++    // --disable-updates, or runs from a read-only mount (see
++    // SparkleGlue +sharedSparkleGlue). None of those are failures, so report
++    // DISABLED — settings/about hides the whole update row for it — rather
++    // than FAILED, which would show a red error the user cannot act on.
++    VLOG(1) << "SparkleVersionUpdater: no updater; update UI disabled";
 +    if (!status_callback_.is_null()) {
-+      status_callback_.Run(FAILED, 0, false, false, std::string(), 0,
-+                           u"Sparkle updater not available");
++      status_callback_.Run(DISABLED, 0, false, false, std::string(), 0,
++                           std::u16string());
 +    }
 +    return;
 +  }

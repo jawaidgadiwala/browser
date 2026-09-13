@@ -94,7 +94,7 @@ class FeedTableTest(unittest.TestCase):
         mac = by_key["appcast.xml"]
         self.assertEqual(mac.platform, "macos")
         self.assertEqual(mac.artifact_keys, ("universal", "arm64"))
-        self.assertEqual(mac.title, "BrowserOS")
+        self.assertEqual(mac.title, "Browser")
 
         mac_x64 = by_key["appcast-x86_64.xml"]
         self.assertEqual(mac_x64.artifact_keys, ("x64", "universal"))
@@ -102,7 +102,7 @@ class FeedTableTest(unittest.TestCase):
         win = by_key["appcast-win.xml"]
         self.assertEqual(win.platform, "win")
         self.assertEqual(win.artifact_keys, ("x64_installer",))
-        self.assertEqual(win.title, "BrowserOS Windows Updates")
+        self.assertEqual(win.title, "Browser Windows Updates")
 
         win_arm = by_key["appcast-win-arm64.xml"]
         self.assertEqual(win_arm.artifact_keys, ("arm64_installer",))
