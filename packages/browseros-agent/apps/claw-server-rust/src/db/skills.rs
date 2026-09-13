@@ -13,6 +13,22 @@ use sea_orm::{
     QuerySelect, TransactionTrait, sea_query::OnConflict,
 };
 
+/// Prefix every user- and agent-authored skill used to be namespaced under. New
+/// skills are saved under their bare name, so every lookup falls back to the
+/// prefixed row to keep skills saved by an earlier build addressable.
+const LEGACY_SKILL_PREFIX: &str = "neo-";
+
+/// The name a pre-prefix-drop row would be stored under. Idempotent: an
+/// already-prefixed name is returned unchanged.
+#[must_use]
+pub fn legacy_prefixed(name: &str) -> String {
+    if name.starts_with(LEGACY_SKILL_PREFIX) {
+        name.to_owned()
+    } else {
+        format!("{LEGACY_SKILL_PREFIX}{name}")
+    }
+}
+
 /// Database boundary for user skills and their run history.
 #[derive(Clone)]
 pub struct SkillsRepository {
@@ -36,6 +52,29 @@ impl SkillsRepository {
         Ok(Skills::find_by_id(name.to_owned())
             .one(self.db.connection())
             .await?)
+    }
+
+    /**
+     * Look a skill up by the name a caller supplied, and report the name its row is actually
+     * stored under. A bare name falls back to the legacy `neo-`-prefixed row, so a skill saved
+     * before the prefix was dropped stays addressable by the name an agent types; passing the
+     * legacy name directly also works. Callers must use the returned name for follow-up
+     * queries and file paths.
+     */
+    pub async fn get_allowing_legacy(
+        &self,
+        name: &str,
+    ) -> AppResult<Option<(String, skills::Model)>> {
+        if let Some(model) = self.get(name).await? {
+            return Ok(Some((name.to_owned(), model)));
+        }
+        let legacy = legacy_prefixed(name);
+        if legacy != name
+            && let Some(model) = self.get(&legacy).await?
+        {
+            return Ok(Some((legacy, model)));
+        }
+        Ok(None)
     }
 
     /// Insert a skill only if its name is free. Returns `true` when the row was
@@ -221,5 +260,21 @@ fn into_active(model: skills::Model) -> skills::ActiveModel {
         linked_agents_json: Set(model.linked_agents_json),
         created_at: Set(model.created_at),
         updated_at: Set(model.updated_at),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::legacy_prefixed;
+
+    #[test]
+    fn legacy_prefixed_is_idempotent() {
+        assert_eq!(legacy_prefixed("weather"), "neo-weather");
+        assert_eq!(legacy_prefixed("neo-weather"), "neo-weather");
+        // Only a leading prefix is collapsed; an interior "neo-" is untouched.
+        assert_eq!(
+            legacy_prefixed("weather-neo-check"),
+            "neo-weather-neo-check"
+        );
     }
 }

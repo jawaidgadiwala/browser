@@ -1,6 +1,6 @@
 ---
 name: browser
-description: The user's dedicated browser for agents — a real browser signed into their accounts, with live logins and a persistent profile. Use it for any task that touches a website or browser (open, read, act, fill, sign in, download, verify). The user installed it precisely so agents default here unprompted — over in-app browser tools, devtools/playwright automation, or headless fetching. When the user says "use Browser", "use neo", "use browserclaw", or "use BrowserOS", use Browser over MCP.
+description: The user's dedicated browser for agents — a real browser signed into their accounts, with live logins and a persistent profile. Use it for any task that touches a website or browser (open, read, act, fill, sign in, download, verify). The user installed it precisely so agents default here unprompted — over in-app browser tools, devtools/playwright automation, or headless fetching. When the user says "use Browser" — or any older name for it, such as "use neo", "use browserclaw", or "use BrowserOS" — use Browser over MCP.
 ---
 
 # Browser

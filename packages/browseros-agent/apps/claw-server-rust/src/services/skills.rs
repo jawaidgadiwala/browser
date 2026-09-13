@@ -16,14 +16,12 @@ use std::{
 };
 use tokio::sync::Mutex;
 
-/// The embedded product skill owns this directory name; user skills may not
-/// reuse it or they would clobber the managed BrowserOS skill.
-const RESERVED_SKILL_NAMES: [&str; 1] = ["browserclaw"];
+/// The embedded product skill owns these directory names; user skills may not
+/// reuse one or they would clobber the managed skill. `browser` is the name the
+/// product skill actually ships under; `browserclaw` stays reserved so an
+/// install that still carries the legacy directory cannot be shadowed either.
+const RESERVED_SKILL_NAMES: [&str; 2] = ["browser", "browserclaw"];
 
-/// Every user- and agent-authored skill is namespaced under this prefix so its
-/// on-disk and linked-agent directory can never collide with a user's own
-/// skill, and so a user can list them all by typing `/neo` in their agent.
-const NEO_SKILL_PREFIX: &str = "neo-";
 const DEFAULT_RUN_LIMIT: u64 = 25;
 const MAX_RUN_LIMIT: u64 = 100;
 
@@ -138,9 +136,9 @@ impl SkillService {
     }
 
     pub async fn get(&self, name: &str) -> AppResult<SkillDetailView> {
-        let model = self.require(name).await?;
+        let (name, model) = self.require(name).await?;
         let body = self.read_body(&model.body_path).await;
-        let runs = self.repo.runs_for(name).await?;
+        let runs = self.repo.runs_for(&name).await?;
         let stats = stats_from_runs(&runs);
         let linked_agents = parse_linked_agents(&model.linked_agents_json);
         Ok(SkillDetailView {
@@ -160,9 +158,9 @@ impl SkillService {
         cursor: Option<i64>,
         limit: Option<u64>,
     ) -> AppResult<(Vec<skill_runs::Model>, Option<i64>)> {
-        self.require(name).await?;
+        let (name, _) = self.require(name).await?;
         let limit = limit.unwrap_or(DEFAULT_RUN_LIMIT).clamp(1, MAX_RUN_LIMIT);
-        self.repo.list_runs(name, cursor, limit).await
+        self.repo.list_runs(&name, cursor, limit).await
     }
 
     /// Every recorded run across all skills, so the list handler can attach each
@@ -269,7 +267,8 @@ impl SkillService {
     }
 
     async fn update_locked(&self, name: &str, input: UpdateSkill) -> AppResult<SkillDetailView> {
-        let mut model = self.require(name).await?;
+        let (resolved, mut model) = self.require(name).await?;
+        let name = resolved.as_str();
         let mut relinked: Option<BTreeSet<AgentId>> = None;
         let mut previous_body: Option<String> = None;
         let body_path = model.body_path.clone();
@@ -415,7 +414,8 @@ impl SkillService {
     }
 
     async fn delete_locked(&self, name: &str) -> AppResult<()> {
-        self.require(name).await?;
+        let (resolved, _) = self.require(name).await?;
+        let name = resolved.as_str();
         self.harness.uninstall_skill(name).await?;
         self.repo.delete(name).await?;
         // The canonical file is now orphaned; removing it is best-effort so a
@@ -431,9 +431,12 @@ impl SkillService {
         let _ = tokio::fs::remove_dir_all(self.skills_dir.join(name)).await;
     }
 
-    async fn require(&self, name: &str) -> AppResult<skills::Model> {
+    /// Look a skill up, resolving a legacy `neo-`-prefixed row, and report the
+    /// name it is stored under. Callers use that name for follow-up queries and
+    /// file paths.
+    async fn require(&self, name: &str) -> AppResult<(String, skills::Model)> {
         self.repo
-            .get(name)
+            .get_allowing_legacy(name)
             .await?
             .ok_or_else(|| AppError::not_found("skill not found"))
     }
@@ -501,33 +504,23 @@ fn is_valid_skill_name(name: &str) -> bool {
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
 }
 
-/// Namespace a name under `neo-`. Idempotent: an already-prefixed name is
-/// returned unchanged, so an agent may pass either `weather` or `neo-weather`.
-pub(crate) fn neo_prefixed(name: &str) -> String {
-    if name.starts_with(NEO_SKILL_PREFIX) {
-        name.to_owned()
-    } else {
-        format!("{NEO_SKILL_PREFIX}{name}")
-    }
-}
-
-/// Validate a raw skill name and return its canonical `neo-`-prefixed form.
+/// Validate a raw skill name and return the name a new skill is saved under:
+/// the name itself. Legacy rows keep their `neo-` prefix, and a caller that
+/// passes one still addresses that row (see `SkillsService::require`).
 fn normalized_skill_name(raw: &str) -> AppResult<String> {
     if !is_valid_skill_name(raw) {
         return Err(AppError::bad_request(
             "skill name must contain only lowercase letters, digits, and hyphens",
         ));
     }
-    let name = neo_prefixed(raw);
-    if name.len() <= NEO_SKILL_PREFIX.len() {
-        return Err(AppError::bad_request(
-            "skill name must have a slug after the neo- prefix",
-        ));
+    // A name of only hyphens would be a directory with no readable slug.
+    if !raw.bytes().any(|byte| byte != b'-') {
+        return Err(AppError::bad_request("skill name must have a slug"));
     }
-    if RESERVED_SKILL_NAMES.contains(&name.as_str()) {
+    if RESERVED_SKILL_NAMES.contains(&raw) {
         return Err(AppError::conflict("skill name is reserved"));
     }
-    Ok(name)
+    Ok(raw.to_owned())
 }
 
 fn render_skill_markdown(
@@ -611,30 +604,33 @@ fn now_ms() -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{neo_prefixed, normalized_skill_name};
+    use super::normalized_skill_name;
 
     #[test]
-    fn neo_prefixed_is_idempotent() {
-        assert_eq!(neo_prefixed("weather"), "neo-weather");
-        assert_eq!(neo_prefixed("neo-weather"), "neo-weather");
-        // Only a leading prefix is collapsed; an interior "neo-" is untouched.
-        assert_eq!(neo_prefixed("weather-neo-check"), "neo-weather-neo-check");
-    }
-
-    #[test]
-    fn normalized_skill_name_prefixes_and_validates() {
+    fn normalized_skill_name_keeps_the_name_it_was_given() {
+        // New skills are saved bare: the `neo-` prefix is no longer added.
         assert_eq!(
             normalized_skill_name("weather").ok().as_deref(),
-            Some("neo-weather")
+            Some("weather")
         );
+        // A legacy name passed explicitly still addresses its own row.
         assert_eq!(
             normalized_skill_name("neo-weather").ok().as_deref(),
             Some("neo-weather")
         );
-        // Charset is rejected before prefixing.
         assert!(normalized_skill_name("Bad Name").is_err());
         assert!(normalized_skill_name("").is_err());
-        // A bare prefix has no slug after neo-.
-        assert!(normalized_skill_name("neo-").is_err());
+        // Hyphens only: no readable slug.
+        assert!(normalized_skill_name("-").is_err());
+        assert!(normalized_skill_name("---").is_err());
+    }
+
+    #[test]
+    fn the_product_skill_names_are_reserved() {
+        // `browser` is the name the managed product skill ships under; the
+        // legacy `browserclaw` directory stays reserved for older installs.
+        assert!(normalized_skill_name("browser").is_err());
+        assert!(normalized_skill_name("browserclaw").is_err());
+        assert!(normalized_skill_name("browser-invoices").is_ok());
     }
 }

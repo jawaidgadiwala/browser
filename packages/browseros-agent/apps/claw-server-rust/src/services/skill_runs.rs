@@ -38,14 +38,22 @@ impl SkillRunService {
 
     /// Tie the current session to a skill; completion turns this into a run row.
     /// Rejects a name that does not resolve to a saved skill so a typo or stale
-    /// name never records a run for a skill that does not exist.
+    /// name never records a run for a skill that does not exist. A bare name
+    /// falls back to the legacy `neo-`-prefixed row, so a skill saved before the
+    /// prefix was dropped still records runs under the name the agent types.
     pub async fn mark(&self, session_id: &str, skill_name: &str) -> AppResult<()> {
-        if self.repo.get(skill_name).await?.is_none() {
-            return Err(AppError::not_found("skill not found"));
-        }
+        let skill_name = self.resolve_skill_name(skill_name).await?;
         self.repo
-            .upsert_mark(session_id, skill_name, now_ms())
+            .upsert_mark(session_id, &skill_name, now_ms())
             .await
+    }
+
+    async fn resolve_skill_name(&self, skill_name: &str) -> AppResult<String> {
+        self.repo
+            .get_allowing_legacy(skill_name)
+            .await?
+            .map(|(name, _)| name)
+            .ok_or_else(|| AppError::not_found("skill not found"))
     }
 
     /// Fire-and-forget projection for a completed session, safe to call from the

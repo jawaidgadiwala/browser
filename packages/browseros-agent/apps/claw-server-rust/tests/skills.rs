@@ -368,18 +368,18 @@ async fn skill_create_rejects_bad_names_and_duplicates() -> anyhow::Result<()> {
     .await?;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 
-    // Every user skill is saved under the neo- namespace, so a user-authored
-    // "browserclaw" saves cleanly as "neo-browserclaw" and never collides with a
-    // product-managed directory.
-    let (status, created) = request(
-        router,
-        "POST",
-        "/api/v1/skills",
-        Some(json!({ "name": "browserclaw", "description": "no longer collides" })),
-    )
-    .await?;
-    assert_eq!(status, StatusCode::CREATED);
-    assert_eq!(created["name"], "neo-browserclaw");
+    // Skills are saved under the name given, so the managed product skill's own
+    // names are reserved rather than shadowed.
+    for reserved in ["browser", "browserclaw"] {
+        let (status, _) = request(
+            router,
+            "POST",
+            "/api/v1/skills",
+            Some(json!({ "name": reserved, "description": "would shadow the managed skill" })),
+        )
+        .await?;
+        assert_eq!(status, StatusCode::CONFLICT, "{reserved} must be reserved");
+    }
 
     let (status, _) = request(
         router,
@@ -436,11 +436,12 @@ async fn skill_create_escapes_yaml_sensitive_descriptions() -> anyhow::Result<()
 }
 
 #[tokio::test]
-async fn skill_create_namespaces_a_bare_name_under_neo() -> anyhow::Result<()> {
+async fn skill_create_keeps_the_name_it_was_given_and_still_reads_legacy_rows() -> anyhow::Result<()>
+{
     let app = test_app().await?;
     let router = &app.router;
 
-    // A bare name is namespaced under neo- on the way in.
+    // The name is kept verbatim: no `neo-` prefix is added any more.
     let (status, created) = request(
         router,
         "POST",
@@ -453,33 +454,37 @@ async fn skill_create_namespaces_a_bare_name_under_neo() -> anyhow::Result<()> {
     )
     .await?;
     assert_eq!(status, StatusCode::CREATED);
-    assert_eq!(created["name"], "neo-weather");
+    assert_eq!(created["name"], "weather");
 
-    // The canonical file lives under the prefixed name, and its frontmatter and
-    // the mark step both carry the prefixed name so a re-run marks correctly.
-    let skill_md = app.root.join("skills").join("neo-weather").join("SKILL.md");
+    // The canonical file, its frontmatter, and the mark step all carry that name.
+    let skill_md = app.root.join("skills").join("weather").join("SKILL.md");
     let content = std::fs::read_to_string(&skill_md)?;
-    assert!(content.contains("name: neo-weather"));
-    assert!(content.contains("mark_skill_run tool with name: neo-weather"));
-    assert!(!app.root.join("skills").join("weather").exists());
+    assert!(content.contains("name: weather"));
+    assert!(content.contains("mark_skill_run tool with name: weather"));
+    assert!(!app.root.join("skills").join("neo-weather").exists());
 
-    // The read path is exact: the prefixed name resolves, the bare one does not.
-    let (status, _) = request(router, "GET", "/api/v1/skills/neo-weather", None).await?;
-    assert_eq!(status, StatusCode::OK);
     let (status, _) = request(router, "GET", "/api/v1/skills/weather", None).await?;
-    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(status, StatusCode::OK);
 
-    // Re-posting the already-prefixed name hits the same skill (a duplicate),
-    // never nesting into neo-neo-weather.
-    let (status, _) = request(
-        router,
-        "POST",
-        "/api/v1/skills",
-        Some(json!({ "name": "neo-weather", "description": "Now with the hourly view" })),
-    )
-    .await?;
-    assert_eq!(status, StatusCode::CONFLICT);
-    assert!(!app.root.join("skills").join("neo-neo-weather").exists());
+    // A skill saved by an earlier build keeps its prefix, and stays reachable by
+    // the bare name an agent types as well as by its stored name.
+    app.state
+        .skills
+        .create(CreateSkill {
+            name: "neo-legacy-brief".to_string(),
+            description: "Saved before the prefix was dropped".to_string(),
+            site: None,
+            steps: vec!["Open the brief".to_string()],
+            learned_notes: Vec::new(),
+            origin: SkillOrigin::Manual,
+            source_session_id: None,
+        })
+        .await?;
+    let (status, detail) = request(router, "GET", "/api/v1/skills/legacy-brief", None).await?;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(detail["skill"]["name"], "neo-legacy-brief");
+    let (status, _) = request(router, "GET", "/api/v1/skills/neo-legacy-brief", None).await?;
+    assert_eq!(status, StatusCode::OK);
 
     Ok(())
 }

@@ -530,7 +530,7 @@ async fn mcp_name_session_lists_and_renames_while_disconnected() -> anyhow::Resu
                 },
                 "session": {
                     "type": "string",
-                    "description": "Opaque session handle for this browser session. The server returns it in every tool result's `_meta` under the key `com.browseros.neo/session`; read it from there and pass it back as this `session` argument on every later call to keep the same browser session and its tab ownership. Omit it only on your first call to start a new session."
+                    "description": "Opaque session handle for this browser session. The server returns it in every tool result's `_meta` under the key `com.jawaidgadiwala.browser/session`; read it from there and pass it back as this `session` argument on every later call to keep the same browser session and its tab ownership. Omit it only on your first call to start a new session."
                 }
             },
             "required": ["name"]
