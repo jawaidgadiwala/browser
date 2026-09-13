@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test'
-import { parseBrowserOSApiUrl } from './browseros-api-url'
+import {
+  browserOSApiMatchOrigin,
+  hostedApiConfigured,
+  parseBrowserOSApiUrl,
+  UNCONFIGURED_API_ORIGIN,
+} from './browseros-api-url'
 import { parseAlphaFeaturesFlag } from './env'
 
 describe('parseAlphaFeaturesFlag', () => {
@@ -17,8 +22,12 @@ describe('parseAlphaFeaturesFlag', () => {
 })
 
 describe('parseBrowserOSApiUrl', () => {
-  it('defaults to the production BrowserOS API when unset', () => {
-    expect(parseBrowserOSApiUrl(undefined)).toBe('https://api.browseros.com')
+  it('defaults to no hosted API when unset', () => {
+    expect(parseBrowserOSApiUrl(undefined)).toBe('')
+  })
+
+  it('treats a blank value as no hosted API', () => {
+    expect(parseBrowserOSApiUrl('   ')).toBe('')
   })
 
   it('preserves explicit overrides', () => {
@@ -40,6 +49,20 @@ describe('parseBrowserOSApiUrl', () => {
   })
 
   it('returns a URL that can form a valid WXT match pattern', () => {
-    expect(`${parseBrowserOSApiUrl(undefined)}/home`).toStartWith('https://')
+    expect(`${parseBrowserOSApiUrl('https://api.example.com')}/home`).toBe(
+      'https://api.example.com/home',
+    )
+  })
+
+  it('falls back to a never-resolving origin for match patterns', () => {
+    expect(browserOSApiMatchOrigin(undefined)).toBe(UNCONFIGURED_API_ORIGIN)
+    expect(browserOSApiMatchOrigin('https://api.example.com')).toBe(
+      'https://api.example.com',
+    )
+  })
+
+  it('reports whether a hosted API is configured', () => {
+    expect(hostedApiConfigured(undefined)).toBe(false)
+    expect(hostedApiConfigured('https://api.example.com')).toBe(true)
   })
 })

@@ -1,6 +1,7 @@
 import { storage } from '@wxt-dev/storage'
 import { getBrowserOSAdapter } from '@/lib/browseros/adapter'
 import { BROWSEROS_PREFS } from '@/lib/browseros/prefs'
+import { DEFAULT_BROWSEROS_API_URL } from '@/lib/browseros-api-url'
 import { hostedProviderEnabled } from '@/lib/personal/personal-build'
 import {
   migrateLlmProvidersToV3,
@@ -14,6 +15,15 @@ import { dropRemovedProviderConfigs } from './removed-provider-types'
 import type { LlmProviderConfig, LlmProvidersBackup } from './types'
 
 export { DEFAULT_PROVIDER_ID } from './provider-selection'
+
+/**
+ * Base URL of the hosted provider. Empty when no hosted API is configured (the
+ * default), which keeps the fallback provider config inert instead of pointing
+ * a user's traffic at a third party's endpoint.
+ */
+const HOSTED_PROVIDER_BASE_URL = DEFAULT_BROWSEROS_API_URL
+  ? `${DEFAULT_BROWSEROS_API_URL}/v1`
+  : ''
 
 export const providersStorage = storage.defineItem<LlmProviderConfig[]>(
   'local:llm-providers',
@@ -85,7 +95,7 @@ export function createDefaultBrowserOSProvider(): LlmProviderConfig {
     id: DEFAULT_PROVIDER_ID,
     type: 'browseros',
     name: DEFAULT_PROVIDER_NAME,
-    baseUrl: 'https://api.browseros.com/v1',
+    baseUrl: HOSTED_PROVIDER_BASE_URL,
     modelId: 'browseros-auto',
     supportsImages: true,
     contextWindow: 200000,

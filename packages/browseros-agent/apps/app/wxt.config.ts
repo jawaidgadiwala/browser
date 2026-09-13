@@ -11,10 +11,20 @@ import { PRODUCT_NAME } from './lib/personal/product'
 // biome-ignore lint/style/noProcessEnv: build config file needs env access
 const env = process.env
 
-const apiUrl = new URL(parseBrowserOSApiUrl(env.VITE_PUBLIC_BROWSEROS_API))
-const apiPattern = apiUrl.port
-  ? `${apiUrl.hostname}:${apiUrl.port}`
-  : apiUrl.hostname
+// No hosted API configured (the default for this product) means no host
+// permissions at all: the manifest must not grant a third party's origin.
+const apiBaseUrl = parseBrowserOSApiUrl(env.VITE_PUBLIC_BROWSEROS_API)
+const apiPattern = apiBaseUrl ? hostPattern(new URL(apiBaseUrl)) : undefined
+const apiMatches = apiPattern
+  ? [`https://${apiPattern}/*`, `https://*.${apiPattern}/*`]
+  : undefined
+const webHostMatches = PRODUCT_WEB_HOST
+  ? [`https://${PRODUCT_WEB_HOST}/*`, `https://*.${PRODUCT_WEB_HOST}/*`]
+  : undefined
+
+function hostPattern(url: URL): string {
+  return url.port ? `${url.hostname}:${url.port}` : url.hostname
+}
 
 // See https://wxt.dev/api/config.html
 // Extension ID will be lmihdclmhdopaeappmadgmglglcabodf
@@ -29,22 +39,21 @@ export default defineConfig({
   manifest: {
     name: PRODUCT_NAME,
     key: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlfNMhaIv8bdRian2xb8+SMXdeOE6DwmdisT4V97qSTlq1gvlS6DrtZvI9u9vC7ZGFCEZ4nXi9S5U9sJxF9HIOA5vG1B6MulGsjB2xdZSRMSUoy2WAJ+e3RphgBKHIN6JtZCPbxkJUGovPtgCaUhG3LbgP6E6JNQFDzfYZrbkXP6K1znl8nkFKc4Q/VNgRRbU+rnhZmvACvF8C0/l/TI8MxpcfNTPqMrRUr/jdNTXOPPWloU/8IIA+NMLZnVlvLzpgCLwjfyShoC98Tnw0XgO3EID6Qo0wKgu4vLRkS/lW1C4qb3kP11bwsYIiQCfQdigGYu4Lt7kmvSc5kVjIqMj/wIDAQAB',
-    update_url: 'https://cdn.browseros.com/extensions/update-manifest.xml',
-    // update_url: 'https://cdn.browseros.com/extensions/update-manifest.alpha.xml',
+    // No update_url: this build must never auto-update itself from the
+    // upstream project's CDN. Set one here once we publish our own feed.
     externally_connectable: {
       ids: [REPORTER_EXTENSION_ID],
-      matches: [`https://${apiPattern}/*`, `https://*.${apiPattern}/*`],
+      ...(apiMatches ? { matches: apiMatches } : {}),
     },
-    web_accessible_resources: [
-      {
-        resources: ['app.html'],
-        matches: [
-          `https://${PRODUCT_WEB_HOST}/*`,
-          `https://*.${PRODUCT_WEB_HOST}/*`,
-        ],
-        extension_ids: [LEGACY_AGENT_EXTENSION_ID],
-      },
-    ],
+    web_accessible_resources: webHostMatches
+      ? [
+          {
+            resources: ['app.html'],
+            matches: webHostMatches,
+            extension_ids: [LEGACY_AGENT_EXTENSION_ID],
+          },
+        ]
+      : [],
     chrome_url_overrides: {
       newtab: 'app.html',
     },
