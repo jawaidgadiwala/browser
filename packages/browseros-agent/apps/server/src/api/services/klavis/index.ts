@@ -8,6 +8,7 @@ export {
   getConnectorCatalog,
   isSupportedConnector,
 } from './catalog'
+export { KlavisClient } from './client'
 export { KlavisService } from './service'
 export type {
   // fallow-ignore-next-line unused-type

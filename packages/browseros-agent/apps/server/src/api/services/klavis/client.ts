@@ -16,6 +16,15 @@ interface KlavisIntegrationObject {
 
 type KlavisIntegrationItem = string | KlavisIntegrationObject
 
+/**
+ * Whether a managed-integrations proxy exists for this build. Empty means the
+ * feature is off: we route nobody's connector traffic through a proxy we do not
+ * operate. Set `EXTERNAL_URLS.KLAVIS_PROXY` to your own proxy to turn it on.
+ */
+export function klavisProxyConfigured(): boolean {
+  return EXTERNAL_URLS.KLAVIS_PROXY.trim().length > 0
+}
+
 /** Handles Klavis proxy HTTP calls and response normalization. */
 export class KlavisClient {
   private baseUrl: string
@@ -29,6 +38,10 @@ export class KlavisClient {
     path: string,
     body?: unknown,
   ): Promise<T> {
+    if (!this.baseUrl) {
+      throw new Error('Managed integrations are disabled: no proxy configured.')
+    }
+
     const controller = new AbortController()
     const timeoutId = setTimeout(
       () => controller.abort(),

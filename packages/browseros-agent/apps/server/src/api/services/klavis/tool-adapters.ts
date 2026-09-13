@@ -5,6 +5,7 @@
  */
 
 import type { JSONValue } from '@ai-sdk/provider'
+import { PRODUCT_NAME } from '@browseros/shared/constants/product'
 import type { CallToolResult } from '@modelcontextprotocol/client'
 import { fromJsonSchema, type McpServer } from '@modelcontextprotocol/server'
 import { jsonSchema, type ToolSet } from 'ai'
@@ -200,8 +201,7 @@ function klavisResultToModelOutput(output: unknown) {
 export function buildKlavisToolSet(deps: KlavisToolAdapterDeps): ToolSet {
   const toolSet: ToolSet = {
     connector_mcp_servers: {
-      description:
-        'Check or list BrowserOS managed app connectors before using Strata MCP tools. Omit server_name to see available, selected, connected, and proxy status. With server_name, returns connected/auth URL status.',
+      description: `Check or list ${PRODUCT_NAME} managed app connectors before using Strata MCP tools. Omit server_name to see available, selected, connected, and proxy status. With server_name, returns connected/auth URL status.`,
       inputSchema: z.object(
         connectorInputSchema(deps.catalog) as z.ZodRawShape,
       ),
@@ -269,8 +269,7 @@ export function registerKlavisTools(
   mcpServer.registerTool(
     'connector_mcp_servers',
     {
-      description:
-        'Check or list BrowserOS managed app connectors before using Strata MCP tools. Omit server_name to see available, selected, connected, and proxy status. With server_name, returns connected/auth URL status.',
+      description: `Check or list ${PRODUCT_NAME} managed app connectors before using Strata MCP tools. Omit server_name to see available, selected, connected, and proxy status. With server_name, returns connected/auth URL status.`,
       inputSchema: toV2InputSchema(
         connectorInputSchema(deps.catalog) as z.ZodRawShape,
       ),

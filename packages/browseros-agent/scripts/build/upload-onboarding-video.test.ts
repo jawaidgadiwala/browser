@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { EXTERNAL_URLS } from '@browseros/shared/constants/urls'
 
 import {
   buildOnboardingVideoUploadPlan,
@@ -38,7 +39,7 @@ describe('onboarding video upload', () => {
           ),
           contentType: 'video/mp4',
           key: 'artifacts/claw/onboarding-video/v0.1.0/first-run-demo.mp4',
-          url: 'https://cdn.browseros.com/artifacts/claw/onboarding-video/v0.1.0/first-run-demo.mp4',
+          url: `${EXTERNAL_URLS.CDN}/artifacts/claw/onboarding-video/v0.1.0/first-run-demo.mp4`,
           renderCommand: 'bun run --cwd packages/onboarding-video render',
         },
         {
@@ -51,7 +52,7 @@ describe('onboarding video upload', () => {
           ),
           contentType: 'image/png',
           key: 'artifacts/claw/onboarding-video/v0.1.0/first-run-demo-poster.png',
-          url: 'https://cdn.browseros.com/artifacts/claw/onboarding-video/v0.1.0/first-run-demo-poster.png',
+          url: `${EXTERNAL_URLS.CDN}/artifacts/claw/onboarding-video/v0.1.0/first-run-demo-poster.png`,
           renderCommand:
             'bun run --cwd packages/onboarding-video render:poster',
         },

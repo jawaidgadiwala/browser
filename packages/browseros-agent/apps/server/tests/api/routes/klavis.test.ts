@@ -6,7 +6,7 @@
 import { afterEach, describe, it } from 'bun:test'
 import assert from 'node:assert'
 import { createKlavisRoutes } from '../../../src/api/routes/klavis'
-import { KlavisService } from '../../../src/api/services/klavis'
+import { KlavisClient, KlavisService } from '../../../src/api/services/klavis'
 
 const originalFetch = globalThis.fetch
 
@@ -14,9 +14,14 @@ afterEach(() => {
   globalThis.fetch = originalFetch
 })
 
+// Managed integrations are off unless a proxy is configured, so these tests
+// inject a client with an explicit base URL; the stubbed fetch ignores it.
 function createRoute(browserosId = 'user-123') {
   return createKlavisRoutes({
-    klavis: new KlavisService({ browserosId }),
+    klavis: new KlavisService({
+      browserosId,
+      client: new KlavisClient('https://klavis.test'),
+    }),
   })
 }
 

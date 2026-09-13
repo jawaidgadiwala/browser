@@ -13,7 +13,7 @@ import {
   getConnectorServerNames,
   isSupportedConnector,
 } from './catalog'
-import { KlavisClient } from './client'
+import { KlavisClient, klavisProxyConfigured } from './client'
 import {
   buildConnectorInventory,
   getAuthUrlForServer,
@@ -52,6 +52,7 @@ export interface KlavisServiceDeps {
 /** Owns Klavis catalog, auth, Strata lifecycle, cache, and tool exposure. */
 export class KlavisService {
   private readonly browserosId?: string
+  private readonly proxyConfigured: boolean
   private readonly client: KlavisClient
   private readonly cache: KlavisStrataCache
   private readonly connect: (
@@ -64,14 +65,29 @@ export class KlavisService {
   private status: KlavisProxyStatus
 
   constructor(deps: KlavisServiceDeps) {
-    this.browserosId = deps.browserosId ?? undefined
+    // An injected client carries its own base URL, so only a default client
+    // depends on a configured proxy. Without one the whole feature is off: no
+    // catalog, no session, no connector calls.
+    this.proxyConfigured = deps.client !== undefined || klavisProxyConfigured()
+    this.browserosId = this.proxyConfigured
+      ? (deps.browserosId ?? undefined)
+      : undefined
     this.client = deps.client ?? new KlavisClient()
     this.cache = deps.cache ?? new KlavisStrataCache()
     this.connect = deps.connect ?? connectKlavisStrataSession
     this.retryDelaysMs = deps.retryDelaysMs ?? KLAVIS_PROXY_RETRY_BACKOFF_MS
     this.status = this.browserosId
       ? { state: 'stopped' }
-      : { state: 'disabled', reason: 'missing_browseros_id' }
+      : this.disabledStatus()
+  }
+
+  private disabledStatus(): Extract<KlavisProxyStatus, { state: 'disabled' }> {
+    return {
+      state: 'disabled',
+      reason: this.proxyConfigured
+        ? 'missing_browseros_id'
+        : 'proxy_not_configured',
+    }
   }
 
   /** Starts the background Strata session without blocking route startup. */
@@ -103,7 +119,7 @@ export class KlavisService {
     this.session = null
     this.status = this.browserosId
       ? { state: 'stopped' }
-      : { state: 'disabled', reason: 'missing_browseros_id' }
+      : this.disabledStatus()
     await session?.close().catch((error) => {
       logger.warn('Failed to close Klavis proxy transport', {
         error: error instanceof Error ? error.message : String(error),
@@ -116,7 +132,7 @@ export class KlavisService {
   }
 
   listAvailableConnectors() {
-    return getConnectorCatalog()
+    return this.proxyConfigured ? getConnectorCatalog() : []
   }
 
   async getUserIntegrations(): Promise<UserIntegration[]> {
@@ -196,7 +212,7 @@ export class KlavisService {
   ): void {
     if (!this.browserosId) {
       logger.debug('Skipping Klavis MCP tools registration', {
-        reason: 'missing_browseros_id',
+        reason: this.disabledStatus().reason,
         selectedServers: selectedServerNames(scope),
       })
       return
